@@ -6,7 +6,7 @@
 بعد رفع الكود على GitHub، يجب إضافة البيانات السرية (Secrets) لتمكين الرفع التلقائي:
 1. اذهب إلى **Settings > Secrets and variables > Actions**.
 2. أضف الـ Secrets التالية:
-    - `SERVER_IP`: الـ IP الخاص بالسيرفر (`16.16.218.61`).
+    - `SERVER_IP`: الـ IP الخاص بالسيرفر (`13.50.226.152`).
     - `SERVER_USER`: اسم المستخدم للسيرفر (غالباً `root` أو `ubuntu`).
     - `SERVER_SSH_KEY`: مفتاح الـ SSH الخاص بالسيرفر (Private Key).
 
@@ -30,8 +30,8 @@ sudo systemctl restart nginx
 
 ## 3. استخدام Subdomains (nip.io)
 المشروع سيعمل تلقائياً على العناوين التالية:
-- **لوحة الأدمن**: `http://att-admin.16.16.218.61.nip.io`
-- **لوحة الدكتور**: `http://att-doctor.16.16.218.61.nip.io`
+- **لوحة الأدمن**: `http://att-admin.13.50.226.152.nip.io`
+- **لوحة الدكتور**: `http://att-doctor.13.50.226.152.nip.io`
 - **الـ API**: متاح عبر `/api` من أي من النطاقات السابقة.
 
 ## 4. أوامر الرفع الأولى (Git Commands)
