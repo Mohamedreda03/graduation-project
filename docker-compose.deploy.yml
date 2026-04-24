@@ -1,6 +1,7 @@
 services:
   backend:
     build: ./backend
+    container_name: backend
     restart: always
     environment:
       - MONGO_URI=mongodb://admin:admin123@mongodb:27017/attendance_system?authSource=admin
@@ -12,15 +13,18 @@ services:
 
   admin-dashboard:
     build: ./admin-dashboard
+    container_name: admin-dashboard
     restart: always
     ports:
       - "3001:80"
 
   doctor-dashboard:
     build: ./doctor-dashboard
+    container_name: doctor-dashboard
     restart: always
     ports:
       - "3002:80"
+
 
   mongodb:
     image: mongo:latest
