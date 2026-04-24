@@ -24,12 +24,14 @@ jobs:
             
             if [ ! -d "$PROJECT_PATH" ]; then
               echo "Project directory not found. Cloning for the first time..."
-              git clone https://github.com/${{ github.repository }}.git "$PROJECT_PATH"
+              git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git "$PROJECT_PATH"
               cd "$PROJECT_PATH"
             else
               cd "$PROJECT_PATH"
-              git pull origin main
+              git fetch --all
+              git reset --hard origin/main
             fi
+
             
             # إنشاء ملف الـ .env من الـ Secrets
             echo "${{ secrets.BACKEND_ENV }}" > "$PROJECT_PATH/backend/.env"
