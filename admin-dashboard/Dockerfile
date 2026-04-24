@@ -7,7 +7,9 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+ENV VITE_API_URL=/api
 RUN npm run build
+
 
 # Production stage
 FROM nginx:stable-alpine

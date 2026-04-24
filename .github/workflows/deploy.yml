@@ -31,7 +31,11 @@ jobs:
               git pull origin main
             fi
             
+            # إنشاء ملف الـ .env من الـ Secrets
+            echo "${{ secrets.BACKEND_ENV }}" > "$PROJECT_PATH/backend/.env"
+            
             # تشغيل الـ Docker
+
             docker-compose -f docker-compose.deploy.yml up -d --build
             docker system prune -f
 
