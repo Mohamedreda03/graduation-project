@@ -19,7 +19,19 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /path/to/your/graduation-project
-            git pull origin main
+            # ادخل المسار الصحيح هنا
+            PROJECT_PATH="/home/${{ secrets.SERVER_USER }}/graduation-project"
+            
+            if [ ! -d "$PROJECT_PATH" ]; then
+              echo "Project directory not found. Cloning for the first time..."
+              git clone https://github.com/${{ github.repository }}.git "$PROJECT_PATH"
+              cd "$PROJECT_PATH"
+            else
+              cd "$PROJECT_PATH"
+              git pull origin main
+            fi
+            
+            # تشغيل الـ Docker
             docker-compose -f docker-compose.deploy.yml up -d --build
             docker system prune -f
+
