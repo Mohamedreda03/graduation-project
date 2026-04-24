@@ -1,0 +1,12 @@
+﻿export * from "./auth.service";
+export * from "./departments.service";
+export * from "./halls.service";
+export * from "./students.service";
+export * from "./doctors.service";
+export * from "./courses.service";
+export * from "./lectures.service";
+export * from "./attendance.service";
+export * from "./settings.service";
+export * from "./dashboard.service";
+export { default as aiService } from "./ai.service";
+export type { ChatMessage, ChatResponse } from "./ai.service";

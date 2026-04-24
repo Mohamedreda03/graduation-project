@@ -1,0 +1,42 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches: [main] # Or the branch name you use for production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20" # Modern LTS version for better performance and security
+
+      - name: Install Dependencies & Test (Optional but recommended)
+        run: |
+          npm ci
+          # npm test
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Navigate to the project directory on the server
+            cd ~/projects/grad/backend
+
+            # Pull the latest changes
+            git pull origin main
+
+            # Install dependencies
+            npm install --production
+
+            # Restart the server (using pm2 as an example)
+            pm2 restart backend-api || pm2 start server.js --name "backend-api"

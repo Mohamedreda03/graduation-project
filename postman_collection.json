@@ -1,0 +1,377 @@
+{
+  "info": {
+    "name": "📱 Smart Attendance - Mobile API",
+    "description": "## نظام الحضور الذكي - دليل Flutter Developer\n\n---\n\n## 🏗️ كيف يعمل النظام؟\n\nالنظام يعتمد على ربط الحساب بـ **MAC Address** للجهاز:\n\n1. **أول تسجيل دخول**: السيرفر يحفظ الـ MAC Address ويولّد `deviceId` فريد\n2. **كل تسجيل دخول تاني**: السيرفر يتحقق إن الـ MAC Address نفسه\n3. **جهاز مختلف**: السيرفر يرفض ويرجع 403\n4. **تغيير الجهاز**: الطالب يبعت طلب → الأدمن يوافق\n\n---\n\n## ⚡ كيفية الاستخدام السريع\n\n1. شغّل السيرفر\n2. غيّر `baseUrl` لو السيرفر على IP مختلف (مثلاً: `http://192.168.1.100:5000/api`)\n3. ابدأ بـ **Login** - التوكنات تتحفظ تلقائياً\n4. باقي الطلبات تشتغل تلقائياً\n\n---\n\n## 📦 المتغيرات المتاحة\n\n| المتغير | الوصف | القيمة الافتراضية |\n|---|---|---|\n| `baseUrl` | رابط السيرفر | `http://localhost:5000/api` |\n| `accessToken` | يُحفظ تلقائياً بعد Login | `` |\n| `refreshToken` | يُحفظ تلقائياً بعد Login | `` |\n| `courseId` | ID المقرر للاختبار | `REPLACE_WITH_COURSE_ID` |\n\n---\n\n## 📱 كيف تحصل على MAC Address في Flutter؟\n\n```dart\n// استخدم مكتبة: network_info_plus أو wifi_info_flutter\nimport 'package:network_info_plus/network_info_plus.dart';\n\nfinal info = NetworkInfo();\nfinal mac = await info.getWifiBSSID(); // MAC Address\n```\n\n> ⚠️ في Android 10+، قد تحتاج صلاحيات خاصة أو تستخدم MAC بديل\n\n---\n\n## 🔄 دورة حياة التوكنات\n\n```\nLogin → accessToken (15 دقيقة) + refreshToken (7 أيام)\n\nلما accessToken ينتهي:\n  → استخدم /refresh مع الـ refreshToken\n  → تحصل على accessToken جديد + refreshToken جديد\n\nلما refreshToken ينتهي:\n  → أعد تسجيل الدخول\n```\n\n---\n\n## 🛡️ إدارة التوكنات في Flutter (Dio + Interceptor)\n\n```dart\ndio.interceptors.add(\n  InterceptorsWrapper(\n    onError: (error, handler) async {\n      if (error.response?.statusCode == 401) {\n        // جرب تجديد التوكن\n        try {\n          final refresh = await dio.post('/auth/mobile/refresh',\n            data: {'refreshToken': storage.read('refreshToken')});\n          final newToken = refresh.data['data']['accessToken'];\n          storage.write('accessToken', newToken);\n          // أعد الطلب الأصلي بالتوكن الجديد\n          error.requestOptions.headers['Authorization'] = 'Bearer $newToken';\n          return handler.resolve(await dio.fetch(error.requestOptions));\n        } catch (_) {\n          // refreshToken انتهى - أعد تسجيل الدخول\n          navigateTo('/login');\n        }\n      }\n      return handler.next(error);\n    },\n  ),\n);\n```",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "courseId",
+      "value": "REPLACE_WITH_COURSE_ID",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 المصادقة (Authentication)",
+      "description": "طلبات تسجيل الدخول والخروج وتحديث التوكن.\n\n**الترتيب المطلوب:**\n1. Login أولاً (التوكن يتحفظ تلقائياً)\n2. باقي الطلبات تشتغل بالتوكن المحفوظ\n3. Refresh Token لو التوكن انتهى\n4. Logout لتسجيل الخروج",
+      "item": [
+        {
+          "name": "1. تسجيل الدخول (Login)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// حفظ التوكنات تلقائياً بعد نجاح تسجيل الدخول",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', data.refreshToken);",
+                  "    ",
+                  "    console.log('✅ تم حفظ التوكنات تلقائياً');",
+                  "    console.log('DeviceId:', data.user?.device?.deviceId || 'لم يتم توليده بعد');",
+                  "    console.log('MAC:', data.user?.device?.macAddress || 'غير مسجل');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"20210001\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/mobile/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "mobile", "login"]
+            },
+            "description": "## تسجيل دخول الطالب عبر الموبايل\n\n---\n\n### 📥 البيانات المطلوبة\n\n| الحقل | النوع | إلزامي | الوصف |\n|---|---|---|---|\n| `studentId` | string | ✅ (أو email) | رقم الطالب |\n| `email` | string | ✅ (أو studentId) | البريد الإلكتروني |\n| `password` | string | ✅ | كلمة المرور |\n| `deviceInfo.macAddress` | string | ✅ | MAC Address للجهاز |\n\n> ⚠️ **لا ترسل `deviceId`** - السيرفر هو اللي بيولّده\n\n---\n\n### 📤 الاستجابة الناجحة (200)\n\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"...\",\n      \"name\": \"أحمد محمد\",\n      \"studentId\": \"20210001\",\n      \"email\": \"ahmed@uni.edu\",\n      \"role\": \"student\",\n      \"academicInfo\": {\n        \"department\": { \"_id\": \"...\", \"name\": \"علوم الحاسب\" },\n        \"level\": 3\n      },\n      \"device\": {\n        \"deviceId\": \"uuid-generated-by-server\",\n        \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n        \"isVerified\": true\n      }\n    },\n    \"accessToken\": \"eyJhbGc...\",\n    \"refreshToken\": \"eyJhbGc...\"\n  }\n}\n```\n\n---\n\n### ❌ الأخطاء المحتملة\n\n| كود | السبب |\n|---|---|\n| 401 | بيانات دخول خاطئة |\n| 401 | الحساب معطّل |\n| 403 | الجهاز مختلف عن المسجّل |\n| 400 | الـ macAddress مش موجود |\n\n---\n\n### 💡 كود Flutter\n\n```dart\nFuture<void> login(String studentId, String password, String macAddress) async {\n  final response = await dio.post('/auth/mobile/login', data: {\n    'studentId': studentId,\n    'password': password,\n    'deviceInfo': {'macAddress': macAddress},\n  });\n  \n  final data = response.data['data'];\n  await storage.write('accessToken', data['accessToken']);\n  await storage.write('refreshToken', data['refreshToken']);\n}\n```"
+          }
+        },
+        {
+          "name": "2. تحديث التوكن (Refresh Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// تحديث التوكنات الجديدة تلقائياً",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', data.refreshToken);",
+                  "    console.log('✅ تم تحديث التوكنات');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/mobile/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "mobile", "refresh"]
+            },
+            "description": "## تجديد التوكن المنتهي\n\n---\n\n### ⏰ متى تستخدمه؟\n- لما تلاقي `401 Unauthorized` من أي endpoint\n- الـ `accessToken` بينتهي بعد **15 دقيقة**\n- الـ `refreshToken` بينتهي بعد **7 أيام**\n\n---\n\n### 📥 البيانات المطلوبة\n\n```json\n{ \"refreshToken\": \"eyJhbGc...\" }\n```\n\n---\n\n### 📤 الاستجابة الناجحة (200)\n\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"accessToken\": \"eyJhbGc... (جديد)\",\n    \"refreshToken\": \"eyJhbGc... (جديد)\"\n  }\n}\n```\n\n> ✅ التوكنات الجديدة تتحفظ تلقائياً في Postman\n\n---\n\n### ❌ الأخطاء\n\n| كود | السبب |\n|---|---|\n| 401 | الـ refreshToken غير صالح أو منتهي |\n| 400 | الـ refreshToken غير مرسل |"
+          }
+        },
+        {
+          "name": "3. تسجيل الخروج (Logout)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/mobile/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "mobile", "logout"]
+            },
+            "description": "## تسجيل خروج الطالب\n\n---\n\n### 📥 البيانات المطلوبة\n\n| الحقل | المكان | الوصف |\n|---|---|---|\n| `Authorization` | Header | `Bearer {accessToken}` |\n| `refreshToken` | Body | الـ refresh token الحالي |\n\n---\n\n### 📤 الاستجابة (200)\n\n```json\n{ \"success\": true, \"message\": \"تم تسجيل الخروج بنجاح\" }\n```\n\n---\n\n### 💡 كود Flutter\n\n```dart\nFuture<void> logout() async {\n  await dio.post('/auth/mobile/logout',\n    data: {'refreshToken': storage.read('refreshToken')});\n  await storage.deleteAll();\n  navigateTo('/login');\n}\n```"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 الحضور والغياب (Attendance)",
+      "description": "طلبات عرض سجلات الحضور وحالة المحاضرة الحالية.\n\n**مهم:** كل الطلبات هنا تتطلب تسجيل دخول كطالب أولاً.",
+      "item": [
+        {
+          "name": "4. عرض سجلات حضوري (الكل)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/attendance/my?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["attendance", "my"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "رقم الصفحة (افتراضي: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "عدد السجلات في الصفحة (افتراضي: 20)"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01",
+                  "description": "تصفية من تاريخ (اختياري)",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31",
+                  "description": "تصفية إلى تاريخ (اختياري)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "## عرض كل سجلات الحضور للطالب المسجّل دخوله\n\n---\n\n### 🔍 الفلاتر المتاحة (Query Params)\n\n| الفلتر | النوع | الوصف |\n|---|---|---|\n| `page` | number | رقم الصفحة (افتراضي: 1) |\n| `limit` | number | عدد النتائج (افتراضي: 20) |\n| `startDate` | YYYY-MM-DD | تصفية من تاريخ |\n| `endDate` | YYYY-MM-DD | تصفية إلى تاريخ |\n\n---\n\n### 📤 الاستجابة (200)\n\n```json\n{\n  \"success\": true,\n  \"data\": [...],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 85,\n    \"pages\": 5\n  }\n}\n```\n\n---\n\n### 🏷️ حالات الحضور\n\n| القيمة | المعنى |\n|---|---|\n| `present` | حاضر ✅ |\n| `absent` | غائب ❌ |\n| `excused` | غياب بعذر 📄 |\n| `late` | متأخر ⏰ |\n| `in-progress` | المحاضرة لسه شغالة 🔄 |"
+          }
+        },
+        {
+          "name": "5. عرض حضوري لمقرر معين",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/attendance/my/course/{{courseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["attendance", "my", "course", "{{courseId}}"]
+            },
+            "description": "## عرض سجلات الحضور لمقرر دراسي محدد\n\n---\n\n### قبل الاستخدام\nغيّر `courseId` في المتغيرات بالـ ID الصحيح من نتيجة endpoint المقررات\n\n---\n\n### 📤 الاستجابة (200)\n\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"summary\": {\n      \"totalLectures\": 20,\n      \"present\": 17,\n      \"absent\": 3,\n      \"attendanceRate\": 85\n    },\n    \"records\": [\n      {\n        \"_id\": \"...\",\n        \"date\": \"2026-02-20\",\n        \"status\": \"present\",\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"10:30\" }\n      }\n    ]\n  }\n}\n```"
+          }
+        },
+        {
+          "name": "6. 🔄 حالة المحاضرة الحالية (Polling)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/attendance/my/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["attendance", "my", "status"]
+            },
+            "description": "## 🔄 Endpoint الـ Polling الرئيسي للـ Flutter\n\n**الأهم في التطبيق** - يُعرفك هل الطالب داخل محاضرة ولّا لأ.\n\n---\n\n### ⚙️ كيفية الاستخدام\n- نادي هذا الـ endpoint كل **30-60 ثانية** في الخلفية\n- مش محتاج أي parameters\n\n---\n\n### 📤 استجابة - الطالب في محاضرة\n\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"inLecture\": true,\n    \"session\": {\n      \"hallName\": \"قاعة 301\",\n      \"courseName\": \"مقدمة في البرمجة\",\n      \"courseCode\": \"CS101\",\n      \"doctorName\": \"أحمد محمد\",\n      \"startTime\": \"09:00\",\n      \"endTime\": \"10:30\",\n      \"connectedAt\": \"2026-02-22T09:05:00Z\",\n      \"attendanceStatus\": \"in-progress\",\n      \"presenceTimeMinutes\": 25\n    }\n  }\n}\n```\n\n---\n\n### 📤 استجابة - الطالب مش في محاضرة\n\n```json\n{\n  \"success\": true,\n  \"data\": { \"inLecture\": false, \"session\": null }\n}\n```\n\n---\n\n### 💡 كود Flutter (Polling)\n\n```dart\nlate Timer _pollingTimer;\n\nvoid startPolling() {\n  _pollingTimer = Timer.periodic(Duration(seconds: 30), (_) async {\n    try {\n      final res = await dio.get('/attendance/my/status');\n      final data = res.data['data'];\n      setState(() {\n        inLecture = data['inLecture'];\n        session = data['session'];\n      });\n    } catch (e) {\n      // تجاهل الأخطاء المؤقتة في الـ polling\n    }\n  });\n}\n\n@override\nvoid dispose() {\n  _pollingTimer.cancel();\n  super.dispose();\n}\n```"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📚 المقررات الدراسية (Courses)",
+      "description": "عرض المقررات المتاحة للطالب.",
+      "item": [
+        {
+          "name": "7. عرض كل المقررات",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["courses"]
+            },
+            "description": "## عرض قائمة بكل المقررات الدراسية\n\n---\n\n### 📤 الاستجابة (200)\n\n```json\n{\n  \"success\": true,\n  \"data\": [\n    {\n      \"_id\": \"65a1b2c3d4e5f6789\",\n      \"name\": \"مقدمة في البرمجة\",\n      \"code\": \"CS101\",\n      \"creditHours\": 3,\n      \"doctor\": { \"_id\": \"...\", \"name\": \"د. أحمد\" },\n      \"department\": { \"_id\": \"...\", \"name\": \"علوم الحاسب\" }\n    }\n  ]\n}\n```\n\n> 💡 احفظ الـ `_id` لكل مقرر واستخدمه في endpoint حضور المقرر"
+          }
+        },
+        {
+          "name": "7.1 عرض مقرر بالتفصيل",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["courses", "{{courseId}}"]
+            },
+            "description": "## عرض تفاصيل مقرر دراسي محدد\n\nغيّر `courseId` في المتغيرات أو في الـ URL مباشرة بالـ `_id` من قائمة المقررات."
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 الملف الشخصي (Profile)",
+      "description": "طلبات متعلقة ببيانات الطالب وجهازه.",
+      "item": [
+        {
+          "name": "8. عرض بيانات جهازي",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/students/my-device",
+              "host": ["{{baseUrl}}"],
+              "path": ["students", "my-device"]
+            },
+            "description": "## عرض بيانات الجهاز المسجّل للطالب\n\n---\n\n### 📤 الاستجابة (200)\n\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"deviceId\": \"uuid-generated-by-server\",\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n    \"registeredAt\": \"2026-01-15T10:30:00Z\",\n    \"isVerified\": true\n  }\n}\n```\n\n---\n\n### متى تستخدمه؟\n- في صفحة الإعدادات لعرض بيانات الجهاز\n- للتأكد من أن الجهاز مسجّل بشكل صحيح"
+          }
+        },
+        {
+          "name": "9. طلب تغيير الجهاز",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"فقدت هاتفي القديم واشتريت هاتف جديد\",\n  \"newDeviceInfo\": {\n    \"macAddress\": \"BB:CC:DD:EE:FF:00\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/students/request-device-change",
+              "host": ["{{baseUrl}}"],
+              "path": ["students", "request-device-change"]
+            },
+            "description": "## طلب تغيير الجهاز المسجّل\n\nيُستخدم لما الطالب يشتري موبايل جديد أو يفقد هاتفه.\n\n---\n\n### 📥 البيانات المطلوبة\n\n| الحقل | إلزامي | الوصف |\n|---|---|---|\n| `reason` | ✅ | سبب التغيير (10 حروف على الأقل) |\n| `newDeviceInfo.macAddress` | ✅ | MAC Address الجهاز الجديد |\n\n---\n\n### ⚙️ دورة حياة الطلب\n\n```\nالطالب يبعت طلب (pending)\n        ↓\nالأدمن يراجع الطلب\n        ↓\n  approved / rejected\n```\n\n---\n\n### 📤 الأخطاء\n\n| كود | السبب |\n|---|---|\n| 400 | فيه طلب معلّق بالفعل |\n| 400 | الـ reason أقل من 10 حروف |"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔑 تغيير كلمة المرور",
+      "description": "تغيير كلمة مرور الطالب.",
+      "item": [
+        {
+          "name": "10. تغيير كلمة المرور",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"student123\",\n  \"newPassword\": \"newPassword456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "change-password"]
+            },
+            "description": "## تغيير كلمة مرور الطالب\n\n---\n\n### 📥 البيانات المطلوبة\n\n| الحقل | الوصف |\n|---|---|\n| `currentPassword` | كلمة المرور الحالية |\n| `newPassword` | كلمة المرور الجديدة (6 حروف على الأقل) |\n\n---\n\n### 📤 الاستجابة (200)\n\n```json\n{\n  \"success\": true,\n  \"message\": \"Password changed successfully\",\n  \"data\": {\n    \"accessToken\": \"...\",\n    \"refreshToken\": \"...\"\n  }\n}\n```\n\n> ✅ بعد تغيير كلمة المرور، يرجع توكنات جديدة - احفظها!"
+          }
+        }
+      ]
+    }
+  ]
+}
