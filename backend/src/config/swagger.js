@@ -1,13 +1,12 @@
 const swaggerJsdoc = require("swagger-jsdoc");
 
-const options = {
+const baseOptions = {
   definition: {
     openapi: "3.0.0",
     info: {
       title: "Smart Attendance System API",
       version: "1.0.0",
-      description:
-        "WiFi-based Smart Attendance System for University - API Documentation",
+      description: "WiFi-based Smart Attendance System for University - API Documentation",
       contact: {
         name: "Development Team",
         email: "support@smartattendance.edu",
@@ -27,6 +26,12 @@ const options = {
           bearerFormat: "JWT",
           description: "Enter your JWT token",
         },
+        cookieAuth: {
+          type: "apiKey",
+          in: "cookie",
+          name: "accessToken",
+          description: "Cookie-based authentication for web",
+        },
         apiKeyAuth: {
           type: "apiKey",
           in: "header",
@@ -41,26 +46,14 @@ const options = {
           properties: {
             _id: { type: "string", example: "507f1f77bcf86cd799439011" },
             name: { type: "string", example: "أحمد محمد" },
-            email: {
-              type: "string",
-              format: "email",
-              example: "ahmed@university.edu",
-            },
-            role: {
-              type: "string",
-              enum: ["student", "doctor", "admin"],
-              example: "student",
-            },
+            email: { type: "string", format: "email", example: "ahmed@university.edu" },
+            role: { type: "string", enum: ["student", "doctor", "admin"], example: "student" },
             studentId: { type: "string", example: "20210001" },
             department: { type: "string", example: "507f1f77bcf86cd799439011" },
             level: { type: "integer", minimum: 1, maximum: 6, example: 3 },
             phone: { type: "string", example: "01012345678" },
             isActive: { type: "boolean", example: true },
-            createdAt: {
-              type: "string",
-              format: "date-time",
-              example: "2026-01-15T10:30:00Z",
-            },
+            createdAt: { type: "string", format: "date-time", example: "2026-01-15T10:30:00Z" },
           },
         },
 
@@ -103,10 +96,7 @@ const options = {
             building: { type: "string", example: "مبنى الحاسبات" },
             floor: { type: "integer", example: 1 },
             capacity: { type: "integer", example: 100 },
-            hallType: {
-              type: "string",
-              enum: ["lecture_hall", "lab", "classroom"],
-            },
+            hallType: { type: "string", enum: ["lecture_hall", "lab", "classroom"] },
             accessPoint: {
               type: "object",
               properties: {
@@ -127,18 +117,10 @@ const options = {
             _id: { type: "string", example: "507f1f77bcf86cd799439011" },
             course: { type: "string" },
             hall: { type: "string" },
-            dayOfWeek: {
-              type: "integer",
-              minimum: 0,
-              maximum: 6,
-              description: "0=Sunday, 6=Saturday",
-            },
+            dayOfWeek: { type: "integer", minimum: 0, maximum: 6, description: "0=Sunday, 6=Saturday" },
             startTime: { type: "string", example: "09:00" },
             endTime: { type: "string", example: "10:30" },
-            lectureType: {
-              type: "string",
-              enum: ["lecture", "section", "lab"],
-            },
+            lectureType: { type: "string", enum: ["lecture", "section", "lab"] },
             weekPattern: { type: "string", enum: ["weekly", "odd", "even"] },
             isActive: { type: "boolean", example: true },
           },
@@ -154,10 +136,7 @@ const options = {
             lecture: { type: "string" },
             hall: { type: "string" },
             date: { type: "string", format: "date" },
-            status: {
-              type: "string",
-              enum: ["in-progress", "present", "absent"],
-            },
+            status: { type: "string", enum: ["in-progress", "present", "absent"] },
             sessions: {
               type: "array",
               items: {
@@ -165,17 +144,11 @@ const options = {
                 properties: {
                   checkIn: { type: "string", format: "date-time" },
                   checkOut: { type: "string", format: "date-time" },
-                  duration: {
-                    type: "integer",
-                    description: "Duration in minutes",
-                  },
+                  duration: { type: "integer", description: "Duration in minutes" },
                 },
               },
             },
-            totalPresenceTime: {
-              type: "integer",
-              description: "Total time in minutes",
-            },
+            totalPresenceTime: { type: "integer", description: "Total time in minutes" },
             presencePercentage: { type: "number", example: 85.5 },
             isFinalized: { type: "boolean" },
           },
@@ -194,10 +167,7 @@ const options = {
                 hall: { type: "string" },
               },
             },
-            eventType: {
-              type: "string",
-              enum: ["device-connected", "device-disconnected"],
-            },
+            eventType: { type: "string", enum: ["device-connected", "device-disconnected"] },
             timestamp: { type: "string", format: "date-time" },
             processed: { type: "boolean" },
           },
@@ -256,11 +226,7 @@ const options = {
           type: "object",
           required: ["email", "password"],
           properties: {
-            email: {
-              type: "string",
-              format: "email",
-              example: "admin@smartattendance.edu",
-            },
+            email: { type: "string", format: "email", example: "admin@smartattendance.edu" },
             password: { type: "string", example: "admin123456" },
           },
         },
@@ -325,7 +291,10 @@ const options = {
     },
     tags: [
       { name: "Auth", description: "Authentication endpoints" },
+      { name: "Auth - Web", description: "Web authentication (Admin & Doctor)" },
+      { name: "Auth - Mobile", description: "Mobile authentication (Student)" },
       { name: "Users", description: "User management (Admin only)" },
+      { name: "Profile", description: "Current logged-in user profile" },
       { name: "Students", description: "Student management" },
       { name: "Doctors", description: "Doctor management" },
       { name: "Departments", description: "Department management" },
@@ -333,16 +302,104 @@ const options = {
       { name: "Halls", description: "Hall & Access Point management" },
       { name: "Lectures", description: "Lecture schedule management" },
       { name: "Attendance", description: "Attendance records" },
-      {
-        name: "Connections",
-        description: "WiFi connection events from Access Points",
-      },
+      { name: "Connections", description: "WiFi connection events from Access Points" },
       { name: "Settings", description: "System settings (Admin only)" },
+      { name: "Dashboard", description: "Dashboard statistics and overviews" },
+      { name: "AI", description: "AI Assistant endpoints" },
     ],
   },
   apis: ["./src/routes/*.js"],
 };
 
-const swaggerSpec = swaggerJsdoc(options);
+// Generate full spec from all routes
+const fullSpec = swaggerJsdoc(baseOptions);
 
-module.exports = swaggerSpec;
+/**
+ * Filter Swagger Specification by tags
+ * @param {Array<string>} allowedTags 
+ * @param {string} title 
+ * @returns {object}
+ */
+const filterSpec = (allowedTags, title) => {
+  const spec = JSON.parse(JSON.stringify(fullSpec));
+  spec.info.title = title;
+
+  // Filter global tags list
+  if (spec.tags) {
+    spec.tags = spec.tags.filter((t) => allowedTags.includes(t.name));
+  }
+
+  // Filter paths
+  Object.keys(spec.paths).forEach((path) => {
+    Object.keys(spec.paths[path]).forEach((method) => {
+      const operation = spec.paths[path][method];
+      if (operation.tags) {
+        const hasTag = operation.tags.some((tag) => allowedTags.includes(tag));
+        if (!hasTag) {
+          delete spec.paths[path][method];
+        }
+      } else {
+        // If an operation has no tags, we either keep it or remove it. We'll remove it.
+        delete spec.paths[path][method];
+      }
+    });
+
+    if (Object.keys(spec.paths[path]).length === 0) {
+      delete spec.paths[path];
+    }
+  });
+
+  return spec;
+};
+
+const adminTags = [
+  "Auth - Web",
+  "Auth",
+  "Users",
+  "Profile",
+  "Students",
+  "Doctors",
+  "Departments",
+  "Courses",
+  "Halls",
+  "Lectures",
+  "Attendance",
+  "Connections",
+  "Settings",
+  "Dashboard",
+  "AI"
+];
+
+const mobileTags = [
+  "Auth - Mobile",
+  "Auth",
+  "Profile",
+  "Students",
+  "Courses",
+  "Lectures",
+  "Attendance",
+  "AI"
+];
+
+const doctorTags = [
+  "Auth - Web",
+  "Auth",
+  "Profile",
+  "Doctors",
+  "Courses",
+  "Lectures",
+  "Attendance",
+  "Dashboard",
+  "AI"
+];
+
+const adminSpec = filterSpec(adminTags, "Smart Attendance - Admin API");
+const mobileSpec = filterSpec(mobileTags, "Smart Attendance - Mobile API");
+const doctorSpec = filterSpec(doctorTags, "Smart Attendance - Doctor API");
+
+module.exports = {
+  adminSpec,
+  mobileSpec,
+  doctorSpec,
+  fullSpec,
+};

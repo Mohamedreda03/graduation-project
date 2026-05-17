@@ -1,0 +1,699 @@
+{
+  "info": {
+    "name": "Student Mobile App API",
+    "description": "دليل API الكامل لتطبيق الموبايل الخاص بالطالب - Student Mobile App API Documentation\n\n📱 نظام المصادقة للموبايل:\n1. تسجيل الدخول: POST /api/auth/mobile/login\n   - يتم إرجاع accessToken و refreshToken في الـ Response\n   - accessToken ينتهي بعد 15 دقيقة\n   - refreshToken ينتهي بعد 7 أيام\n   - يتم ربط الجهاز من خلال MAC Address\n\n2. تحديث التوكن: POST /api/auth/mobile/refresh\n   - عندما ينتهي accessToken، استخدم refreshToken للحصول على واحد جديد\n\n3. جميع طلبات API الأخرى:\n   - أضف Authorization Header: Bearer <accessToken>\n   - إذا كان accessToken منتهي الصلاحية، حدّث التوكن أولاً\n\n4. تسجيل الخروج: POST /api/auth/mobile/logout\n   - يحذف refreshToken من قاعدة البيانات",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication (المصادقة)",
+      "description": "نظام التسجيل والمصادقة للموبايل - Mobile Login & Authentication",
+      "item": [
+        {
+          "name": "Mobile Login (تسجيل الدخول)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student1@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"00:11:22:33:44:55\",\n    \"deviceName\": \"iPhone 13\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "login"]
+            },
+            "description": "تسجيل دخول الطالب من خلال التطبيق\n\nيمكن الدخول باستخدام:\n- البريد الإلكتروني + كلمة المرور\n- أو رقم الطالب + كلمة المرور\n\nعند الدخول لأول مرة: يتم ربط الجهاز (MAC Address)\nعند محاولة الدخول من جهاز مختلف: يتم رفض الطلب ما لم يتم تغيير الجهاز من قبل الأدمن"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"student1@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"00:11:22:33:44:55\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/mobile/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"60d0fe4f5311236168a109ca\",\n      \"email\": \"student1@student.edu\",\n      \"studentId\": \"20210001\",\n      \"name\": \"أحمد محمد\",\n      \"role\": \"student\",\n      \"isActive\": true,\n      \"academicInfo\": {\n        \"department\": { \"_id\": \"...\", \"name\": \"علوم الحاسب\" },\n        \"level\": 3,\n        \"enrolledCourses\": [\n          { \"_id\": \"...\", \"name\": \"هياكل البيانات\", \"code\": \"CS201\" }\n        ]\n      },\n      \"device\": {\n        \"deviceId\": \"device-uuid\",\n        \"macAddress\": \"00:11:22:33:44:55\",\n        \"registeredAt\": \"2024-03-21T09:00:00.000Z\",\n        \"isVerified\": true\n      }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            },
+            {
+              "name": "Device Mismatch Error",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"student1@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"FF:FF:FF:FF:FF:FF\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/mobile/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "login"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"error\": \"هذا الحساب مسجل على جهاز آخر. يرجى استخدام الجهاز المسجل أو طلب تغيير الجهاز.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token (تحديث التوكن)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "refresh"]
+            },
+            "description": "تحديث رمز الوصول (Access Token)\nعندما ينتهي صلاحية Access Token (بعد 15 دقيقة)، استخدم Refresh Token للحصول على واحد جديد\nصلاحية Refresh Token: 7 أيام"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/mobile/refresh",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "refresh"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mobile Logout (تسجيل الخروج)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "logout"]
+            },
+            "description": "تسجيل خروج الطالب\nيتم حذف Refresh Token من قاعدة البيانات"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/mobile/logout",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "logout"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"تم تسجيل الخروج بنجاح\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Change Password (تغيير كلمة المرور)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"student123\",\n  \"newPassword\": \"newPassword456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "change-password"]
+            },
+            "description": "تغيير كلمة المرور\nملاحظة: بعد تغيير كلمة المرور، سيتم حذف جميع Refresh Tokens القديمة وإعطاء واحد جديد"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"student123\",\n  \"newPassword\": \"newPassword456\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/change-password",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "change-password"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"تم تغيير كلمة المرور بنجاح\",\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Student Profile",
+      "description": "بيانات الطالب الشخصية - Student Profile Data",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
+            },
+            "description": "Get the current logged-in student profile data including:\n- Basic info (ID, email, name, phone)\n- Academic info (department, level, enrolled courses)\n- Device info (MAC address, device model, approval status)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/users/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "users", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"60d0fe4f5311236168a109ca\",\n    \"email\": \"student@example.com\",\n    \"name\": \"أحمد محمد\",\n    \"role\": \"student\",\n    \"studentId\": \"20230001\",\n    \"phone\": \"01000000000\",\n    \"isActive\": true,\n    \"academicInfo\": {\n      \"department\": { \"_id\": \"...\", \"name\": \"علوم الحاسب\" },\n      \"level\": 3,\n      \"enrolledCourses\": [ \n        { \"_id\": \"...\", \"name\": \"هياكل البيانات\", \"code\": \"CS201\" } \n      ]\n    },\n    \"device\": {\n      \"macAddress\": \"00:11:22:33:44:55\",\n      \"deviceId\": \"device-uuid\",\n      \"deviceModel\": \"iPhone 13\",\n      \"isApproved\": true\n    }\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Schedule (جدول المحاضرات)",
+      "description": "جدول المحاضرات الأسبوعي - Weekly Lecture Schedule",
+      "item": [
+        {
+          "name": "Get My Schedule",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/lectures/my-schedule",
+              "host": ["{{base_url}}"],
+              "path": ["api", "lectures", "my-schedule"]
+            },
+            "description": "Get the student's weekly lecture schedule\nDays are organized from 0 (Sunday) to 6 (Saturday)\nIncludes:\n- Course name and code\n- Lecture hall and building\n- Instructor name\n- Start and end times"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/lectures/my-schedule",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "lectures", "my-schedule"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"0\": [\n      {\n        \"_id\": \"...\",\n        \"course\": { \"name\": \"قواعد البيانات\", \"code\": \"CS301\" },\n        \"hall\": { \"name\": \"مدرج 1\", \"building\": \"مبنى أ\" },\n        \"doctor\": { \"name\": { \"first\": \"علي\", \"last\": \"حسن\" } },\n        \"startTime\": \"10:00\",\n        \"endTime\": \"12:00\",\n        \"dayOfWeek\": 0\n      }\n    ],\n    \"1\": [],\n    \"2\": [],\n    \"3\": [],\n    \"4\": [],\n    \"5\": [],\n    \"6\": []\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Attendance (الحضور)",
+      "description": "بيانات الحضور والغياب - Attendance and Absence Data",
+      "item": [
+        {
+          "name": "Get Live Attendance Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/attendance/my/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "attendance", "my", "status"]
+            },
+            "description": "Get the current live attendance status\nUse this endpoint for polling (recommended every 30 seconds)\nReturns:\n- Whether student is in a lecture (inLecture: boolean)\n- Current lecture details\n- Attendance status (in-progress, present, absent, late, excused)\n- Time spent in the lecture in minutes"
+          },
+          "response": [
+            {
+              "name": "In Lecture",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/attendance/my/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "attendance", "my", "status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"inLecture\": true,\n    \"session\": {\n      \"hallName\": \"مدرج 1\",\n      \"courseName\": \"هياكل البيانات\",\n      \"courseCode\": \"CS201\",\n      \"doctorName\": \"د. أحمد\",\n      \"startTime\": \"09:00\",\n      \"endTime\": \"11:00\",\n      \"connectedAt\": \"2024-03-21T09:05:00.000Z\",\n      \"attendanceStatus\": \"in-progress\",\n      \"presenceTimeMinutes\": 45\n    }\n  }\n}"
+            },
+            {
+              "name": "Not In Lecture",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/attendance/my/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "attendance", "my", "status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"inLecture\": false,\n    \"session\": null\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Course Attendance Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/attendance/my/course/:courseId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "attendance", "my", "course", ":courseId"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "60d0fe4f5311236168a109ca",
+                  "description": "The course ID"
+                }
+              ]
+            },
+            "description": "Get attendance summary for a specific course\nIncludes:\n- Total lectures held\n- Number of attended lectures\n- Number of absent lectures\n- Attendance percentage\n- Historical attendance records"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/attendance/my/course/:courseId",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "attendance", "my", "course", ":courseId"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"name\": \"هياكل البيانات\",\n      \"code\": \"CS201\"\n    },\n    \"summary\": {\n      \"totalLectures\": 10,\n      \"presentLectures\": 8,\n      \"absentLectures\": 2,\n      \"attendancePercentage\": 80\n    },\n    \"records\": [\n      {\n        \"_id\": \"...\",\n        \"date\": \"2024-03-21T00:00:00.000Z\",\n        \"status\": \"present\",\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 2 }\n      },\n      {\n        \"_id\": \"...\",\n        \"date\": \"2024-03-20T00:00:00.000Z\",\n        \"status\": \"absent\",\n        \"lecture\": { \"startTime\": \"10:00\", \"endTime\": \"12:00\", \"dayOfWeek\": 1 }\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Attendance Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/attendance/my?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "attendance", "my"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number for pagination"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of records per page"
+                }
+              ]
+            },
+            "description": "Get complete attendance history for the student\nReturns paginated list of all attendance records sorted chronologically (newest first)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/attendance/my",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "attendance", "my"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"records\": [\n      {\n        \"_id\": \"...\",\n        \"date\": \"2024-03-21T00:00:00.000Z\",\n        \"status\": \"present\",\n        \"course\": { \"name\": \"هياكل البيانات\", \"code\": \"CS201\" },\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 2 }\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 45,\n      \"pages\": 3\n    }\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Device Management",
+      "description": "إدارة الأجهزة المسجلة - Device Registration & Management",
+      "item": [
+        {
+          "name": "Request Device Change",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"الهاتف القديم ضاع\",\n  \"requestDetails\": \"تفاصيل إضافية عن طلب التغيير\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/students/request-device-change",
+              "host": ["{{base_url}}"],
+              "path": ["api", "students", "request-device-change"]
+            },
+            "description": "Submit a request to change the registered device\nUsed when student gets a new phone or needs to change their device\nRequires admin approval"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"الهاتف القديم ضاع\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/students/request-device-change",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "students", "request-device-change"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"تم تقديم طلب تغيير الجهاز بنجاح، في انتظار موافقة الأدمن\",\n  \"data\": {\n    \"requestId\": \"...\",\n    \"status\": \"pending\",\n    \"createdAt\": \"2024-03-21T12:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string",
+      "description": "Base URL for the API server"
+    },
+    {
+      "key": "token",
+      "value": "your_jwt_token_here",
+      "type": "string",
+      "description": "JWT Authentication token - replace with your actual token"
+    }
+  ]
+}

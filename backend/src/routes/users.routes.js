@@ -10,7 +10,7 @@ router.use(protect);
  * /users/me:
  *   get:
  *     summary: Get current logged-in user profile
- *     tags: [Users]
+ *     tags: [Profile]
  *     security:
  *       - bearerAuth: []
  *     responses:

@@ -1,9 +1,9 @@
-﻿const express = require("express");
+const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const swaggerUi = require("swagger-ui-express");
-const swaggerSpec = require("./config/swagger");
+
 const { errorHandler, notFound } = require("./middlewares");
 require("dotenv").config();
 
@@ -33,13 +33,31 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 
 // Swagger API Documentation
+const { adminSpec, mobileSpec, doctorSpec, fullSpec } = require("./config/swagger");
+
+// Serve JSON specs for Swagger UI Explorer
+app.get("/api-docs/admin.json", (req, res) => res.json(adminSpec));
+app.get("/api-docs/mobile.json", (req, res) => res.json(mobileSpec));
+app.get("/api-docs/doctor.json", (req, res) => res.json(doctorSpec));
+app.get("/api-docs/full.json", (req, res) => res.json(fullSpec));
+
+// Provide Swagger UI
 app.use(
   "/api-docs",
   swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec, {
-    customCss: ".swagger-ui .topbar { display: none }",
+  swaggerUi.setup(null, {
+    explorer: true,
+    swaggerOptions: {
+      urls: [
+        { url: "/api-docs/mobile.json", name: "📱 Mobile App API (Students)" },
+        { url: "/api-docs/admin.json", name: "💻 Admin Dashboard API" },
+        { url: "/api-docs/doctor.json", name: "👨‍🏫 Doctor Dashboard API" },
+        { url: "/api-docs/full.json", name: "🌐 Full API (All Endpoints)" },
+      ],
+    },
     customSiteTitle: "Smart Attendance API Docs",
-  }),
+    customCss: ".swagger-ui .topbar { background-color: #2c3e50; }",
+  })
 );
 
 // Redirect /docs to /api-docs
@@ -47,10 +65,9 @@ app.get("/docs", (req, res) => {
   res.redirect("/api-docs");
 });
 
-// Swagger JSON endpoint
+// Backward compatibility for old JSON endpoint
 app.get("/api-docs.json", (req, res) => {
-  res.setHeader("Content-Type", "application/json");
-  res.send(swaggerSpec);
+  res.json(fullSpec);
 });
 
 // Ignore favicon requests (browser auto-requests it)
