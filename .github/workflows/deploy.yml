@@ -64,6 +64,27 @@ jobs:
             sudo ln -sf /etc/nginx/sites-available/attendance /etc/nginx/sites-enabled/attendance
             sudo nginx -t && sudo systemctl restart nginx
 
+            # تثبيت Certbot
+            if ! command -v certbot &> /dev/null; then
+              echo "Installing Certbot..."
+              sudo apt-get install -y certbot python3-certbot-nginx
+            fi
+
+            # إنشاء/تجديد شهادات SSL
+            echo "Setting up SSL certificates..."
+            sudo certbot --nginx \
+              -d att-admin.${{ secrets.SERVER_IP }}.nip.io \
+              -d att-doctor.${{ secrets.SERVER_IP }}.nip.io \
+              -d api.${{ secrets.SERVER_IP }}.nip.io \
+              --non-interactive \
+              --agree-tos \
+              -m ${{ secrets.CERTBOT_EMAIL }} \
+              --keep-until-expiring
+
+            # تفعيل التجديد التلقائي
+            sudo systemctl enable certbot.timer
+            sudo systemctl start certbot.timer
+
             # تشغيل الـ Docker
             cd "$PROJECT_PATH"
             sudo docker-compose -f docker-compose.deploy.yml up -d --build
