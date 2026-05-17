@@ -65,6 +65,25 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Root endpoint (/)
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Welcome to Smart Attendance System 🔥",
+    serverIp: "54.224.164.102",
+    docs: "/api-docs",
+  });
+});
+
+// API Root endpoint (/api)
+app.get("/api", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "API routing is working perfectly! 🚀",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // API Routes
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/users", require("./routes/users.routes"));
