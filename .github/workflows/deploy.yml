@@ -78,8 +78,8 @@ jobs:
               -d api.${{ secrets.SERVER_IP }}.nip.io \
               --non-interactive \
               --agree-tos \
-              -m ${{ secrets.CERTBOT_EMAIL }} \
-              --keep-until-expiring
+              --register-unsafely-without-email \
+              --redirect
 
             # تفعيل التجديد التلقائي
             sudo systemctl enable certbot.timer
