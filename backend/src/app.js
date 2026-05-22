@@ -115,6 +115,7 @@ app.use("/api/connections", require("./routes/connections.routes"));
 app.use("/api/settings", require("./routes/settings.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
 app.use("/api/ai", require("./routes/ai.routes"));
+app.use("/api/mobile", require("./routes/mobile.routes"));
 
 // Error handling
 app.use(notFound);

@@ -40,15 +40,8 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/mobile/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "mobile",
-                "login"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "login"]
             },
             "description": "تسجيل دخول الطالب كامل البيانات (Full Data Student)\n\n🔑 الحساب:\n- البريد الإلكتروني: student_full@student.edu\n- كلمة المرور: student123\n- عنوان الماك (MAC): AA:BB:CC:DD:EE:FF\n\nعند إرسال الطلب، سيتم تلقائياً تحديث متغير الـ token في المجموعة (Collection Variable) لاستخدامه في باقي الطلبات."
           },
@@ -70,15 +63,8 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "auth",
-                    "mobile",
-                    "login"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "login"]
                 }
               },
               "status": "OK",
@@ -124,15 +110,8 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/mobile/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "mobile",
-                "login"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "login"]
             },
             "description": "تسجيل دخول الطالب متوسط البيانات (Medium Data Student)\n\n🔑 الحساب:\n- البريد الإلكتروني: student_medium@student.edu\n- كلمة المرور: student123\n- عنوان الماك (MAC): 11:22:33:44:55:66\n\nعند إرسال الطلب، سيتم تلقائياً تحديث متغير الـ token في المجموعة (Collection Variable) لاستخدامه في باقي الطلبات."
           },
@@ -154,15 +133,8 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "auth",
-                    "mobile",
-                    "login"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "login"]
                 }
               },
               "status": "OK",
@@ -208,15 +180,8 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/mobile/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "mobile",
-                "login"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "login"]
             },
             "description": "تسجيل دخول الطالب بدون بيانات (Empty Data Student)\n\n🔑 الحساب:\n- البريد الإلكتروني: student_empty@student.edu\n- كلمة المرور: student123\n- عنوان الماك (MAC): FF:EE:DD:CC:BB:AA\n\nعند إرسال الطلب، سيتم تلقائياً تحديث متغير الـ token في المجموعة (Collection Variable) لاستخدامه في باقي الطلبات."
           },
@@ -238,15 +203,8 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "auth",
-                    "mobile",
-                    "login"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "login"]
                 }
               },
               "status": "OK",
@@ -278,15 +236,8 @@
             },
             "url": {
               "raw": "{{base_url}}/api/auth/mobile/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "mobile",
-                "login"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "login"]
             },
             "description": "محاولة تسجيل دخول الطالب بجهاز مختلف غير المسجل والموثق له في قاعدة البيانات.\n\n🔑 الحساب:\n- البريد الإلكتروني: student_full@student.edu\n- كلمة المرور: student123\n- عنوان الماك المرسل (MAC): FF:FF:FF:FF:FF:FF (يختلف عن المسجل للماك الحقيقي وهو AA:BB:CC:DD:EE:FF)\n\nسيقوم السيرفر برفض الطلب وإرجاع رمز الخطأ 403 Forbidden لمنع التزوير وتأكيد حماية النظام."
           },
@@ -307,15 +258,8 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "auth",
-                    "mobile",
-                    "login"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "login"]
                 }
               },
               "status": "Forbidden",
@@ -1136,7 +1080,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:3000",
+      "value": "https://api.54.224.164.102.nip.io",
       "type": "string",
       "description": "Base URL for the API server"
     },

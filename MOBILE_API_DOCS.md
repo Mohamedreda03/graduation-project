@@ -1,5 +1,7 @@
 # 📱 توثيق API الموبايل (Mobile API Documentation)
 
+> 🚀 **جديد:** تم توفير ملف Postman Collection محدث يحتوي على جميع الروتس الجديدة والمصادقة للطلاب: [postman_mobile_v2_collection.json](./postman_mobile_v2_collection.json)
+
 ## نظام الحضور الذكي - تطبيق الطالب
 
 > **رابط السيرفر الأساسي (Base URL):** `http://<SERVER_IP>:5000/api`
