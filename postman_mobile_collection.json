@@ -10,7 +10,21 @@
       "description": "نظام التسجيل والمصادقة للموبايل - Mobile Login & Authentication",
       "item": [
         {
-          "name": "Mobile Login (تسجيل الدخول)",
+          "name": "Mobile Login - Full Data (كامل البيانات)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response && response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"token\", response.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -22,14 +36,21 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"student_full@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n    \"deviceName\": \"Test Phone\"\n  }\n}"
+              "raw": "{\n  \"email\": \"student_full@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n    \"deviceName\": \"Full Data Phone\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/mobile/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "mobile", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mobile",
+                "login"
+              ]
             },
-            "description": "تسجيل دخول الطالب من خلال التطبيق\n\nيمكن الدخول باستخدام:\n- البريد الإلكتروني + كلمة المرور\n- أو رقم الطالب + كلمة المرور\n\n🔑 الحسابات المتاحة للتجربة:\n- كامل البيانات (Full): student_full@student.edu / student123\n- متوسط البيانات (Medium): student_medium@student.edu / student123\n- بدون بيانات (Empty): student_empty@student.edu / student123\n\nعند الدخول لأول مرة: يتم ربط الجهاز (MAC Address)\nعند محاولة الدخول من جهاز مختلف: يتم رفض الطلب ما لم يتم تغيير الجهاز من قبل الأدمن"
+            "description": "تسجيل دخول الطالب كامل البيانات (Full Data Student)\n\n🔑 الحساب:\n- البريد الإلكتروني: student_full@student.edu\n- كلمة المرور: student123\n- عنوان الماك (MAC): AA:BB:CC:DD:EE:FF\n\nعند إرسال الطلب، سيتم تلقائياً تحديث متغير الـ token في المجموعة (Collection Variable) لاستخدامه في باقي الطلبات."
           },
           "response": [
             {
@@ -45,12 +66,19 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"student_full@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n    \"deviceName\": \"Test Phone\"\n  }\n}"
+                  "raw": "{\n  \"email\": \"student_full@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n    \"deviceName\": \"Full Data Phone\"\n  }\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "mobile", "login"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "mobile",
+                    "login"
+                  ]
                 }
               },
               "status": "OK",
@@ -62,7 +90,53 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"60d0fe4f5311236168a109ca\",\n      \"email\": \"student_full@student.edu\",\n      \"studentId\": \"20240001\",\n      \"name\": \"كامل البيانات\",\n      \"role\": \"student\",\n      \"isActive\": true,\n      \"academicInfo\": {\n        \"department\": { \"_id\": \"60d0fe4f5311236168a109c0\", \"name\": \"علوم الحاسب\", \"code\": \"CS\" },\n        \"level\": 3,\n        \"enrolledCourses\": [\n          { \"_id\": \"60d0fe4f5311236168a109c1\", \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n          { \"_id\": \"60d0fe4f5311236168a109c2\", \"name\": \"الذكاء الاصطناعي\", \"code\": \"CS361\" },\n          { \"_id\": \"60d0fe4f5311236168a109c3\", \"name\": \"شبكات الحاسب\", \"code\": \"IT321\" }\n        ]\n      },\n      \"device\": {\n        \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n        \"deviceId\": \"device-full-id\",\n        \"registeredAt\": \"2026-05-22T09:00:00.000Z\",\n        \"isVerified\": true\n      }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwZDBmZTRmNTMxMTIzNjE2OGExMDljYSIsImV1IjoidXNlciJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwZDBmZTRmNTMxMTIzNjE2OGExMDljYSIsImV1IjoidXNlciJ9...\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mobile Login - Medium Data (متوسط البيانات)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response && response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"token\", response.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student_medium@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"11:22:33:44:55:66\",\n    \"deviceName\": \"Medium Data Phone\"\n  }\n}"
             },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mobile",
+                "login"
+              ]
+            },
+            "description": "تسجيل دخول الطالب متوسط البيانات (Medium Data Student)\n\n🔑 الحساب:\n- البريد الإلكتروني: student_medium@student.edu\n- كلمة المرور: student123\n- عنوان الماك (MAC): 11:22:33:44:55:66\n\nعند إرسال الطلب، سيتم تلقائياً تحديث متغير الـ token في المجموعة (Collection Variable) لاستخدامه في باقي الطلبات."
+          },
+          "response": [
             {
               "name": "Success Response - Medium Data",
               "originalRequest": {
@@ -80,8 +154,15 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "mobile", "login"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "mobile",
+                    "login"
+                  ]
                 }
               },
               "status": "OK",
@@ -93,7 +174,53 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"60d0fe4f5311236168a109cb\",\n      \"email\": \"student_medium@student.edu\",\n      \"studentId\": \"20240050\",\n      \"name\": \"متوسط البيانات\",\n      \"role\": \"student\",\n      \"isActive\": true,\n      \"academicInfo\": {\n        \"department\": { \"_id\": \"60d0fe4f5311236168a109c0\", \"name\": \"علوم الحاسب\", \"code\": \"CS\" },\n        \"level\": 3,\n        \"enrolledCourses\": [\n          { \"_id\": \"60d0fe4f5311236168a109c1\", \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n          { \"_id\": \"60d0fe4f5311236168a109c2\", \"name\": \"الذكاء الاصطناعي\", \"code\": \"CS361\" }\n        ]\n      },\n      \"device\": {\n        \"macAddress\": \"11:22:33:44:55:66\",\n        \"deviceId\": \"device-medium-id\",\n        \"registeredAt\": \"2026-05-22T09:10:00.000Z\",\n        \"isVerified\": true\n      }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mobile Login - Empty Data (بدون بيانات)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response && response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"token\", response.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student_empty@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"FF:EE:DD:CC:BB:AA\",\n    \"deviceName\": \"Empty Data Phone\"\n  }\n}"
             },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mobile",
+                "login"
+              ]
+            },
+            "description": "تسجيل دخول الطالب بدون بيانات (Empty Data Student)\n\n🔑 الحساب:\n- البريد الإلكتروني: student_empty@student.edu\n- كلمة المرور: student123\n- عنوان الماك (MAC): FF:EE:DD:CC:BB:AA\n\nعند إرسال الطلب، سيتم تلقائياً تحديث متغير الـ token في المجموعة (Collection Variable) لاستخدامه في باقي الطلبات."
+          },
+          "response": [
             {
               "name": "Success Response - Empty Data",
               "originalRequest": {
@@ -111,8 +238,15 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "mobile", "login"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "mobile",
+                    "login"
+                  ]
                 }
               },
               "status": "OK",
@@ -124,7 +258,39 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"60d0fe4f5311236168a109cc\",\n      \"email\": \"student_empty@student.edu\",\n      \"studentId\": \"20240099\",\n      \"name\": \"فارغ البيانات\",\n      \"role\": \"student\",\n      \"isActive\": true,\n      \"academicInfo\": {\n        \"department\": { \"_id\": \"60d0fe4f5311236168a109c0\", \"name\": \"علوم الحاسب\", \"code\": \"CS\" },\n        \"level\": 3,\n        \"enrolledCourses\": []\n      },\n      \"device\": {\n        \"macAddress\": \"FF:EE:DD:CC:BB:AA\",\n        \"deviceId\": \"device-empty-id\",\n        \"registeredAt\": \"2026-05-22T09:20:00.000Z\",\n        \"isVerified\": true\n      }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mobile Login - Device Mismatch Error (خطأ اختلاف الجهاز)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student_full@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"FF:FF:FF:FF:FF:FF\",\n    \"deviceName\": \"Stranger Phone\"\n  }\n}"
             },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mobile",
+                "login"
+              ]
+            },
+            "description": "محاولة تسجيل دخول الطالب بجهاز مختلف غير المسجل والموثق له في قاعدة البيانات.\n\n🔑 الحساب:\n- البريد الإلكتروني: student_full@student.edu\n- كلمة المرور: student123\n- عنوان الماك المرسل (MAC): FF:FF:FF:FF:FF:FF (يختلف عن المسجل للماك الحقيقي وهو AA:BB:CC:DD:EE:FF)\n\nسيقوم السيرفر برفض الطلب وإرجاع رمز الخطأ 403 Forbidden لمنع التزوير وتأكيد حماية النظام."
+          },
+          "response": [
             {
               "name": "Device Mismatch Error",
               "originalRequest": {
@@ -141,8 +307,15 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
-                  "host": ["{{base_url}}"],
-                  "path": ["api", "auth", "mobile", "login"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "mobile",
+                    "login"
+                  ]
                 }
               },
               "status": "Forbidden",
