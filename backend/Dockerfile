@@ -11,6 +11,10 @@ RUN npm install --production
 # Copy source code
 COPY . .
 
+# Set unprivileged user
+RUN chown -R node:node /app
+USER node
+
 # Set environment variables (should be overridden in docker-compose or .env)
 ENV NODE_ENV=production
 ENV PORT=5000

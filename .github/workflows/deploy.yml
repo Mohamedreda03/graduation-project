@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to Server
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
@@ -88,4 +88,4 @@ jobs:
             # تشغيل الـ Docker
             cd "$PROJECT_PATH"
             sudo docker-compose -f docker-compose.deploy.yml up -d --build
-            sudo docker system prune -f
+            sudo docker image prune -f
