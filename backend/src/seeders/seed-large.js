@@ -416,11 +416,73 @@ async function seedDoctors(deptList) {
 async function seedStudents(deptList) {
   console.log("👨‍🎓 Seeding students (this may take a moment)...");
   const students = [];
-  const studentsPerDept = 50; // 50 students per department = 200 total
+  const csDept = deptList[0]; // CS is the first department
 
-  let studentIndex = 1;
+  // 1. Full Data Student
+  students.push({
+    name: { first: "كامل", last: "البيانات" },
+    email: "student_full@student.edu",
+    password: "student123",
+    studentId: "20240001",
+    role: ROLES.STUDENT,
+    academicInfo: {
+      department: csDept._id,
+      level: 3,
+    },
+    device: {
+      macAddress: "AA:BB:CC:DD:EE:FF",
+      isVerified: true,
+      deviceId: "device-full-id",
+      deviceName: "Full Data Phone",
+    },
+    isActive: true,
+  });
+
+  // 2. Medium Data Student
+  students.push({
+    name: { first: "متوسط", last: "البيانات" },
+    email: "student_medium@student.edu",
+    password: "student123",
+    studentId: "20240050",
+    role: ROLES.STUDENT,
+    academicInfo: {
+      department: csDept._id,
+      level: 3,
+    },
+    device: {
+      macAddress: "11:22:33:44:55:66",
+      isVerified: true,
+      deviceId: "device-medium-id",
+      deviceName: "Medium Data Phone",
+    },
+    isActive: true,
+  });
+
+  // 3. Empty Data Student
+  students.push({
+    name: { first: "فارغ", last: "البيانات" },
+    email: "student_empty@student.edu",
+    password: "student123",
+    studentId: "20240099",
+    role: ROLES.STUDENT,
+    academicInfo: {
+      department: csDept._id,
+      level: 3,
+    },
+    device: {
+      macAddress: "FF:EE:DD:CC:BB:AA",
+      isVerified: true,
+      deviceId: "device-empty-id",
+      deviceName: "Empty Data Phone",
+    },
+    isActive: true,
+  });
+
+  let studentIndex = 1000;
   for (const dept of deptList) {
-    for (let i = 0; i < studentsPerDept; i++) {
+    // 50 students per department, total 200. Since we manually inserted 3, let's distribute the remaining 197
+    const deptStudentsCount = dept.code === "CS" ? 47 : 50;
+    for (let i = 0; i < deptStudentsCount; i++) {
       const firstName = randomElement(arabicFirstNames);
       const lastName = randomElement(arabicLastNames);
       const level = randomInt(1, 4);
@@ -448,7 +510,7 @@ async function seedStudents(deptList) {
   await User.insertMany(students);
   console.log(`✅ Created ${students.length} students`);
   console.log(
-    "   Login credentials: student1@student.edu - student200@student.edu / student123",
+    "   Login credentials: student_full@student.edu, student_medium@student.edu, student_empty@student.edu / student123",
   );
 
   // Return student documents with _id
@@ -493,9 +555,28 @@ async function enrollStudentsInCourses(courses, students) {
   for (const course of courses) {
     // Find students in the same department and level
     const eligibleStudents = students.filter(
-      (s) =>
-        s.academicInfo.department.toString() === course.department.toString() &&
-        s.academicInfo.level === course.level,
+      (s) => {
+        // Skip empty student entirely (0 courses)
+        if (s.email === "student_empty@student.edu") {
+          return false;
+        }
+
+        // Limit medium student to 2 courses maximum
+        if (s.email === "student_medium@student.edu") {
+          if (!s.academicInfo.enrolledCourses) {
+            s.academicInfo.enrolledCourses = [];
+          }
+          const currentCount = s.academicInfo.enrolledCourses.length;
+          if (currentCount >= 2) {
+            return false;
+          }
+        }
+
+        return (
+          s.academicInfo.department.toString() === course.department.toString() &&
+          s.academicInfo.level === course.level
+        );
+      }
     );
 
     // Enroll all eligible students
@@ -564,6 +645,10 @@ async function seedAttendanceRecords(lectures, students) {
   console.log("📊 Seeding attendance records (this may take a while)...");
   const records = [];
 
+  const studentFull = students.find(s => s.email === "student_full@student.edu");
+  const studentMedium = students.find(s => s.email === "student_medium@student.edu");
+  const studentEmpty = students.find(s => s.email === "student_empty@student.edu");
+
   // Generate attendance for the past 4 weeks
   const today = new Date();
   const weeksToGenerate = 4;
@@ -588,6 +673,16 @@ async function seedAttendanceRecords(lectures, students) {
 
       // Generate attendance for each enrolled student
       for (const studentId of course.students) {
+        // Skip empty student entirely
+        if (studentEmpty && studentId.toString() === studentEmpty._id.toString()) {
+          continue;
+        }
+
+        // Skip medium student for weeks 2 and 3 (only 2 weeks of history)
+        if (studentMedium && studentId.toString() === studentMedium._id.toString() && week >= 2) {
+          continue;
+        }
+
         // Random attendance status (80% present, 10% late, 10% absent)
         const rand = Math.random();
         let status, presencePercentage, totalPresenceTime;
@@ -699,7 +794,9 @@ async function seed() {
     console.log("\n🔐 Login Credentials:");
     console.log("   Admin:   admin@smartattendance.edu / admin123456");
     console.log("   Doctor:  doctor1@edu.eg / doctor123");
-    console.log("   Student: student1@student.edu / student123");
+    console.log("   Student (Full):   student_full@student.edu / student123");
+    console.log("   Student (Medium): student_medium@student.edu / student123");
+    console.log("   Student (Empty):  student_empty@student.edu / student123");
     console.log("");
 
     process.exit(0);

@@ -118,6 +118,60 @@ async function seed() {
     // Seed Sample Students
     const sampleStudents = [
       {
+        name: { first: "كامل", last: "البيانات" },
+        email: "student_full@student.edu",
+        password: "student123",
+        studentId: "20240001",
+        role: ROLES.STUDENT,
+        academicInfo: {
+          department: department._id,
+          level: 3,
+        },
+        device: {
+          macAddress: "AA:BB:CC:DD:EE:FF",
+          isVerified: true,
+          deviceId: "device-full-id",
+          deviceName: "Full Data Phone",
+        },
+        isActive: true,
+      },
+      {
+        name: { first: "متوسط", last: "البيانات" },
+        email: "student_medium@student.edu",
+        password: "student123",
+        studentId: "20240050",
+        role: ROLES.STUDENT,
+        academicInfo: {
+          department: department._id,
+          level: 3,
+        },
+        device: {
+          macAddress: "11:22:33:44:55:66",
+          isVerified: true,
+          deviceId: "device-medium-id",
+          deviceName: "Medium Data Phone",
+        },
+        isActive: true,
+      },
+      {
+        name: { first: "فارغ", last: "البيانات" },
+        email: "student_empty@student.edu",
+        password: "student123",
+        studentId: "20240099",
+        role: ROLES.STUDENT,
+        academicInfo: {
+          department: department._id,
+          level: 3,
+        },
+        device: {
+          macAddress: "FF:EE:DD:CC:BB:AA",
+          isVerified: true,
+          deviceId: "device-empty-id",
+          deviceName: "Empty Data Phone",
+        },
+        isActive: true,
+      },
+      {
         name: { first: "أحمد", last: "محمد" },
         email: "ahmed@student.edu",
         password: "student123",

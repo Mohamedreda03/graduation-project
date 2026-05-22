@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Student Mobile App API",
-    "description": "دليل API الكامل لتطبيق الموبايل الخاص بالطالب - Student Mobile App API Documentation\n\n📱 نظام المصادقة للموبايل:\n1. تسجيل الدخول: POST /api/auth/mobile/login\n   - يتم إرجاع accessToken و refreshToken في الـ Response\n   - accessToken ينتهي بعد 15 دقيقة\n   - refreshToken ينتهي بعد 7 أيام\n   - يتم ربط الجهاز من خلال MAC Address\n\n2. تحديث التوكن: POST /api/auth/mobile/refresh\n   - عندما ينتهي accessToken، استخدم refreshToken للحصول على واحد جديد\n\n3. جميع طلبات API الأخرى:\n   - أضف Authorization Header: Bearer <accessToken>\n   - إذا كان accessToken منتهي الصلاحية، حدّث التوكن أولاً\n\n4. تسجيل الخروج: POST /api/auth/mobile/logout\n   - يحذف refreshToken من قاعدة البيانات",
+    "description": "دليل API الكامل لتطبيق الموبايل الخاص بالطالب - Student Mobile App API Documentation\n\n📱 نظام المصادقة للموبايل:\n1. تسجيل الدخول: POST /api/auth/mobile/login\n   - يتم إرجاع accessToken و refreshToken في الـ Response\n   - accessToken ينتهي بعد 15 دقيقة\n   - refreshToken ينتهي بعد 7 أيام\n   - يتم ربط الجهاز من خلال MAC Address\n\n2. تحديث التوكن: POST /api/auth/mobile/refresh\n   - عندما ينتهي accessToken، استخدم refreshToken للحصول على واحد جديد\n\n3. جميع طلبات API الأخرى:\n   - أضف Authorization Header: Bearer <accessToken>\n   - إذا كان accessToken منتهي الصلاحية، حدّث التوكن أولاً\n\n4. تسجيل الخروج: POST /api/auth/mobile/logout\n   - يحذف refreshToken من قاعدة البيانات\n\n👥 حسابات الطلاب للتجربة (Test Student Accounts):\n1. طالب ذو بيانات كاملة (Full Data Student):\n   - البريد الإلكتروني: student_full@student.edu\n   - كلمة المرور: student123\n   - التفاصيل: مسجل في جميع مواد المستوى الثالث، ولديه سجل حضور وغياب كامل لمدة 4 أسابيع، ومربوط بجهاز تجريبي (MAC: AA:BB:CC:DD:EE:FF).\n\n2. طالب ذو بيانات متوسطة (Medium Data Student):\n   - البريد الإلكتروني: student_medium@student.edu\n   - كلمة المرور: student123\n   - التفاصيل: مسجل في مادتين فقط، ولديه سجل حضور وغياب متوسط لـ أسبوعين فقط.\n\n3. طالب بدون بيانات (Empty Data Student):\n   - البريد الإلكتروني: student_empty@student.edu\n   - كلمة المرور: student123\n   - التفاصيل: طالب جديد غير مسجل في أي مواد (0 مواد)، ولا يمتلك أي سجل حضور أو غياب على الإطلاق (مثالي لتجربة الشاشات الفارغة).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -22,18 +22,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"student1@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"00:11:22:33:44:55\",\n    \"deviceName\": \"iPhone 13\"\n  }\n}"
+              "raw": "{\n  \"email\": \"student_full@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n    \"deviceName\": \"Test Phone\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/mobile/login",
               "host": ["{{base_url}}"],
               "path": ["api", "auth", "mobile", "login"]
             },
-            "description": "تسجيل دخول الطالب من خلال التطبيق\n\nيمكن الدخول باستخدام:\n- البريد الإلكتروني + كلمة المرور\n- أو رقم الطالب + كلمة المرور\n\nعند الدخول لأول مرة: يتم ربط الجهاز (MAC Address)\nعند محاولة الدخول من جهاز مختلف: يتم رفض الطلب ما لم يتم تغيير الجهاز من قبل الأدمن"
+            "description": "تسجيل دخول الطالب من خلال التطبيق\n\nيمكن الدخول باستخدام:\n- البريد الإلكتروني + كلمة المرور\n- أو رقم الطالب + كلمة المرور\n\n🔑 الحسابات المتاحة للتجربة:\n- كامل البيانات (Full): student_full@student.edu / student123\n- متوسط البيانات (Medium): student_medium@student.edu / student123\n- بدون بيانات (Empty): student_empty@student.edu / student123\n\nعند الدخول لأول مرة: يتم ربط الجهاز (MAC Address)\nعند محاولة الدخول من جهاز مختلف: يتم رفض الطلب ما لم يتم تغيير الجهاز من قبل الأدمن"
           },
           "response": [
             {
-              "name": "Success Response",
+              "name": "Success Response - Full Data",
               "originalRequest": {
                 "method": "POST",
                 "header": [
@@ -45,7 +45,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"student1@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"00:11:22:33:44:55\"\n  }\n}"
+                  "raw": "{\n  \"email\": \"student_full@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n    \"deviceName\": \"Test Phone\"\n  }\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
@@ -61,7 +61,69 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"60d0fe4f5311236168a109ca\",\n      \"email\": \"student1@student.edu\",\n      \"studentId\": \"20210001\",\n      \"name\": \"أحمد محمد\",\n      \"role\": \"student\",\n      \"isActive\": true,\n      \"academicInfo\": {\n        \"department\": { \"_id\": \"...\", \"name\": \"علوم الحاسب\" },\n        \"level\": 3,\n        \"enrolledCourses\": [\n          { \"_id\": \"...\", \"name\": \"هياكل البيانات\", \"code\": \"CS201\" }\n        ]\n      },\n      \"device\": {\n        \"deviceId\": \"device-uuid\",\n        \"macAddress\": \"00:11:22:33:44:55\",\n        \"registeredAt\": \"2024-03-21T09:00:00.000Z\",\n        \"isVerified\": true\n      }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"60d0fe4f5311236168a109ca\",\n      \"email\": \"student_full@student.edu\",\n      \"studentId\": \"20240001\",\n      \"name\": \"كامل البيانات\",\n      \"role\": \"student\",\n      \"isActive\": true,\n      \"academicInfo\": {\n        \"department\": { \"_id\": \"60d0fe4f5311236168a109c0\", \"name\": \"علوم الحاسب\", \"code\": \"CS\" },\n        \"level\": 3,\n        \"enrolledCourses\": [\n          { \"_id\": \"60d0fe4f5311236168a109c1\", \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n          { \"_id\": \"60d0fe4f5311236168a109c2\", \"name\": \"الذكاء الاصطناعي\", \"code\": \"CS361\" },\n          { \"_id\": \"60d0fe4f5311236168a109c3\", \"name\": \"شبكات الحاسب\", \"code\": \"IT321\" }\n        ]\n      },\n      \"device\": {\n        \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n        \"deviceId\": \"device-full-id\",\n        \"registeredAt\": \"2026-05-22T09:00:00.000Z\",\n        \"isVerified\": true\n      }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwZDBmZTRmNTMxMTIzNjE2OGExMDljYSIsImV1IjoidXNlciJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwZDBmZTRmNTMxMTIzNjE2OGExMDljYSIsImV1IjoidXNlciJ9...\"\n  }\n}"
+            },
+            {
+              "name": "Success Response - Medium Data",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"student_medium@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"11:22:33:44:55:66\",\n    \"deviceName\": \"Medium Data Phone\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/mobile/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"60d0fe4f5311236168a109cb\",\n      \"email\": \"student_medium@student.edu\",\n      \"studentId\": \"20240050\",\n      \"name\": \"متوسط البيانات\",\n      \"role\": \"student\",\n      \"isActive\": true,\n      \"academicInfo\": {\n        \"department\": { \"_id\": \"60d0fe4f5311236168a109c0\", \"name\": \"علوم الحاسب\", \"code\": \"CS\" },\n        \"level\": 3,\n        \"enrolledCourses\": [\n          { \"_id\": \"60d0fe4f5311236168a109c1\", \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n          { \"_id\": \"60d0fe4f5311236168a109c2\", \"name\": \"الذكاء الاصطناعي\", \"code\": \"CS361\" }\n        ]\n      },\n      \"device\": {\n        \"macAddress\": \"11:22:33:44:55:66\",\n        \"deviceId\": \"device-medium-id\",\n        \"registeredAt\": \"2026-05-22T09:10:00.000Z\",\n        \"isVerified\": true\n      }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            },
+            {
+              "name": "Success Response - Empty Data",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"student_empty@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"FF:EE:DD:CC:BB:AA\",\n    \"deviceName\": \"Empty Data Phone\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/mobile/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "mobile", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"60d0fe4f5311236168a109cc\",\n      \"email\": \"student_empty@student.edu\",\n      \"studentId\": \"20240099\",\n      \"name\": \"فارغ البيانات\",\n      \"role\": \"student\",\n      \"isActive\": true,\n      \"academicInfo\": {\n        \"department\": { \"_id\": \"60d0fe4f5311236168a109c0\", \"name\": \"علوم الحاسب\", \"code\": \"CS\" },\n        \"level\": 3,\n        \"enrolledCourses\": []\n      },\n      \"device\": {\n        \"macAddress\": \"FF:EE:DD:CC:BB:AA\",\n        \"deviceId\": \"device-empty-id\",\n        \"registeredAt\": \"2026-05-22T09:20:00.000Z\",\n        \"isVerified\": true\n      }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
             },
             {
               "name": "Device Mismatch Error",
@@ -75,7 +137,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"student1@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"FF:FF:FF:FF:FF:FF\"\n  }\n}"
+                  "raw": "{\n  \"email\": \"student_full@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"FF:FF:FF:FF:FF:FF\"\n  }\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/api/auth/mobile/login",
@@ -309,7 +371,7 @@
           },
           "response": [
             {
-              "name": "Success Response",
+              "name": "Success Response - Full Data",
               "originalRequest": {
                 "method": "GET",
                 "header": [
@@ -333,7 +395,61 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"60d0fe4f5311236168a109ca\",\n    \"email\": \"student@example.com\",\n    \"name\": \"أحمد محمد\",\n    \"role\": \"student\",\n    \"studentId\": \"20230001\",\n    \"phone\": \"01000000000\",\n    \"isActive\": true,\n    \"academicInfo\": {\n      \"department\": { \"_id\": \"...\", \"name\": \"علوم الحاسب\" },\n      \"level\": 3,\n      \"enrolledCourses\": [ \n        { \"_id\": \"...\", \"name\": \"هياكل البيانات\", \"code\": \"CS201\" } \n      ]\n    },\n    \"device\": {\n      \"macAddress\": \"00:11:22:33:44:55\",\n      \"deviceId\": \"device-uuid\",\n      \"deviceModel\": \"iPhone 13\",\n      \"isApproved\": true\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"60d0fe4f5311236168a109ca\",\n    \"email\": \"student_full@student.edu\",\n    \"name\": \"كامل البيانات\",\n    \"role\": \"student\",\n    \"studentId\": \"20240001\",\n    \"phone\": \"01000000000\",\n    \"isActive\": true,\n    \"academicInfo\": {\n      \"department\": { \"_id\": \"60d0fe4f5311236168a109c0\", \"name\": \"علوم الحاسب\", \"code\": \"CS\" },\n      \"level\": 3,\n      \"enrolledCourses\": [ \n        { \"_id\": \"60d0fe4f5311236168a109c1\", \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n        { \"_id\": \"60d0fe4f5311236168a109c2\", \"name\": \"الذكاء الاصطناعي\", \"code\": \"CS361\" },\n        { \"_id\": \"60d0fe4f5311236168a109c3\", \"name\": \"شبكات الحاسب\", \"code\": \"IT321\" }\n      ]\n    },\n    \"device\": {\n      \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n      \"deviceId\": \"device-full-id\",\n      \"deviceModel\": \"iPhone 13\",\n      \"isApproved\": true\n    }\n  }\n}"
+            },
+            {
+              "name": "Success Response - Medium Data",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/users/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "users", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"60d0fe4f5311236168a109cb\",\n    \"email\": \"student_medium@student.edu\",\n    \"name\": \"متوسط البيانات\",\n    \"role\": \"student\",\n    \"studentId\": \"20240050\",\n    \"phone\": \"01011111111\",\n    \"isActive\": true,\n    \"academicInfo\": {\n      \"department\": { \"_id\": \"60d0fe4f5311236168a109c0\", \"name\": \"علوم الحاسب\", \"code\": \"CS\" },\n      \"level\": 3,\n      \"enrolledCourses\": [ \n        { \"_id\": \"60d0fe4f5311236168a109c1\", \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n        { \"_id\": \"60d0fe4f5311236168a109c2\", \"name\": \"الذكاء الاصطناعي\", \"code\": \"CS361\" }\n      ]\n    },\n    \"device\": {\n      \"macAddress\": \"11:22:33:44:55:66\",\n      \"deviceId\": \"device-medium-id\",\n      \"deviceModel\": \"Samsung Galaxy S22\",\n      \"isApproved\": true\n    }\n  }\n}"
+            },
+            {
+              "name": "Success Response - Empty Data",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/users/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "users", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"60d0fe4f5311236168a109cc\",\n    \"email\": \"student_empty@student.edu\",\n    \"name\": \"فارغ البيانات\",\n    \"role\": \"student\",\n    \"studentId\": \"20240099\",\n    \"phone\": \"01022222222\",\n    \"isActive\": true,\n    \"academicInfo\": {\n      \"department\": { \"_id\": \"60d0fe4f5311236168a109c0\", \"name\": \"علوم الحاسب\", \"code\": \"CS\" },\n      \"level\": 3,\n      \"enrolledCourses\": []\n    },\n    \"device\": {\n      \"macAddress\": \"FF:EE:DD:CC:BB:AA\",\n      \"deviceId\": \"device-empty-id\",\n      \"deviceModel\": \"Google Pixel 7\",\n      \"isApproved\": true\n    }\n  }\n}"
             }
           ]
         }
@@ -368,7 +484,7 @@
           },
           "response": [
             {
-              "name": "Success Response",
+              "name": "Success Response - Full Data",
               "originalRequest": {
                 "method": "GET",
                 "header": [
@@ -392,7 +508,61 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"0\": [\n      {\n        \"_id\": \"...\",\n        \"course\": { \"name\": \"قواعد البيانات\", \"code\": \"CS301\" },\n        \"hall\": { \"name\": \"مدرج 1\", \"building\": \"مبنى أ\" },\n        \"doctor\": { \"name\": { \"first\": \"علي\", \"last\": \"حسن\" } },\n        \"startTime\": \"10:00\",\n        \"endTime\": \"12:00\",\n        \"dayOfWeek\": 0\n      }\n    ],\n    \"1\": [],\n    \"2\": [],\n    \"3\": [],\n    \"4\": [],\n    \"5\": [],\n    \"6\": []\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"0\": [\n      {\n        \"_id\": \"60d0fe4f5311236168a109d1\",\n        \"course\": { \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n        \"hall\": { \"name\": \"قاعة 101\", \"building\": \"مبنى أ\" },\n        \"doctor\": { \"name\": { \"first\": \"محمد\", \"last\": \"عبدالله\" } },\n        \"startTime\": \"09:00\",\n        \"endTime\": \"11:00\",\n        \"dayOfWeek\": 0\n      }\n    ],\n    \"1\": [],\n    \"2\": [\n      {\n        \"_id\": \"60d0fe4f5311236168a109d2\",\n        \"course\": { \"name\": \"الذكاء الاصطناعي\", \"code\": \"CS361\" },\n        \"hall\": { \"name\": \"مدرج د. مجدي\", \"building\": \"مبنى المدرجات\" },\n        \"doctor\": { \"name\": { \"first\": \"محمد\", \"last\": \"عبدالله\" } },\n        \"startTime\": \"12:00\",\n        \"endTime\": \"14:00\",\n        \"dayOfWeek\": 2\n      }\n    ],\n    \"3\": [],\n    \"4\": [\n      {\n        \"_id\": \"60d0fe4f5311236168a109d3\",\n        \"course\": { \"name\": \"شبكات الحاسب\", \"code\": \"IT321\" },\n        \"hall\": { \"name\": \"قاعة 102\", \"building\": \"مبنى أ\" },\n        \"doctor\": { \"name\": { \"first\": \"أحمد\", \"last\": \"سالم\" } },\n        \"startTime\": \"09:00\",\n        \"endTime\": \"11:00\",\n        \"dayOfWeek\": 4\n      }\n    ],\n    \"5\": [],\n    \"6\": []\n  }\n}"
+            },
+            {
+              "name": "Success Response - Medium Data",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/lectures/my-schedule",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "lectures", "my-schedule"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"0\": [\n      {\n        \"_id\": \"60d0fe4f5311236168a109d1\",\n        \"course\": { \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n        \"hall\": { \"name\": \"قاعة 101\", \"building\": \"مبنى أ\" },\n        \"doctor\": { \"name\": { \"first\": \"محمد\", \"last\": \"عبدالله\" } },\n        \"startTime\": \"09:00\",\n        \"endTime\": \"11:00\",\n        \"dayOfWeek\": 0\n      }\n    ],\n    \"1\": [],\n    \"2\": [\n      {\n        \"_id\": \"60d0fe4f5311236168a109d2\",\n        \"course\": { \"name\": \"الذكاء الاصطناعي\", \"code\": \"CS361\" },\n        \"hall\": { \"name\": \"مدرج د. مجدي\", \"building\": \"مبنى المدرجات\" },\n        \"doctor\": { \"name\": { \"first\": \"محمد\", \"last\": \"عبدالله\" } },\n        \"startTime\": \"12:00\",\n        \"endTime\": \"14:00\",\n        \"dayOfWeek\": 2\n      }\n    ],\n    \"3\": [],\n    \"4\": [],\n    \"5\": [],\n    \"6\": []\n  }\n}"
+            },
+            {
+              "name": "Success Response - Empty Data",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/lectures/my-schedule",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "lectures", "my-schedule"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"0\": [],\n    \"1\": [],\n    \"2\": [],\n    \"3\": [],\n    \"4\": [],\n    \"5\": [],\n    \"6\": []\n  }\n}"
             }
           ]
         }
@@ -451,7 +621,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"inLecture\": true,\n    \"session\": {\n      \"hallName\": \"مدرج 1\",\n      \"courseName\": \"هياكل البيانات\",\n      \"courseCode\": \"CS201\",\n      \"doctorName\": \"د. أحمد\",\n      \"startTime\": \"09:00\",\n      \"endTime\": \"11:00\",\n      \"connectedAt\": \"2024-03-21T09:05:00.000Z\",\n      \"attendanceStatus\": \"in-progress\",\n      \"presenceTimeMinutes\": 45\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"inLecture\": true,\n    \"session\": {\n      \"hallName\": \"قاعة 101\",\n      \"courseName\": \"هندسة البرمجيات\",\n      \"courseCode\": \"CS351\",\n      \"doctorName\": \"د. محمد عبدالله\",\n      \"startTime\": \"09:00\",\n      \"endTime\": \"11:00\",\n      \"connectedAt\": \"2026-05-22T09:05:00.000Z\",\n      \"attendanceStatus\": \"in-progress\",\n      \"presenceTimeMinutes\": 45\n    }\n  }\n}"
             },
             {
               "name": "Not In Lecture",
@@ -505,7 +675,7 @@
               "variable": [
                 {
                   "key": "courseId",
-                  "value": "60d0fe4f5311236168a109ca",
+                  "value": "60d0fe4f5311236168a109c1",
                   "description": "The course ID"
                 }
               ]
@@ -514,7 +684,7 @@
           },
           "response": [
             {
-              "name": "Success Response",
+              "name": "Success Response - Full Data",
               "originalRequest": {
                 "method": "GET",
                 "header": [
@@ -538,7 +708,61 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"name\": \"هياكل البيانات\",\n      \"code\": \"CS201\"\n    },\n    \"summary\": {\n      \"totalLectures\": 10,\n      \"presentLectures\": 8,\n      \"absentLectures\": 2,\n      \"attendancePercentage\": 80\n    },\n    \"records\": [\n      {\n        \"_id\": \"...\",\n        \"date\": \"2024-03-21T00:00:00.000Z\",\n        \"status\": \"present\",\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 2 }\n      },\n      {\n        \"_id\": \"...\",\n        \"date\": \"2024-03-20T00:00:00.000Z\",\n        \"status\": \"absent\",\n        \"lecture\": { \"startTime\": \"10:00\", \"endTime\": \"12:00\", \"dayOfWeek\": 1 }\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"name\": \"هندسة البرمجيات\",\n      \"code\": \"CS351\"\n    },\n    \"summary\": {\n      \"totalLectures\": 10,\n      \"presentLectures\": 8,\n      \"absentLectures\": 2,\n      \"attendancePercentage\": 80\n    },\n    \"records\": [\n      {\n        \"_id\": \"60d0fe4f5311236168a109f1\",\n        \"date\": \"2026-05-15T00:00:00.000Z\",\n        \"status\": \"present\",\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 0 }\n      },\n      {\n        \"_id\": \"60d0fe4f5311236168a109f2\",\n        \"date\": \"2026-05-08T00:00:00.000Z\",\n        \"status\": \"absent\",\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 0 }\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Success Response - Medium Data",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/attendance/my/course/:courseId",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "attendance", "my", "course", ":courseId"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"name\": \"هندسة البرمجيات\",\n      \"code\": \"CS351\"\n    },\n    \"summary\": {\n      \"totalLectures\": 4,\n      \"presentLectures\": 3,\n      \"absentLectures\": 1,\n      \"attendancePercentage\": 75\n    },\n    \"records\": [\n      {\n        \"_id\": \"60d0fe4f5311236168a109f1\",\n        \"date\": \"2026-05-15T00:00:00.000Z\",\n        \"status\": \"present\",\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 0 }\n      },\n      {\n        \"_id\": \"60d0fe4f5311236168a109f2\",\n        \"date\": \"2026-05-08T00:00:00.000Z\",\n        \"status\": \"absent\",\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 0 }\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Success Response - Empty Data",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/attendance/my/course/:courseId",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "attendance", "my", "course", ":courseId"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"name\": \"شبكات الحاسب\",\n      \"code\": \"IT321\"\n    },\n    \"summary\": {\n      \"totalLectures\": 0,\n      \"presentLectures\": 0,\n      \"absentLectures\": 0,\n      \"attendancePercentage\": 0\n    },\n    \"records\": []\n  }\n}"
             }
           ]
         },
@@ -579,7 +803,7 @@
           },
           "response": [
             {
-              "name": "Success Response",
+              "name": "Success Response - Full Data",
               "originalRequest": {
                 "method": "GET",
                 "header": [
@@ -603,7 +827,61 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"records\": [\n      {\n        \"_id\": \"...\",\n        \"date\": \"2024-03-21T00:00:00.000Z\",\n        \"status\": \"present\",\n        \"course\": { \"name\": \"هياكل البيانات\", \"code\": \"CS201\" },\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 2 }\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 45,\n      \"pages\": 3\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"records\": [\n      {\n        \"_id\": \"60d0fe4f5311236168a109f1\",\n        \"date\": \"2026-05-15T00:00:00.000Z\",\n        \"status\": \"present\",\n        \"course\": { \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 0 }\n      },\n      {\n        \"_id\": \"60d0fe4f5311236168a109f2\",\n        \"date\": \"2026-05-14T00:00:00.000Z\",\n        \"status\": \"present\",\n        \"course\": { \"name\": \"الذكاء الاصطناعي\", \"code\": \"CS361\" },\n        \"lecture\": { \"startTime\": \"12:00\", \"endTime\": \"14:00\", \"dayOfWeek\": 2 }\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 24,\n      \"pages\": 2\n    }\n  }\n}"
+            },
+            {
+              "name": "Success Response - Medium Data",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/attendance/my",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "attendance", "my"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"records\": [\n      {\n        \"_id\": \"60d0fe4f5311236168a109f1\",\n        \"date\": \"2026-05-15T00:00:00.000Z\",\n        \"status\": \"present\",\n        \"course\": { \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 0 }\n      },\n      {\n        \"_id\": \"60d0fe4f5311236168a109f2\",\n        \"date\": \"2026-05-08T00:00:00.000Z\",\n        \"status\": \"absent\",\n        \"course\": { \"name\": \"هندسة البرمجيات\", \"code\": \"CS351\" },\n        \"lecture\": { \"startTime\": \"09:00\", \"endTime\": \"11:00\", \"dayOfWeek\": 0 }\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 4,\n      \"pages\": 1\n    }\n  }\n}"
+            },
+            {
+              "name": "Success Response - Empty Data",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/attendance/my",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "attendance", "my"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"records\": [],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 0,\n      \"pages\": 0\n    }\n  }\n}"
             }
           ]
         }
@@ -675,7 +953,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"تم تقديم طلب تغيير الجهاز بنجاح، في انتظار موافقة الأدمن\",\n  \"data\": {\n    \"requestId\": \"...\",\n    \"status\": \"pending\",\n    \"createdAt\": \"2024-03-21T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"تم تقديم طلب تغيير الجهاز بنجاح، في انتظار موافقة الأدمن\",\n  \"data\": {\n    \"requestId\": \"...\",\n    \"status\": \"pending\",\n    \"createdAt\": \"2026-05-22T12:00:00.000Z\"\n  }\n}"
             }
           ]
         }

@@ -251,29 +251,71 @@ async function seed() {
     console.log("👨‍🎓 Creating students...");
     const studentsData = [];
     
-    // Main Test Student
+    // 1. Full Data Student
     studentsData.push({
-      name: { first: "طالب", last: "تجريبي" },
-      email: "student1@student.edu",
+      name: { first: "كامل", last: "البيانات" },
+      email: "student_full@student.edu",
       password: "student123",
       studentId: "20240001",
       role: ROLES.STUDENT,
       academicInfo: {
         department: csDept._id,
         level: 3,
-        specialization: "General",
+        specialization: "Computer Science",
       },
       device: {
         macAddress: "AA:BB:CC:DD:EE:FF", // Fixed MAC for testing
         isVerified: true,
-        deviceId: "test-device-id",
-        deviceName: "Test Phone",
+        deviceId: "device-full-id",
+        deviceName: "Full Data Phone",
+      },
+      isActive: true,
+    });
+
+    // 2. Medium Data Student
+    studentsData.push({
+      name: { first: "متوسط", last: "البيانات" },
+      email: "student_medium@student.edu",
+      password: "student123",
+      studentId: "20240050",
+      role: ROLES.STUDENT,
+      academicInfo: {
+        department: csDept._id,
+        level: 3,
+        specialization: "Computer Science",
+      },
+      device: {
+        macAddress: "11:22:33:44:55:66",
+        isVerified: true,
+        deviceId: "device-medium-id",
+        deviceName: "Medium Data Phone",
+      },
+      isActive: true,
+    });
+
+    // 3. Empty Data Student
+    studentsData.push({
+      name: { first: "فارغ", last: "البيانات" },
+      email: "student_empty@student.edu",
+      password: "student123",
+      studentId: "20240099",
+      role: ROLES.STUDENT,
+      academicInfo: {
+        department: csDept._id,
+        level: 3,
+        specialization: "Computer Science",
+      },
+      device: {
+        macAddress: "FF:EE:DD:CC:BB:AA",
+        isVerified: true,
+        deviceId: "device-empty-id",
+        deviceName: "Empty Data Phone",
       },
       isActive: true,
     });
 
     // Generate other students
-    for (let i = 0; i < 49; i++) {
+    for (let i = 0; i < 47; i++) {
       const fullName = getRandomItem(STUDENT_NAMES);
       const [first, last] = fullName.split(" ");
       const dept = getRandomItem(createdDepts);
@@ -281,9 +323,9 @@ async function seed() {
       
       studentsData.push({
         name: { first, last },
-        email: `s${20240002 + i}@student.edu`,
+        email: `s${20240100 + i}@student.edu`,
         password: "student123",
-        studentId: `${20240002 + i}`,
+        studentId: `${20240100 + i}`,
         role: ROLES.STUDENT,
         academicInfo: {
           department: dept._id,
@@ -348,18 +390,32 @@ async function seed() {
 
     // 8. Enroll Students
     console.log("📝 Enrolling students...");
-    // Enroll the main test student in all level 3 CS courses
-    const level3CsCourses = createdCourses.filter(c => c.level === 3);
-    const testStudent = createdStudents[0];
-    
-    for (const course of level3CsCourses) {
-      course.students.push(testStudent._id);
-      testStudent.academicInfo.enrolledCourses.push(course._id);
-    }
-    await testStudent.save();
+    const studentFull = createdStudents[0];
+    const studentMedium = createdStudents[1];
+    const studentEmpty = createdStudents[2];
 
-    // Randomly enroll other students
-    for (const student of createdStudents.slice(1)) { // Skip first student
+    // Enroll full student in all level 3 CS courses
+    const level3CsCourses = createdCourses.filter(c => c.level === 3);
+    for (const course of level3CsCourses) {
+      course.students.push(studentFull._id);
+      studentFull.academicInfo.enrolledCourses.push(course._id);
+    }
+    await studentFull.save();
+
+    // Enroll medium student in CS351 and CS361
+    const mediumCourses = createdCourses.filter(c => c.code === "CS351" || c.code === "CS361");
+    for (const course of mediumCourses) {
+      course.students.push(studentMedium._id);
+      studentMedium.academicInfo.enrolledCourses.push(course._id);
+    }
+    await studentMedium.save();
+
+    // Enroll empty student in 0 courses (do nothing)
+    studentEmpty.academicInfo.enrolledCourses = [];
+    await studentEmpty.save();
+
+    // Randomly enroll other students (skipping the first 3)
+    for (const student of createdStudents.slice(3)) {
       const eligibleCourses = createdCourses.filter(c => c.level === student.academicInfo.level);
       for (const course of eligibleCourses) {
         if (Math.random() > 0.3) { // 70% chance to enroll
@@ -440,6 +496,16 @@ async function seed() {
         if (!course) continue;
 
         for (const studentId of course.students) {
+          // Skip empty student entirely (no attendance records)
+          if (studentId.equals(studentEmpty._id)) {
+            continue;
+          }
+
+          // Skip medium student for weeks 3 and 4 (only 2 weeks of history)
+          if (studentId.equals(studentMedium._id) && w > 2) {
+            continue;
+          }
+
           // Determine status randomly
           // 80% Present, 10% Late, 10% Absent
           const rand = Math.random();
@@ -457,8 +523,8 @@ async function seed() {
             totalPresenceTime = 100;
           }
 
-          // Special case for test student: Make him "At Risk" in one course
-          if (studentId.equals(testStudent._id) && course.code === "CS361" && w > 2) {
+          // Special case for full student: Make him "At Risk" in one course
+          if (studentId.equals(studentFull._id) && course.code === "CS361" && w > 2) {
              status = ATTENDANCE_STATUS.ABSENT;
              presencePercentage = 0;
              totalPresenceTime = 0;
@@ -489,7 +555,9 @@ async function seed() {
     console.log("-----------------------------------------");
     console.log("👤 Admin:    admin@smartattendance.edu / admin123456");
     console.log("👨‍🏫 Doctor:   doctor1@edu.eg / doctor123");
-    console.log("👨‍🎓 Student:  student1@student.edu / student123");
+    console.log("👨‍🎓 Student (Full):   student_full@student.edu / student123");
+    console.log("👨‍🎓 Student (Medium): student_medium@student.edu / student123");
+    console.log("👨‍🎓 Student (Empty):  student_empty@student.edu / student123");
     console.log("-----------------------------------------");
 
     process.exit(0);
