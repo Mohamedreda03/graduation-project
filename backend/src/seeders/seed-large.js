@@ -604,35 +604,65 @@ async function seedLectures(courses, hallList) {
 
   // Create schedule - each course gets 2 lectures per week
   for (const course of courses) {
-    const day1 = WORKING_DAYS[randomInt(0, 2)]; // السبت - الاثنين
-    const day2 = WORKING_DAYS[randomInt(3, 5)]; // الثلاثاء - الخميس
-    const timeSlot1 = randomElement(lectureTimes);
-    const timeSlot2 = randomElement(lectureTimes);
-    const hall = hallList[randomInt(0, hallList.length - 1)];
+    if (course.code === "CS301") {
+      // Custom schedule for full/medium test students (Every day coverage)
+      for (const d of [6, 0, 1, 2]) {
+        lectures.push({
+          course: course._id,
+          hall: hallList[0]._id,
+          doctor: course.doctor,
+          dayOfWeek: d,
+          startTime: "09:00",
+          endTime: "11:00",
+          level: course.level,
+          isActive: true,
+        });
+      }
+    } else if (course.code === "CS302") {
+      // Custom schedule for full/medium test students (Every day coverage)
+      for (const d of [3, 4, 5]) {
+        lectures.push({
+          course: course._id,
+          hall: hallList[0]._id,
+          doctor: course.doctor,
+          dayOfWeek: d,
+          startTime: "12:00",
+          endTime: "14:00",
+          level: course.level,
+          isActive: true,
+        });
+      }
+    } else {
+      const day1 = WORKING_DAYS[randomInt(0, 2)]; // السبت - الاثنين
+      const day2 = WORKING_DAYS[randomInt(3, 5)]; // الثلاثاء - الخميس
+      const timeSlot1 = randomElement(lectureTimes);
+      const timeSlot2 = randomElement(lectureTimes);
+      const hall = hallList[randomInt(0, hallList.length - 1)];
 
-    // First lecture
-    lectures.push({
-      course: course._id,
-      hall: hall._id,
-      doctor: course.doctor,
-      dayOfWeek: day1,
-      startTime: timeSlot1.start,
-      endTime: timeSlot1.end,
-      level: course.level,
-      isActive: true,
-    });
+      // First lecture
+      lectures.push({
+        course: course._id,
+        hall: hall._id,
+        doctor: course.doctor,
+        dayOfWeek: day1,
+        startTime: timeSlot1.start,
+        endTime: timeSlot1.end,
+        level: course.level,
+        isActive: true,
+      });
 
-    // Second lecture
-    lectures.push({
-      course: course._id,
-      hall: hall._id,
-      doctor: course.doctor,
-      dayOfWeek: day2,
-      startTime: timeSlot2.start,
-      endTime: timeSlot2.end,
-      level: course.level,
-      isActive: true,
-    });
+      // Second lecture
+      lectures.push({
+        course: course._id,
+        hall: hall._id,
+        doctor: course.doctor,
+        dayOfWeek: day2,
+        startTime: timeSlot2.start,
+        endTime: timeSlot2.end,
+        level: course.level,
+        isActive: true,
+      });
+    }
   }
 
   await Lecture.insertMany(lectures);
@@ -649,37 +679,28 @@ async function seedAttendanceRecords(lectures, students) {
   const studentMedium = students.find(s => s.email === "student_medium@student.edu");
   const studentEmpty = students.find(s => s.email === "student_empty@student.edu");
 
-  // Generate attendance for the past 4 weeks
+  // Generate attendance for 2 weeks in past and 2 weeks in future
   const today = new Date();
-  const weeksToGenerate = 4;
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - 14);
+  const endDate = new Date(today);
+  endDate.setDate(today.getDate() + 14);
 
   for (const lecture of lectures) {
     // Get course to find enrolled students
     const course = await Course.findById(lecture.course);
     if (!course || !course.students || course.students.length === 0) continue;
 
-    // Generate records for each week
-    for (let week = 0; week < weeksToGenerate; week++) {
-      // Calculate the date for this lecture in this week
-      const lectureDate = new Date(today);
-      lectureDate.setDate(
-        today.getDate() -
-          week * 7 -
-          ((today.getDay() - lecture.dayOfWeek + 7) % 7),
-      );
+    // Loop through each day in the 4-week range
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      if (d.getDay() !== lecture.dayOfWeek) continue;
 
-      // Skip future dates
-      if (lectureDate > today) continue;
+      const lectureDate = new Date(d);
 
       // Generate attendance for each enrolled student
       for (const studentId of course.students) {
         // Skip empty student entirely
         if (studentEmpty && studentId.toString() === studentEmpty._id.toString()) {
-          continue;
-        }
-
-        // Skip medium student for weeks 2 and 3 (only 2 weeks of history)
-        if (studentMedium && studentId.toString() === studentMedium._id.toString() && week >= 2) {
           continue;
         }
 
@@ -715,7 +736,7 @@ async function seedAttendanceRecords(lectures, students) {
               ? [
                   {
                     checkIn: new Date(
-                      lectureDate.setHours(
+                      new Date(lectureDate).setHours(
                         parseInt(lecture.startTime.split(":")[0]),
                         parseInt(lecture.startTime.split(":")[1]),
                       ),
@@ -723,7 +744,7 @@ async function seedAttendanceRecords(lectures, students) {
                     checkOut:
                       status === ATTENDANCE_STATUS.PRESENT
                         ? new Date(
-                            lectureDate.setHours(
+                            new Date(lectureDate).setHours(
                               parseInt(lecture.endTime.split(":")[0]),
                               parseInt(lecture.endTime.split(":")[1]),
                             ),

@@ -27,8 +27,8 @@ const ApiError = require("../utils/ApiError");
 // Arabic helpers
 // ─────────────────────────────────────────────
 
-/** Egyptian academic week: Saturday(6) → Thursday(4)  */
-const DAY_ORDER = [6, 0, 1, 2, 3, 4];
+/** Egyptian academic week: Saturday(6) → Thursday(4) + Friday(5)  */
+const DAY_ORDER = [6, 0, 1, 2, 3, 4, 5];
 
 const DAY_NAMES_AR = {
   0: "الأحد",
