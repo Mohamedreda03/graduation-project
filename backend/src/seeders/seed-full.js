@@ -434,75 +434,98 @@ async function seed() {
     // 9. Create Lectures (Schedule)
     console.log("📅 Creating lectures schedule...");
     const lecturesData = [];
-    const days = [DAYS.SUNDAY, DAYS.MONDAY, DAYS.TUESDAY, DAYS.WEDNESDAY, DAYS.THURSDAY];
     
-    createdCourses.forEach((course, index) => {
-      // Create 2 lectures per week for each course
-      const hall1 = getRandomItem(createdHalls);
-      const hall2 = getRandomItem(createdHalls);
-      
-      lecturesData.push({
-        course: course._id,
-        hall: hall1._id,
-        doctor: course.doctor,
-        dayOfWeek: days[index % 5],
-        startTime: "09:00",
-        endTime: "11:00",
-        type: "lecture",
-        lectureType: "lecture",
-        status: "scheduled",
-        isActive: true,
-      });
+    createdCourses.forEach((course) => {
+      if (course.code === "CS351") {
+        // Custom schedule for full/medium test students (Every day coverage part 1)
+        for (const d of [6, 0, 1, 2]) {
+          lecturesData.push({
+            course: course._id,
+            hall: createdHalls[0]._id,
+            doctor: course.doctor,
+            dayOfWeek: d,
+            startTime: "09:00",
+            endTime: "11:00",
+            type: "lecture",
+            lectureType: "lecture",
+            status: "scheduled",
+            isActive: true,
+          });
+        }
+      } else if (course.code === "CS361") {
+        // Custom schedule for full/medium test students (Every day coverage part 2)
+        for (const d of [3, 4, 5]) {
+          lecturesData.push({
+            course: course._id,
+            hall: createdHalls[1]._id,
+            doctor: course.doctor,
+            dayOfWeek: d,
+            startTime: "12:00",
+            endTime: "14:00",
+            type: "lecture",
+            lectureType: "lecture",
+            status: "scheduled",
+            isActive: true,
+          });
+        }
+      } else {
+        // Default 2 lectures per week for other courses
+        const hall1 = getRandomItem(createdHalls);
+        const days = [DAYS.SUNDAY, DAYS.MONDAY, DAYS.TUESDAY, DAYS.WEDNESDAY, DAYS.THURSDAY];
+        const dayIdx = Math.floor(Math.random() * days.length);
+        
+        lecturesData.push({
+          course: course._id,
+          hall: hall1._id,
+          doctor: course.doctor,
+          dayOfWeek: days[dayIdx],
+          startTime: "09:00",
+          endTime: "11:00",
+          type: "lecture",
+          lectureType: "lecture",
+          status: "scheduled",
+          isActive: true,
+        });
 
-      lecturesData.push({
-        course: course._id,
-        hall: hall2._id,
-        doctor: course.doctor,
-        dayOfWeek: days[(index + 2) % 5], // Different day
-        startTime: "12:00",
-        endTime: "14:00",
-        type: "section",
-        lectureType: "section",
-        status: "scheduled",
-        isActive: true,
-      });
+        lecturesData.push({
+          course: course._id,
+          hall: hall1._id,
+          doctor: course.doctor,
+          dayOfWeek: days[(dayIdx + 2) % 5],
+          startTime: "12:00",
+          endTime: "14:00",
+          type: "section",
+          lectureType: "section",
+          status: "scheduled",
+          isActive: true,
+        });
+      }
     });
     const createdLectures = await Lecture.create(lecturesData);
 
-    // 10. Generate Attendance History (Last 4 weeks)
+    // 10. Generate Attendance History (2 weeks past to 2 weeks future)
     console.log("📊 Generating attendance history...");
     const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 14);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 14);
+
     const attendanceRecords = [];
 
-    // Helper to get date for previous weeks
-    const getPreviousDate = (weeksBack, dayOfWeek) => {
-      const d = new Date(today);
-      d.setDate(d.getDate() - (weeksBack * 7));
-      const currentDay = d.getDay();
-      const diff = dayOfWeek - currentDay;
-      d.setDate(d.getDate() + diff);
-      d.setHours(0, 0, 0, 0);
-      return d;
-    };
+    for (const lecture of createdLectures) {
+      const course = createdCourses.find(c => c._id.equals(lecture.course));
+      if (!course) continue;
 
-    for (let w = 1; w <= 4; w++) { // Last 4 weeks
-      for (const lecture of createdLectures) {
-        const lectureDate = getPreviousDate(w, lecture.dayOfWeek);
-        
-        // Skip future dates
-        if (lectureDate > today) continue;
+      // Loop through each day in the 4-week range
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        if (d.getDay() !== lecture.dayOfWeek) continue;
 
-        const course = createdCourses.find(c => c._id.equals(lecture.course));
-        if (!course) continue;
+        const lectureDate = new Date(d);
 
         for (const studentId of course.students) {
           // Skip empty student entirely (no attendance records)
           if (studentId.equals(studentEmpty._id)) {
-            continue;
-          }
-
-          // Skip medium student for weeks 3 and 4 (only 2 weeks of history)
-          if (studentId.equals(studentMedium._id) && w > 2) {
             continue;
           }
 
@@ -523,13 +546,6 @@ async function seed() {
             totalPresenceTime = 100;
           }
 
-          // Special case for full student: Make him "At Risk" in one course
-          if (studentId.equals(studentFull._id) && course.code === "CS361" && w > 2) {
-             status = ATTENDANCE_STATUS.ABSENT;
-             presencePercentage = 0;
-             totalPresenceTime = 0;
-          }
-
           attendanceRecords.push({
             student: studentId,
             course: course._id,
@@ -540,10 +556,10 @@ async function seed() {
             presencePercentage,
             totalPresenceTime,
             isFinalized: true,
-            checkInTime: status !== ATTENDANCE_STATUS.ABSENT ? new Date(lectureDate.setHours(9, 0)) : null,
+            checkInTime: status !== ATTENDANCE_STATUS.ABSENT ? new Date(new Date(lectureDate).setHours(9, 0)) : null,
             sessions: status !== ATTENDANCE_STATUS.ABSENT ? [{
-              checkIn: new Date(lectureDate.setHours(9, 0)),
-              checkOut: new Date(lectureDate.setHours(11, 0)),
+              checkIn: new Date(new Date(lectureDate).setHours(9, 0)),
+              checkOut: new Date(new Date(lectureDate).setHours(11, 0)),
             }] : [],
           });
         }
