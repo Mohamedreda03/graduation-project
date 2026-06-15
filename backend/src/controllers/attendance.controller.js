@@ -178,7 +178,6 @@ exports.getLiveAttendance = catchAsync(async (req, res, next) => {
   const records = await AttendanceRecord.find({
     hall: hallId,
     date: today,
-    status: ATTENDANCE_STATUS.IN_PROGRESS,
   }).populate("student", "studentId name");
 
   res.status(200).json({
@@ -192,9 +191,11 @@ exports.getLiveAttendance = catchAsync(async (req, res, next) => {
       })),
       inProgressRecords: records.length,
       records: records.map((r) => ({
+        _id: r._id,
         student: r.student,
         checkIn: r.sessions[r.sessions.length - 1]?.checkIn,
         totalTime: r.totalPresenceTime,
+        status: r.status,
       })),
     },
   });

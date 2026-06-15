@@ -9,10 +9,11 @@ import {
   Square,
   XCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatTime12h } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,14 +73,21 @@ const statusMap: Record<
 };
 
 export function LecturesPage() {
-  const [courseFilter, setCourseFilter] = useState<string>("");
-  const [hallFilter, setHallFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [searchParams] = useSearchParams();
+  const [courseFilter, setCourseFilter] = useState<string>(
+    searchParams.get("course") || ""
+  );
+  const [hallFilter, setHallFilter] = useState<string>(
+    searchParams.get("hall") || ""
+  );
+  const [statusFilter, setStatusFilter] = useState<string>(
+    searchParams.get("status") || ""
+  );
 
   const { data, isLoading } = useLectures({
-    course: courseFilter || undefined,
-    hall: hallFilter || undefined,
-    status: statusFilter || undefined,
+    course: courseFilter && courseFilter !== "all" ? courseFilter : undefined,
+    hall: hallFilter && hallFilter !== "all" ? hallFilter : undefined,
+    status: statusFilter && statusFilter !== "all" ? statusFilter : undefined,
   });
   const { data: coursesData } = useCourses();
   const { data: hallsData } = useHalls();
@@ -121,8 +129,10 @@ export function LecturesPage() {
       accessorKey: "startTime",
       header: "الوقت",
       cell: ({ row }) => (
-        <span dir="ltr" className="text-muted-foreground">
-          {row.original.startTime} - {row.original.endTime}
+        <span dir="ltr" className="text-muted-foreground flex items-center gap-1">
+          <span dir="rtl">{formatTime12h(row.original.startTime)}</span>
+          <span>-</span>
+          <span dir="rtl">{formatTime12h(row.original.endTime)}</span>
         </span>
       ),
     },

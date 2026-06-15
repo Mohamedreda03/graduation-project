@@ -67,13 +67,17 @@ const navMainItems = [
         url: "/attendance",
       },
       {
+        title: "🔴 الحضور المباشر",
+        url: "/attendance/live",
+      },
+      {
         title: "طلاب معرضون للحرمان",
         url: "/attendance/at-risk",
       },
-      {
-        title: "تقارير الحضور",
-        url: "/attendance/reports",
-      },
+      // {
+      //   title: "تقارير الحضور",
+      //   url: "/attendance/reports",
+      // },
     ],
   },
   {

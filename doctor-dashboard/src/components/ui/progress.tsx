@@ -10,6 +10,16 @@ function Progress({
   value,
   ...props
 }: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+  const [isRtl, setIsRtl] = React.useState(false)
+
+  React.useLayoutEffect(() => {
+    const checkRtl = () => {
+      const dir = props.dir || document.documentElement.dir || document.body.dir || "ltr"
+      setIsRtl(dir === "rtl")
+    }
+    checkRtl()
+  }, [props.dir])
+
   return (
     <ProgressPrimitive.Root
       data-slot="progress"
@@ -22,7 +32,7 @@ function Progress({
       <ProgressPrimitive.Indicator
         data-slot="progress-indicator"
         className="bg-primary h-full w-full flex-1 transition-all"
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+        style={{ transform: `translateX(${isRtl ? "" : "-"}${100 - (value || 0)}%)` }}
       />
     </ProgressPrimitive.Root>
   )

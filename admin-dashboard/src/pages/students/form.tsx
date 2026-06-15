@@ -88,6 +88,12 @@ export function StudentFormPage() {
     },
   });
 
+  const selectedDepartmentId = form.watch("department");
+  const selectedDepartment = departmentsData?.find(
+    (dept: any) => dept._id === selectedDepartmentId
+  );
+  const specializations = selectedDepartment?.specializations || [];
+
   useEffect(() => {
     if (student) {
       // Handle both name formats (string or object)
@@ -319,10 +325,10 @@ export function StudentFormPage() {
                           القسم
                         </FormLabel>
                         <Select
+                          key={`dept-${field.value}-${departmentsData?.length ?? 0}`}
                           dir="rtl"
                           onValueChange={field.onChange}
                           value={field.value}
-                          defaultValue={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
@@ -351,25 +357,26 @@ export function StudentFormPage() {
                       <FormItem className="space-y-3">
                         <FormLabel className="flex items-center gap-2">
                           <Layers className="h-4 w-4 text-primary" />
-                          المستوى
+                          الفرقه
                         </FormLabel>
                         <Select
+                          key={`level-${field.value}`}
                           dir="rtl"
                           onValueChange={(v) => field.onChange(parseInt(v))}
                           value={field.value?.toString()}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="اختر المستوى" />
+                              <SelectValue placeholder="اختر الفرقه" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="1">المستوى 1</SelectItem>
-                            <SelectItem value="2">المستوى 2</SelectItem>
-                            <SelectItem value="3">المستوى 3</SelectItem>
-                            <SelectItem value="4">المستوى 4</SelectItem>
-                            <SelectItem value="5">المستوى 5</SelectItem>
-                            <SelectItem value="6">المستوى 6</SelectItem>
+                            <SelectItem value="1">الفرقه 1</SelectItem>
+                            <SelectItem value="2">الفرقه 2</SelectItem>
+                            <SelectItem value="3">الفرقه 3</SelectItem>
+                            <SelectItem value="4">الفرقه 4</SelectItem>
+                            <SelectItem value="5">الفرقه 5</SelectItem>
+                            <SelectItem value="6">الفرقه 6</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -386,9 +393,32 @@ export function StudentFormPage() {
                           <GraduationCap className="h-4 w-4 text-primary" />
                           التخصص (اختياري)
                         </FormLabel>
-                        <FormControl>
-                          <Input placeholder="مثال: علوم الحاسب" {...field} />
-                        </FormControl>
+                        <Select
+                          key={`spec-${field.value}-${specializations.length}`}
+                          dir="rtl"
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={!selectedDepartmentId || specializations.length === 0}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder={
+                                !selectedDepartmentId 
+                                  ? "اختر القسم أولاً" 
+                                  : specializations.length === 0 
+                                    ? "لا توجد تخصصات" 
+                                    : "اختر التخصص"
+                              } />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {specializations.map((spec: any) => (
+                              <SelectItem key={spec._id} value={spec._id}>
+                                {spec.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -501,7 +531,7 @@ export function StudentFormPage() {
                   <GraduationCap className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">القسم والمستوى</p>
+                  <p className="font-medium text-foreground">القسم والفرقه</p>
                   <p>لربط الطالب بالمقررات</p>
                 </div>
               </div>

@@ -20,6 +20,20 @@ const departmentSchema = new mongoose.Schema(
       required: [true, "Faculty name is required"],
       trim: true,
     },
+    specializations: [
+      {
+        name: {
+          type: String,
+          required: [true, "Specialization name is required"],
+          trim: true,
+        },
+        code: {
+          type: String,
+          trim: true,
+          uppercase: true,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

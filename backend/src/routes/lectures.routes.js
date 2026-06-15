@@ -80,6 +80,44 @@ router.get("/today", lecturesController.getTodayLectures);
 
 /**
  * @swagger
+ * /lectures/by-date:
+ *   get:
+ *     summary: Get lectures by date
+ *     tags: [Lectures]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ */
+router.get("/by-date", lecturesController.getLecturesByDate);
+
+/**
+ * @swagger
+ * /lectures/week-schedule:
+ *   get:
+ *     summary: Get week schedule
+ *     tags: [Lectures]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: course
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: hall
+ *         schema:
+ *           type: string
+ */
+router.get("/week-schedule", lecturesController.getWeekSchedule);
+
+/**
+ * @swagger
  * /lectures/{id}:
  *   get:
  *     summary: Get lecture by ID
@@ -163,43 +201,6 @@ router.post("/", adminOnly, lecturesController.createLecture);
  */
 router.post("/schedule", adminOnly, lecturesController.scheduleRecurring);
 
-/**
- * @swagger
- * /lectures/by-date:
- *   get:
- *     summary: Get lectures by date
- *     tags: [Lectures]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: date
- *         required: true
- *         schema:
- *           type: string
- *           format: date
- */
-router.get("/by-date", lecturesController.getLecturesByDate);
-
-/**
- * @swagger
- * /lectures/week-schedule:
- *   get:
- *     summary: Get week schedule
- *     tags: [Lectures]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: course
- *         schema:
- *           type: string
- *       - in: query
- *         name: hall
- *         schema:
- *           type: string
- */
-router.get("/week-schedule", lecturesController.getWeekSchedule);
 
 /**
  * @swagger

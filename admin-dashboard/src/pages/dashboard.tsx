@@ -23,6 +23,7 @@ import {
   useTodayLectures,
   useAtRiskStudents,
 } from "@/hooks";
+import { formatTime12h } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -179,7 +180,7 @@ export function DashboardPage() {
                       </TableCell>
                       <TableCell>{lecture.hall?.name || "غير متوفر"}</TableCell>
                       <TableCell dir="ltr">
-                        {lecture.startTime} - {lecture.endTime}
+                        {formatTime12h(lecture.startTime)} - {formatTime12h(lecture.endTime)}
                       </TableCell>
                       <TableCell>
                         <Badge

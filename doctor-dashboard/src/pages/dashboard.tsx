@@ -9,6 +9,7 @@ import {
 import { coursesService } from "@/services/courses.service";
 import { useAuth } from "@/contexts/auth-context";
 import type { Lecture, Course } from "@/types";
+import { formatTime12h } from "@/lib/utils";
 
 const DAYS = [
   "الأحد",
@@ -200,10 +201,10 @@ export function DashboardPage() {
                     <div className="flex items-center gap-5">
                       <div className="flex flex-col items-center justify-center w-16 h-16 bg-primary/5 border border-primary/10 rounded-xl">
                         <span className="text-xs font-bold text-primary">
-                          {lecture.startTime}
+                          {formatTime12h(lecture.startTime)}
                         </span>
                         <span className="text-[10px] text-muted-foreground mt-0.5">
-                          {lecture.endTime}
+                          {formatTime12h(lecture.endTime)}
                         </span>
                       </div>
                       <div>

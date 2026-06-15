@@ -6,7 +6,7 @@ const {
 } = require("../models");
 const { ROLES, ATTENDANCE_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
-const { catchAsync, getCurrentTimeString } = require("../utils/helpers");
+const { catchAsync, getCurrentTimeString, getTodayDate } = require("../utils/helpers");
 
 /**
  * Get all lectures
@@ -24,7 +24,14 @@ exports.getAllLectures = catchAsync(async (req, res, next) => {
   if (level) query.level = parseInt(level);
 
   const lectures = await Lecture.find(query)
-    .populate("course", "name code")
+    .populate({
+      path: "course",
+      select: "name code department students",
+      populate: {
+        path: "department",
+        select: "name code"
+      }
+    })
     .populate("hall", "name building")
     .populate("doctor", "name")
     .sort({ dayOfWeek: 1, startTime: 1 });
@@ -42,7 +49,7 @@ exports.getAllLectures = catchAsync(async (req, res, next) => {
  */
 exports.getLecture = catchAsync(async (req, res, next) => {
   const lecture = await Lecture.findById(req.params.id)
-    .populate("course", "name code")
+    .populate("course", "name code students")
     .populate("hall", "name building")
     .populate("doctor", "name");
 
@@ -266,7 +273,7 @@ exports.getTodayLectures = catchAsync(async (req, res, next) => {
     dayOfWeek: currentDay,
     isActive: true,
   })
-    .populate("course", "name code")
+    .populate("course", "name code students")
     .populate("hall", "name building")
     .populate("doctor", "name")
     .sort({ startTime: 1 });
@@ -402,7 +409,7 @@ exports.scheduleRecurring = catchAsync(async (req, res, next) => {
  */
 exports.startLecture = catchAsync(async (req, res, next) => {
   const lecture = await Lecture.findById(req.params.id)
-    .populate("course", "name code")
+    .populate("course")
     .populate("hall", "name building")
     .populate("doctor", "name");
 
@@ -413,6 +420,48 @@ exports.startLecture = catchAsync(async (req, res, next) => {
   lecture.status = "in-progress";
   lecture.isActive = true;
   await lecture.save();
+
+  // Find all students currently connected to this hall (active sessions)
+  const activeSessions = await StudentSession.find({
+    currentHall: lecture.hall._id,
+    isActive: true,
+  });
+
+  const now = new Date();
+  const courseStudents = lecture.course?.students || [];
+
+  for (const session of activeSessions) {
+    const isEnrolled = courseStudents.some(
+      (s) => s.toString() === session.student.toString()
+    );
+
+    if (isEnrolled) {
+      // Find or create attendance record
+      let attendanceRecord = await AttendanceRecord.findOne({
+        student: session.student,
+        lecture: lecture._id,
+        date: getTodayDate(),
+      });
+
+      if (!attendanceRecord) {
+        attendanceRecord = await AttendanceRecord.create({
+          student: session.student,
+          course: lecture.course._id,
+          lecture: lecture._id,
+          hall: lecture.hall._id,
+          date: getTodayDate(),
+          status: ATTENDANCE_STATUS.IN_PROGRESS,
+          sessions: [{ checkIn: now }],
+        });
+        console.log(`[Auto-Start] Attendance record created for student ${session.student} on lecture ${lecture._id}`);
+      }
+
+      // Link session to attendance record
+      session.currentLecture = lecture._id;
+      session.attendanceRecord = attendanceRecord._id;
+      await session.save();
+    }
+  }
 
   res.status(200).json({
     success: true,

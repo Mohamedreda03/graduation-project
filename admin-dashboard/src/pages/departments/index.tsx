@@ -39,21 +39,13 @@ export function DepartmentsPage() {
   const columns: ColumnDef<Department>[] = [
     {
       accessorKey: "name",
-      header: "اسم القسم",
+      header: "اسم الكلية",
     },
     {
       accessorKey: "code",
       header: "الرمز",
     },
-    {
-      accessorKey: "description",
-      header: "الوصف",
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.description || "لا يوجد وصف"}
-        </span>
-      ),
-    },
+
     {
       accessorKey: "createdAt",
       header: "تاريخ الإنشاء",
@@ -106,16 +98,16 @@ export function DepartmentsPage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-primary">
-            الأقسام
+            الكليات
           </h1>
           <p className="text-muted-foreground font-medium">
-            إدارة أقسام الكلية والعمليات عليها
+            إدارة الكليات وأقسامها والعمليات عليها
           </p>
         </div>
         <Button asChild className="rounded-xl h-11 px-6">
           <Link to="/departments/new">
             <Plus className="ml-2 h-5 w-5" />
-            إضافة قسم جديد
+            إضافة كلية جديدة
           </Link>
         </Button>
       </div>
@@ -135,7 +127,7 @@ export function DepartmentsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف هذا القسم نهائياً. لا يمكن التراجع عن هذا الإجراء.
+              سيتم حذف هذه الكلية نهائياً. لا يمكن التراجع عن هذا الإجراء.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

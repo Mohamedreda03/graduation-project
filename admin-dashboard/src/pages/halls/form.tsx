@@ -16,6 +16,7 @@ import {
   Lightbulb,
   Info,
   FileText,
+  Key,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useCreateHall, useUpdateHall, useHall } from "@/hooks";
+import { useCreateHall, useUpdateHall, useHall, useUpdateAccessPoint } from "@/hooks";
 
 const formSchema = z.object({
   name: z.string().min(2, "اسم القاعة يجب أن يكون حرفين على الأقل"),
@@ -38,6 +39,7 @@ const formSchema = z.object({
   apSsid: z.string().optional(),
   apIpRange: z.string().optional(),
   apIdentifier: z.string().optional(),
+  apApiKey: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,6 +52,7 @@ export function HallFormPage() {
   const { data: hall, isLoading: hallLoading } = useHall(id ?? "");
   const createMutation = useCreateHall();
   const updateMutation = useUpdateHall();
+  const updateApMutation = useUpdateAccessPoint();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -60,6 +63,7 @@ export function HallFormPage() {
       apSsid: "",
       apIpRange: "",
       apIdentifier: "",
+      apApiKey: "",
     },
   });
 
@@ -72,6 +76,7 @@ export function HallFormPage() {
         apSsid: hall.accessPoint?.ssid || "",
         apIpRange: hall.accessPoint?.ipRange || "",
         apIdentifier: hall.accessPoint?.apIdentifier || "",
+        apApiKey: hall.accessPoint?.apiKey || "",
       });
     }
   }, [hall, form]);
@@ -86,10 +91,14 @@ export function HallFormPage() {
           ssid: values.apSsid,
           ipRange: values.apIpRange,
           apIdentifier: values.apIdentifier,
+          apiKey: values.apApiKey,
         },
       };
       if (isEditing) {
         await updateMutation.mutateAsync({ id: id!, data });
+        if (data.accessPoint) {
+            await updateApMutation.mutateAsync({ id: id!, data: data.accessPoint });
+        }
       } else {
         await createMutation.mutateAsync(data);
       }
@@ -99,7 +108,7 @@ export function HallFormPage() {
     }
   };
 
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const isLoading = createMutation.isPending || updateMutation.isPending || updateApMutation.isPending;
 
   if (isEditing && hallLoading) {
     return (
@@ -290,6 +299,26 @@ export function HallFormPage() {
                           </FormControl>
                           <FormDescription className="text-xs">
                             معرف فريد لنقطة الوصول
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="apApiKey"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          <FormLabel className="flex items-center gap-2">
+                            <Key className="h-4 w-4 text-muted-foreground" />
+                            مفتاح API
+                          </FormLabel>
+                          <FormControl>
+                            <Input dir="ltr" placeholder="secret_key_123" type="text" {...field} />
+                          </FormControl>
+                          <FormDescription className="text-xs">
+                            المفتاح السري للاتصال بنقطة الوصول
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

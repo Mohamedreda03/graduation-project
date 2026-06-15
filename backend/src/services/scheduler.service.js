@@ -216,14 +216,94 @@ function calculateLectureDuration(startTimeStr, endTimeStr) {
 }
 
 /**
+ * Helper: Get the date of the most recent occurrence of a day of week
+ */
+function getMostRecentDayOfWeekDate(dayOfWeek) {
+  const result = new Date();
+  const currentDay = result.getDay();
+  let distance = currentDay - dayOfWeek;
+  if (distance < 0) {
+    distance += 7;
+  }
+  result.setDate(result.getDate() - distance);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+/**
+ * Automatically complete ended lectures that are still in-progress
+ */
+async function autoCompleteLectures() {
+  console.log("[Scheduler] Checking for ended in-progress lectures...");
+  try {
+    const now = new Date();
+    const autoFinalizeSetting = await Setting.findOne({
+      key: "AUTO_FINALIZE_AFTER_MINUTES",
+    });
+    const autoFinalizeMinutes = autoFinalizeSetting
+      ? autoFinalizeSetting.value
+      : 30;
+
+    const lectures = await Lecture.find({
+      status: "in-progress",
+      isActive: true,
+    });
+
+    let completedCount = 0;
+
+    for (const lecture of lectures) {
+      const lectureEnd = getLectureEndTime(
+        getMostRecentDayOfWeekDate(lecture.dayOfWeek),
+        lecture.endTime
+      );
+
+      if (now >= lectureEnd) {
+        lecture.status = "completed";
+        await lecture.save();
+        completedCount++;
+        console.log(`[Scheduler] Auto-completed lecture ${lecture._id} (${lecture.startTime} - ${lecture.endTime})`);
+      }
+    }
+
+    if (completedCount > 0) {
+      console.log(`[Scheduler] Auto-completed ${completedCount} lectures`);
+    }
+  } catch (error) {
+    console.error("[Scheduler] Error auto-completing lectures:", error);
+  }
+}
+
+/**
+ * Reset completed/cancelled lectures status back to scheduled
+ */
+async function resetLecturesStatus() {
+  console.log("[Scheduler] Resetting completed lectures to scheduled status...");
+  try {
+    const result = await Lecture.updateMany(
+      {
+        isActive: true,
+        status: { $in: ["completed", "cancelled"] },
+      },
+      {
+        $set: { status: "scheduled" },
+      }
+    );
+    console.log(`[Scheduler] Reset ${result.modifiedCount} lectures to scheduled status`);
+  } catch (error) {
+    console.error("[Scheduler] Error resetting lectures status:", error);
+  }
+}
+
+/**
  * Initialize scheduler jobs
  */
 function initScheduler() {
   console.log("[Scheduler] Initializing scheduled jobs...");
 
-  // Run every 5 minutes
-  cron.schedule("*/5 * * * *", async () => {
+  // Run every 1 minute
+  cron.schedule("* * * * *", async () => {
     await finalizeAttendanceRecords();
+    await autoCompleteLectures();
   });
 
   // Run every hour at minute 30
@@ -236,12 +316,19 @@ function initScheduler() {
     await cleanupStaleSessions();
   });
 
+  // Run every day at midnight (00:00)
+  cron.schedule("0 0 * * *", async () => {
+    await resetLecturesStatus();
+  });
+
   console.log("[Scheduler] Scheduled jobs initialized");
 }
 
 module.exports = {
   initScheduler,
   finalizeAttendanceRecords,
+  autoCompleteLectures,
+  resetLecturesStatus,
   markAbsentStudents,
   cleanupStaleSessions,
 };

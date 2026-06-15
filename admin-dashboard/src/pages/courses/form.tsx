@@ -50,7 +50,7 @@ import type { Department, Doctor } from "@/types";
 const formSchema = z.object({
   name: z.string().min(2, "اسم المقرر يجب أن يكون حرفين على الأقل"),
   code: z.string().min(2, "رمز المقرر مطلوب"),
-  department: z.string().min(1, "القسم مطلوب"),
+  department: z.string().min(1, "الكلية مطلوبة"),
   doctor: z.string().min(1, "الدكتور مطلوب"),
   level: z.number().min(1).max(6),
   semester: z.string().min(1, "الفصل الدراسي مطلوب"),
@@ -82,6 +82,12 @@ export function CourseFormPage() {
       specialization: "",
     },
   });
+
+  const selectedDepartmentId = form.watch("department");
+  const selectedDepartment = departmentsData?.find(
+    (dept: Department) => dept._id === selectedDepartmentId
+  );
+  const specializations = selectedDepartment?.specializations || [];
 
   useEffect(() => {
     if (course) {
@@ -211,16 +217,17 @@ export function CourseFormPage() {
                       <FormItem className="space-y-3">
                         <FormLabel className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
-                          القسم
+                          الكلية
                         </FormLabel>
                         <Select
+                          key={`dept-${field.value}-${departmentsData?.length ?? 0}`}
                           dir="rtl"
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="اختر القسم" />
+                              <SelectValue placeholder="اختر الكلية" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -243,20 +250,21 @@ export function CourseFormPage() {
                       <FormItem className="space-y-3">
                         <FormLabel className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
-                          الأستاذ
+                          الدكتور
                         </FormLabel>
                         <Select
+                          key={`doc-${field.value}-${doctorsData?.data?.length ?? 0}`}
                           dir="rtl"
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="اختر الأستاذ" />
+                              <SelectValue placeholder="اختر الدكتور" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {doctorsData?.data?.map((doctor) => (
+                            {doctorsData?.data?.map((doctor: Doctor) => (
                               <SelectItem key={doctor._id} value={doctor._id}>
                                 {doctor.fullName ||
                                   (typeof doctor.name === "object"
@@ -278,7 +286,7 @@ export function CourseFormPage() {
                       <FormItem className="space-y-3">
                         <FormLabel className="flex items-center gap-2">
                           <Layers className="h-4 w-4 text-muted-foreground" />
-                          المستوى
+                          الفرقه
                         </FormLabel>
                         <Select
                           dir="rtl"
@@ -287,16 +295,16 @@ export function CourseFormPage() {
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="اختر المستوى" />
+                              <SelectValue placeholder="اختر الفرقه" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="1">المستوى 1</SelectItem>
-                            <SelectItem value="2">المستوى 2</SelectItem>
-                            <SelectItem value="3">المستوى 3</SelectItem>
-                            <SelectItem value="4">المستوى 4</SelectItem>
-                            <SelectItem value="5">المستوى 5</SelectItem>
-                            <SelectItem value="6">المستوى 6</SelectItem>
+                            <SelectItem value="1">الفرقه 1</SelectItem>
+                            <SelectItem value="2">الفرقه 2</SelectItem>
+                            <SelectItem value="3">الفرقه 3</SelectItem>
+                            <SelectItem value="4">الفرقه 4</SelectItem>
+                            <SelectItem value="5">الفرقه 5</SelectItem>
+                            <SelectItem value="6">الفرقه 6</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -333,9 +341,32 @@ export function CourseFormPage() {
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           التخصص (اختياري)
                         </FormLabel>
-                        <FormControl>
-                          <Input placeholder="مثال: علوم الحاسب" {...field} />
-                        </FormControl>
+                        <Select
+                          key={`spec-${field.value}-${specializations.length}`}
+                          dir="rtl"
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={!selectedDepartmentId || specializations.length === 0}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder={
+                                !selectedDepartmentId 
+                                  ? "اختر الكلية أولاً" 
+                                  : specializations.length === 0 
+                                    ? "لا توجد تخصصات" 
+                                    : "اختر التخصص"
+                              } />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {specializations.map((spec: any) => (
+                              <SelectItem key={spec._id} value={spec._id}>
+                                {spec.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -398,8 +429,8 @@ export function CourseFormPage() {
               <div className="flex items-start gap-3">
                 <Layers className="h-4 w-4 mt-0.5 text-primary/60" />
                 <div>
-                  <p className="font-medium text-foreground">المستوى</p>
-                  <p>المستوى الدراسي (1-6)</p>
+                  <p className="font-medium text-foreground">الفرقه</p>
+                  <p>الفرقه الدراسية (1-6)</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">

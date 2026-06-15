@@ -98,6 +98,12 @@ export interface Doctor extends User {
 }
 
 // ============ Department ============
+export interface Specialization {
+  _id?: string;
+  name: string;
+  code?: string;
+}
+
 export interface Department {
   _id: string;
   name: string;
@@ -106,6 +112,7 @@ export interface Department {
   description?: string;
   headOfDepartment?: string;
   isActive: boolean;
+  specializations?: Specialization[];
   createdAt: string;
 }
 
@@ -114,6 +121,7 @@ export interface CreateDepartmentRequest {
   code: string;
   faculty: string;
   description?: string;
+  specializations?: Specialization[];
 }
 
 // ============ Hall ============
@@ -143,6 +151,7 @@ export interface CreateHallRequest {
     ssid?: string;
     ipRange?: string;
     apIdentifier?: string;
+    apiKey?: string;
   };
 }
 
@@ -192,6 +201,8 @@ export interface Lecture {
   lectureType: LectureType;
   status: LectureStatus;
   weekPattern: "weekly" | "odd" | "even";
+  level?: number;
+  specialization?: string;
   isActive: boolean;
   createdAt: string;
 }

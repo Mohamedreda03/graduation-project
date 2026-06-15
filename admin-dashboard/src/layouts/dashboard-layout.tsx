@@ -29,7 +29,7 @@ export function DashboardLayout() {
           <Outlet />
         </div>
       </SidebarInset>
-      <Toaster position="top-center" richColors />
+                <Toaster position="top-right" />
     </SidebarProvider>
   );
 }

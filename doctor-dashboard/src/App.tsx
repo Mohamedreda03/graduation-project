@@ -67,6 +67,7 @@ function App() {
 
                 {/* Attendance */}
                 <Route path="/attendance" element={<AttendancePage />} />
+                <Route path="/attendance/live" element={<LiveAttendancePage />} />
                 <Route path="/attendance/live/:hallId" element={<LiveAttendancePage />} />
                 <Route path="/attendance/at-risk" element={<AtRiskStudentsPage />} />
                 <Route path="/attendance/reports" element={<AttendanceReportsPage />} />

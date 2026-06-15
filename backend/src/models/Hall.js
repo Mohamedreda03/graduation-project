@@ -65,12 +65,9 @@ hallSchema.statics.findByApInfo = function (apIdentifier, ipRange) {
   });
 };
 
-// Hide sensitive apiKey from JSON responses
+// Hide sensitive data if needed in the future
 hallSchema.set("toJSON", {
   transform: function (doc, ret) {
-    if (ret.accessPoint) {
-      delete ret.accessPoint.apiKey;
-    }
     return ret;
   },
 });

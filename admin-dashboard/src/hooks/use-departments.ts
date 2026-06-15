@@ -33,10 +33,10 @@ export function useCreateDepartment() {
     mutationFn: departmentsService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: departmentKeys.all });
-      toast.success("Department added successfully");
+      toast.success("تم إضافة الكلية بنجاح");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error adding department");
+      toast.error(error.message || "خطأ في إضافة الكلية");
     },
   });
 }
@@ -54,10 +54,10 @@ export function useUpdateDepartment() {
     }) => departmentsService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: departmentKeys.all });
-      toast.success("Department updated successfully");
+      toast.success("تم تعديل الكلية بنجاح");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error updating department");
+      toast.error(error.message || "خطأ في تعديل الكلية");
     },
   });
 }
@@ -69,10 +69,10 @@ export function useDeleteDepartment() {
     mutationFn: departmentsService.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: departmentKeys.all });
-      toast.success("Department deleted successfully");
+      toast.success("تم حذف الكلية بنجاح");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error deleting department");
+      toast.error(error.message || "خطأ في حذف الكلية");
     },
   });
 }

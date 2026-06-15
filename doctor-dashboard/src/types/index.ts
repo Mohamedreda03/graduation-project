@@ -194,6 +194,8 @@ export interface Lecture {
   lectureType: LectureType;
   status: LectureStatus;
   weekPattern: "weekly" | "odd" | "even";
+  level?: number;
+  specialization?: string;
   isActive: boolean;
   createdAt: string;
 }

@@ -231,7 +231,7 @@ export function CourseStudentsPage() {
                         <TableHead className="w-12 text-center">#</TableHead>
                         <TableHead>الاسم</TableHead>
                         <TableHead>الرقم الأكاديمي</TableHead>
-                        <TableHead>المستوى</TableHead>
+                        <TableHead>الفرقه</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -252,7 +252,7 @@ export function CourseStudentsPage() {
                           </TableCell>
                           <TableCell>{student.studentId}</TableCell>
                           <TableCell>
-                            {student.academicInfo?.level || "-"}
+                            {student.academicInfo?.level ? `الفرقه ${student.academicInfo.level}` : "-"}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -285,29 +285,29 @@ export function CourseStudentsPage() {
           <DialogTrigger asChild>
             <Button variant="outline" className="gap-2">
               <Layers className="h-4 w-4" />
-              تسجيل حسب المستوى
+              تسجيل حسب الفرقه
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5" />
-                تسجيل جميع طلاب مستوى معين
+                تسجيل جميع طلاب فرقه معينه
               </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 pt-4">
               <Select value={selectedLevel} onValueChange={setSelectedLevel}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="اختر المستوى" />
+                  <SelectValue placeholder="اختر الفرقه" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">المستوى 1</SelectItem>
-                  <SelectItem value="2">المستوى 2</SelectItem>
-                  <SelectItem value="3">المستوى 3</SelectItem>
-                  <SelectItem value="4">المستوى 4</SelectItem>
-                  <SelectItem value="5">المستوى 5</SelectItem>
-                  <SelectItem value="6">المستوى 6</SelectItem>
+                  <SelectItem value="1">الفرقه 1</SelectItem>
+                  <SelectItem value="2">الفرقه 2</SelectItem>
+                  <SelectItem value="3">الفرقه 3</SelectItem>
+                  <SelectItem value="4">الفرقه 4</SelectItem>
+                  <SelectItem value="5">الفرقه 5</SelectItem>
+                  <SelectItem value="6">الفرقه 6</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -321,7 +321,7 @@ export function CourseStudentsPage() {
                 ) : (
                   <UserPlus className="h-4 w-4" />
                 )}
-                تسجيل جميع طلاب المستوى {selectedLevel || "..."}
+                تسجيل جميع طلاب الفرقه {selectedLevel || "..."}
               </Button>
             </div>
           </DialogContent>
@@ -352,7 +352,7 @@ export function CourseStudentsPage() {
                     <TableHead>الاسم</TableHead>
                     <TableHead>الرقم الأكاديمي</TableHead>
                     <TableHead>البريد الإلكتروني</TableHead>
-                    <TableHead>المستوى</TableHead>
+                    <TableHead>الفرقه</TableHead>
                     <TableHead className="text-center">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -363,7 +363,9 @@ export function CourseStudentsPage() {
                         {index + 1}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {getStudentName(student)}
+                        <Link to={`/students/${student._id}`} className="text-primary hover:underline">
+                          {getStudentName(student)}
+                        </Link>
                       </TableCell>
                       <TableCell>{student.studentId}</TableCell>
                       <TableCell className="text-muted-foreground">
@@ -371,7 +373,7 @@ export function CourseStudentsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          المستوى {student.academicInfo?.level || "-"}
+                          الفرقه {student.academicInfo?.level || "-"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">

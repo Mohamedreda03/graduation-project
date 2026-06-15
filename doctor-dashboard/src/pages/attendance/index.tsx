@@ -223,6 +223,7 @@ export function AttendancePage() {
           return new Date(sessions[0].checkIn).toLocaleTimeString("ar-EG", {
             hour: "2-digit",
             minute: "2-digit",
+            hour12: true,
           });
         }
         return "-";

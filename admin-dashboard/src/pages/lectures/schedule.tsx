@@ -43,7 +43,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCourses, useHalls, useDoctors } from "@/hooks";
+import { useCourses, useHalls, useDoctors, useCreateLecture, useWeekSchedule } from "@/hooks";
 import type { Hall } from "@/types";
 
 const dayNames = [
@@ -68,9 +68,12 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export function LectureSchedulePage() {
-  const { data: coursesData } = useCourses();
-  const { data: hallsData } = useHalls();
-  const { data: doctorsData } = useDoctors();
+  const { data: coursesData, isLoading: coursesLoading } = useCourses();
+  const { data: hallsData, isLoading: hallsLoading } = useHalls();
+  const { data: doctorsData, isLoading: doctorsLoading } = useDoctors();
+  const { data: scheduleData, isLoading: scheduleLoading } = useWeekSchedule();
+  const createMutation = useCreateLecture();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const form = useForm<FormValues>({
@@ -86,14 +89,54 @@ export function LectureSchedulePage() {
   });
 
   const onSubmit = async (values: FormValues) => {
-    console.log(values);
-    // TODO: Implement lecture creation
-    setIsDialogOpen(false);
-    form.reset();
+    try {
+      await createMutation.mutateAsync({
+        course: values.course,
+        hall: values.hall,
+        dayOfWeek: parseInt(values.dayOfWeek),
+        startTime: values.startTime,
+        endTime: values.endTime,
+        weekPattern: values.weekType === "all" ? "weekly" : values.weekType,
+      } as any);
+      setIsDialogOpen(false);
+      form.reset();
+    } catch (err) {
+      // Error is handled by mutation
+    }
   };
 
   const courses = coursesData?.data || [];
   const halls: Hall[] = hallsData || [];
+
+  // Convert "HH:mm" to 12-hour format "hh:mm AM/PM"
+  const formatTime12h = (timeStr: string) => {
+    if (!timeStr) return "";
+    const [hourStr, minuteStr] = timeStr.split(":");
+    let hour = parseInt(hourStr);
+    const minute = parseInt(minuteStr);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12;
+    hour = hour ? hour : 12;
+    const minuteStrFormatted = minute.toString().padStart(2, "0");
+    return `${hour}:${minuteStrFormatted} ${ampm}`;
+  };
+
+  const getLecturesForSlot = (dayValue: string, slotStart: string, slotEnd: string) => {
+    if (!scheduleData) return [];
+    const dayLectures = scheduleData[dayValue] || [];
+    return dayLectures.filter((lecture: any) => {
+      return lecture.startTime < slotEnd && lecture.endTime > slotStart;
+    });
+  };
+
+  const handleCellClick = (dayOfWeek: string, startTime: string, endTime: string) => {
+    form.setValue("dayOfWeek", dayOfWeek);
+    form.setValue("startTime", startTime);
+    form.setValue("endTime", endTime);
+    setIsDialogOpen(true);
+  };
+
+  const isLoading = coursesLoading || hallsLoading || doctorsLoading || scheduleLoading;
 
   // Generate time slots
   const timeSlots: { start: string; end: string }[] = [];
@@ -102,6 +145,16 @@ export function LectureSchedulePage() {
     const end = `${(hour + 1).toString().padStart(2, "0")}:00`;
     timeSlots.push({ start, end });
   }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const hasLectures = scheduleData && Object.values(scheduleData).some((dayLectures: any) => dayLectures.length > 0);
 
   return (
     <div className="space-y-6">
@@ -121,7 +174,7 @@ export function LectureSchedulePage() {
               إضافة محاضرة
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg text-right" dir="rtl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
@@ -149,7 +202,7 @@ export function LectureSchedulePage() {
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="اختر المادة" />
                           </SelectTrigger>
                         </FormControl>
@@ -178,7 +231,7 @@ export function LectureSchedulePage() {
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="اختر القاعة" />
                           </SelectTrigger>
                         </FormControl>
@@ -207,7 +260,7 @@ export function LectureSchedulePage() {
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="اختر اليوم" />
                           </SelectTrigger>
                         </FormControl>
@@ -266,7 +319,7 @@ export function LectureSchedulePage() {
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -392,22 +445,57 @@ export function LectureSchedulePage() {
                       dir="ltr"
                     >
                       <div className="flex flex-col items-center">
-                        <span className="font-medium">{slot.start}</span>
+                        <span className="font-medium">{formatTime12h(slot.start)}</span>
                         <span className="text-xs text-muted-foreground">
-                          {slot.end}
+                          {formatTime12h(slot.end)}
                         </span>
                       </div>
                     </td>
-                    {dayNames.slice(0, 6).map((day) => (
-                      <td
-                        key={day.value}
-                        className="p-2 border-r min-h-12 align-top hover:bg-muted/50 cursor-pointer"
-                      >
-                        <div className="min-h-12 rounded border border-dashed border-muted-foreground/20 flex items-center justify-center">
-                          <Plus className="h-4 w-4 text-muted-foreground/30" />
-                        </div>
-                      </td>
-                    ))}
+                    {dayNames.slice(0, 6).map((day) => {
+                      const slotLectures = getLecturesForSlot(day.value, slot.start, slot.end);
+                      
+                      return (
+                        <td
+                          key={day.value}
+                          className="p-2 border-r min-h-12 align-top hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => {
+                            if (slotLectures.length === 0) {
+                              handleCellClick(day.value, slot.start, slot.end);
+                            }
+                          }}
+                        >
+                          {slotLectures.map((lecture: any) => (
+                            <div
+                              key={lecture._id}
+                              className="bg-primary/10 border-r-4 border-primary text-primary p-2 rounded-xl text-xs space-y-1 font-medium hover:bg-primary/20 transition-all duration-300 shadow-sm mb-1"
+                            >
+                              <div className="font-bold text-[12px] truncate">
+                                {lecture.course?.name || "مادة غير معروفة"}
+                              </div>
+                              <div className="text-muted-foreground font-mono text-[10px] flex items-center gap-1">
+                                <BookOpen className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{lecture.course?.code}</span>
+                              </div>
+                              <div className="text-muted-foreground font-medium text-[10px] flex items-center gap-1">
+                                <MapPin className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{lecture.hall?.name || "غير محدد"}</span>
+                              </div>
+                              <div className="text-muted-foreground font-mono text-[10px] flex items-center gap-1">
+                                <Clock className="h-3 w-3 shrink-0" />
+                                <span>
+                                  {formatTime12h(lecture.startTime)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                          {slotLectures.length === 0 && (
+                            <div className="min-h-12 rounded-xl border border-dashed border-muted-foreground/20 flex items-center justify-center hover:border-primary/50 transition-all duration-300 group">
+                              <Plus className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-all duration-300" />
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
@@ -416,18 +504,20 @@ export function LectureSchedulePage() {
         </CardContent>
 
         {/* Empty State */}
-        <CardContent className="text-center py-8 border-t">
-          <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">ابدأ بإضافة المحاضرات</h3>
-          <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-            اضغط على "إضافة محاضرة" أو انقر على أي خلية في الجدول لبدء جدولة
-            المحاضرات
-          </p>
-          <Button onClick={() => setIsDialogOpen(true)}>
-            <Plus className="h-4 w-4 ml-2" />
-            إضافة محاضرة الآن
-          </Button>
-        </CardContent>
+        {!hasLectures && (
+          <CardContent className="text-center py-12 border-t">
+            <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+            <h3 className="text-lg font-medium mb-2 font-bold">ابدأ بإضافة المحاضرات</h3>
+            <p className="text-muted-foreground mb-4 max-w-md mx-auto text-sm">
+              اضغط على "إضافة محاضرة" أو انقر على أي خلية في الجدول لبدء جدولة
+              المحاضرات
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)} className="rounded-xl">
+              <Plus className="h-4 w-4 ml-2" />
+              إضافة محاضرة الآن
+            </Button>
+          </CardContent>
+        )}
       </Card>
     </div>
   );

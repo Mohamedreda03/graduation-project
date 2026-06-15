@@ -9,12 +9,23 @@ import type {
 
 export const authService = {
   login: async (data: LoginRequest): Promise<LoginResponse> => {
-    // Use web login endpoint for admin dashboard
-    const response = await api.post<ApiResponse<LoginResponse>>(
-      "/auth/web/login",
-      data,
-    );
-    return response.data.data;
+    try {
+      // Use web login endpoint for admin dashboard
+      const response = await api.post<ApiResponse<LoginResponse>>(
+        "/auth/web/login",
+        data,
+      );
+      return response.data.data;
+    } catch (error: any) {
+      const backendMessage = error.response?.data?.message || error.response?.data?.error;
+      if (backendMessage) {
+        throw new Error(backendMessage);
+      }
+      if (error.message === "Network Error") {
+        throw new Error("تعذر الاتصال بالسيرفر. يرجى التحقق من اتصالك بالإنترنت أو تشغيل السيرفر الخلفي.");
+      }
+      throw error;
+    }
   },
 
   logout: async (): Promise<void> => {

@@ -106,7 +106,7 @@ export function MyCoursesPage() {
                     </p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                    المستوى {course.level}
+                    الفرقه {course.level}
                   </span>
                 </div>
               </CardHeader>

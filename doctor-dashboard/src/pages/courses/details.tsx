@@ -63,8 +63,8 @@ export function CourseDetailsPage() {
     },
     {
       accessorKey: "academicInfo.level",
-      header: "المستوى",
-      cell: ({ row }) => row.original.academicInfo?.level || "-",
+      header: "الفرقه",
+      cell: ({ row }) => row.original.academicInfo?.level ? `الفرقه ${row.original.academicInfo.level}` : "-",
     },
     {
       id: "actions",
@@ -171,12 +171,12 @@ export function CourseDetailsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المستوى</CardTitle>
+            <CardTitle className="text-sm font-medium">الفرقه</CardTitle>
             <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{course.level}</div>
-            <p className="text-xs text-muted-foreground">المستوى الدراسي</p>
+            <p className="text-xs text-muted-foreground">الفرقه الدراسية</p>
           </CardContent>
         </Card>
 

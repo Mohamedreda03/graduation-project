@@ -7,6 +7,7 @@ import {
   Trash2,
   Users,
   Calendar,
+  BookOpen,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -36,12 +37,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTable } from "@/components/data-table";
-import { useCourses, useDeleteCourse, useDepartments } from "@/hooks";
+import { useCourses, useDeleteCourse, useDepartments, useDoctor } from "@/hooks";
 import type { Course, Department } from "@/types";
 
 export function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const departmentFilter = searchParams.get("department") || "";
+  const doctorFilter = searchParams.get("doctor") || "";
+  const { data: doctorData } = useDoctor(doctorFilter);
   const levelFilter = searchParams.get("level") || "";
   const searchQuery = searchParams.get("q") || "";
   const page = parseInt(searchParams.get("page") || "1");
@@ -108,6 +111,7 @@ export function CoursesPage() {
       departmentFilter && departmentFilter !== "all"
         ? departmentFilter
         : undefined,
+    doctor: doctorFilter || undefined,
     level:
       levelFilter && levelFilter !== "all" ? parseInt(levelFilter) : undefined,
     page,
@@ -136,7 +140,7 @@ export function CoursesPage() {
     },
     {
       accessorKey: "department",
-      header: "القسم",
+      header: "الكلية",
       cell: ({ row }) => {
         const dept = row.original.department;
         return dept && typeof dept === "object"
@@ -146,7 +150,7 @@ export function CoursesPage() {
     },
     {
       accessorKey: "doctor",
-      header: "الأستاذ",
+      header: "الدكتور",
       cell: ({ row }) => {
         const doctor = row.original.doctor;
         if (doctor && typeof doctor === "object") {
@@ -162,9 +166,9 @@ export function CoursesPage() {
     },
     {
       accessorKey: "level",
-      header: "المستوى",
+      header: "الفرقه",
       cell: ({ row }) => (
-        <Badge variant="outline">المستوى {row.original.level}</Badge>
+        <Badge variant="outline">الفرقه {row.original.level}</Badge>
       ),
     },
     {
@@ -203,7 +207,7 @@ export function CoursesPage() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to={`/courses/${course._id}/lectures`}>
+                <Link to={`/lectures?course=${course._id}`}>
                   <Calendar className="ml-2 h-4 w-4" />
                   المحاضرات
                 </Link>
@@ -246,10 +250,10 @@ export function CoursesPage() {
       <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-2xl border shadow-sm">
         <Select dir="rtl" value={departmentFilter} onValueChange={setDepartmentFilter}>
           <SelectTrigger className="w-[180px] rounded-xl border-muted bg-background">
-            <SelectValue placeholder="جميع الأقسام" />
+            <SelectValue placeholder="جميع الكليات" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الأقسام</SelectItem>
+            <SelectItem value="all">جميع الكليات</SelectItem>
             {departmentsData?.map((dept: Department) => (
               <SelectItem key={dept._id} value={dept._id}>
                 {dept.name}
@@ -260,17 +264,39 @@ export function CoursesPage() {
 
         <Select dir="rtl" value={levelFilter} onValueChange={setLevelFilter}>
           <SelectTrigger className="w-[180px] rounded-xl border-muted bg-background">
-            <SelectValue placeholder="جميع المستويات" />
+            <SelectValue placeholder="جميع الفرق" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع المستويات</SelectItem>
-            <SelectItem value="1">المستوى 1</SelectItem>
-            <SelectItem value="2">المستوى 2</SelectItem>
-            <SelectItem value="3">المستوى 3</SelectItem>
-            <SelectItem value="4">المستوى 4</SelectItem>
+            <SelectItem value="all">جميع الفرق</SelectItem>
+            <SelectItem value="1">الفرقه 1</SelectItem>
+            <SelectItem value="2">الفرقه 2</SelectItem>
+            <SelectItem value="3">الفرقه 3</SelectItem>
+            <SelectItem value="4">الفرقه 4</SelectItem>
           </SelectContent>
         </Select>
       </div>
+
+
+
+      {/* Doctor filter banner */}
+      {doctorFilter && (
+        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 text-primary px-4 py-2.5 rounded-xl text-sm font-medium">
+          <BookOpen className="h-4 w-4 shrink-0" />
+          <span>
+            مقررات الدكتور:{" "}
+            {doctorData?.fullName ||
+              (doctorData?.name && typeof doctorData.name === "object"
+                ? `${doctorData.name.first} ${doctorData.name.last}`
+                : (doctorData?.name as string) || "")}
+          </span>
+          <Link
+            to="/courses"
+            className="mr-auto text-xs underline underline-offset-2 hover:text-primary/70 transition-colors"
+          >
+            إظهار جميع المقررات
+          </Link>
+        </div>
+      )}
 
       {/* Data Table */}
       <DataTable

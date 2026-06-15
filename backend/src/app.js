@@ -18,11 +18,13 @@ app.use(
     origin: [
       "http://localhost:5173", // Admin dashboard dev
       "http://localhost:5174", // Doctor dashboard dev
+      "http://localhost:4173", // Admin dashboard preview
+      "http://localhost:4174", // Doctor dashboard preview
       "http://localhost:3000", // React alternative
       process.env.ADMIN_DASHBOARD_URL, // Production admin
       process.env.DOCTOR_DASHBOARD_URL, // Production doctor
     ].filter(Boolean),
-    credentials: true, // Ù…Ù‡Ù… Ù„Ù„Ù€ cookies
+    credentials: true, // مهم للـ cookies
   }),
 );
 

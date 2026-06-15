@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { BarChart3, Users, AlertTriangle, CheckCircle } from "lucide-react";
@@ -48,6 +48,13 @@ export function AttendanceReportsPage() {
 
   const myCourses: Course[] = coursesData?.data || [];
 
+  // Auto-select the first course if available
+  useEffect(() => {
+    if (myCourses.length > 0 && !selectedCourse) {
+      setSelectedCourse(myCourses[0]._id);
+    }
+  }, [myCourses, selectedCourse]);
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -66,7 +73,7 @@ export function AttendanceReportsPage() {
       attendanceService.getAtRiskStudents(selectedCourse || undefined),
   });
 
-  const students: StudentReport[] = reportData?.students || [];
+  const students: StudentReport[] = reportData?.data || reportData?.students || [];
   const pagination = reportData?.pagination || { total: 0, pages: 0 };
   const atRiskCount = atRiskData?.length || 0;
 

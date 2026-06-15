@@ -56,9 +56,14 @@ export function AtRiskStudentsPage() {
       header: "اسم الطالب",
       cell: ({ row }) => {
         const student = row.original.student;
-        return typeof student.name === "object"
+        const nameStr = typeof student.name === "object"
           ? `${student.name.first} ${student.name.last}`
           : student.name;
+        return (
+          <Link to={`/students/${student._id}`} className="text-primary hover:underline font-semibold">
+            {nameStr}
+          </Link>
+        );
       },
     },
     {

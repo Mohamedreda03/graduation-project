@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { lecturesService } from "@/services/lectures.service";
 import { useAuth } from "@/contexts/auth-context";
 import type { Lecture } from "@/types";
+import { formatTime12h } from "@/lib/utils";
 
 const DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
@@ -178,8 +179,10 @@ export function TodaySchedulePage() {
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">
-                      {lecture.startTime} - {lecture.endTime}
+                    <span className="font-medium flex items-center gap-1" dir="ltr">
+                      <span dir="rtl">{formatTime12h(lecture.startTime)}</span>
+                      <span>-</span>
+                      <span dir="rtl">{formatTime12h(lecture.endTime)}</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
@@ -202,7 +205,7 @@ export function TodaySchedulePage() {
                     </span>
                   </div>
 
-                  {status === "current" && (
+                  {(status === "current" || lecture.status === "in-progress") && (
                     <div className="pt-2">
                       <Button className="w-full gap-2" variant="outline" asChild>
                         <Link to={`/attendance/live/${typeof lecture.hall === "string" ? lecture.hall : lecture.hall?._id}`}>

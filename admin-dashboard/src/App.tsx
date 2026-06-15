@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { AuthProvider } from "@/contexts/auth-context";
@@ -20,6 +20,7 @@ import { StudentsPage } from "@/pages/students";
 import { StudentFormPage } from "@/pages/students/form";
 import { ImportStudentsPage } from "@/pages/students/import";
 import { DeviceRequestsPage } from "@/pages/students/device-requests";
+import { StudentDetailsPage } from "@/pages/students/details";
 import { DoctorsPage } from "@/pages/doctors";
 import { DoctorFormPage } from "@/pages/doctors/form";
 import { CoursesPage } from "@/pages/courses";
@@ -97,6 +98,10 @@ function App() {
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/students/new" element={<StudentFormPage />} />
                   <Route
+                    path="/students/:id"
+                    element={<StudentDetailsPage />}
+                  />
+                  <Route
                     path="/students/:id/edit"
                     element={<StudentFormPage />}
                   />
@@ -170,7 +175,7 @@ function App() {
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-              <Toaster position="top-center" richColors />
+              <Toaster position="top-right" />
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>

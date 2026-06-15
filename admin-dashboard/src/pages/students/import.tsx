@@ -330,7 +330,7 @@ export function ImportStudentsPage() {
                         الرقم
                       </th>
                       <th className="p-4 text-right font-bold text-sm">
-                        المستوى
+                        الفرقه
                       </th>
                     </tr>
                   </thead>
@@ -349,7 +349,7 @@ export function ImportStudentsPage() {
                         </td>
                         <td className="p-4">
                           <span className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-sm font-medium">
-                            {student.academicInfo.level}
+                            الفرقه {student.academicInfo.level}
                           </span>
                         </td>
                       </tr>
@@ -454,7 +454,7 @@ export function ImportStudentsPage() {
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               تأكد من أن ملف CSV يحتوي على الأعمدة التالية: name, email,
-              studentId, level (اختياري)
+              studentId, level (الفرقه - اختياري)
             </p>
           </div>
         </div>

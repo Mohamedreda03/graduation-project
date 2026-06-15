@@ -131,11 +131,17 @@ export function AttendancePage() {
       header: "الطالب",
       cell: ({ row }) => {
         const student = row.original.student;
-        return typeof student === "object"
-          ? typeof student.name === "object"
+        if (typeof student === "object") {
+          const nameStr = typeof student.name === "object"
             ? `${student.name.first} ${student.name.last}`
-            : student.name
-          : "غير معروف";
+            : student.name || "غير معروف";
+          return (
+            <Link to={`/students/${student._id}`} className="text-primary hover:underline font-semibold">
+              {nameStr}
+            </Link>
+          );
+        }
+        return "غير معروف";
       },
     },
     {
@@ -188,6 +194,7 @@ export function AttendancePage() {
           return new Date(sessions[0].checkIn).toLocaleTimeString("ar-EG", {
             hour: "2-digit",
             minute: "2-digit",
+            hour12: true,
           });
         }
         return "-";

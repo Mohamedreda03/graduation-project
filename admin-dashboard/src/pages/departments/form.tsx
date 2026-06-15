@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -11,6 +11,8 @@ import {
   GraduationCap,
   Save,
   ArrowRight,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,13 +33,22 @@ import {
 } from "@/hooks";
 
 const formSchema = z.object({
-  name: z.string().min(2, "اسم القسم يجب أن يكون حرفين على الأقل"),
+  name: z.string().min(2, "اسم الكلية يجب أن يكون حرفين على الأقل"),
   code: z
     .string()
-    .min(2, "رمز القسم يجب أن يكون حرفين على الأقل")
-    .max(10, "رمز القسم لا يجب أن يتجاوز 10 أحرف"),
+    .min(2, "رمز الكلية يجب أن يكون حرفين على الأقل")
+    .max(10, "رمز الكلية لا يجب أن يتجاوز 10 أحرف"),
   faculty: z.string().min(2, "اسم الكلية مطلوب"),
   description: z.string().optional(),
+  specializations: z
+    .array(
+      z.object({
+        _id: z.string().optional(),
+        name: z.string().min(2, "اسم التخصص يجب أن يكون حرفين على الأقل"),
+        code: z.string().optional(),
+      })
+    )
+    .default([]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -54,13 +65,19 @@ export function DepartmentFormPage() {
   const updateMutation = useUpdateDepartment();
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       name: "",
       code: "",
       faculty: "",
       description: "",
+      specializations: [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "specializations",
   });
 
   useEffect(() => {
@@ -70,6 +87,7 @@ export function DepartmentFormPage() {
         code: department.code,
         faculty: department.faculty || "",
         description: department.description || "",
+        specializations: department.specializations || [],
       });
     }
   }, [department, form]);
@@ -107,12 +125,12 @@ export function DepartmentFormPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black tracking-tight text-foreground">
-              {isEditing ? "تعديل القسم" : "إضافة قسم جديد"}
+              {isEditing ? "تعديل كلية" : "إضافة كلية جديدة"}
             </h1>
             <p className="text-muted-foreground">
               {isEditing
-                ? "تعديل تفاصيل القسم الحالي"
-                : "أدخل المعلومات الأساسية لتعريف القسم الجديد"}
+                ? "تعديل تفاصيل الكلية الحالية"
+                : "أدخل المعلومات الأساسية لتعريف الكلية الجديدة"}
             </p>
           </div>
         </div>
@@ -125,7 +143,7 @@ export function DepartmentFormPage() {
           <div className="p-5 sm:p-6 border-b border-border/50 bg-muted/30">
             <h2 className="text-lg font-bold flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              بيانات القسم
+              بيانات الكلية
             </h2>
           </div>
           <div className="p-5 sm:p-6">
@@ -142,13 +160,13 @@ export function DepartmentFormPage() {
                       <FormItem className="space-y-3">
                         <FormLabel className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-primary" />
-                          اسم القسم
+                          اسم الكلية
                         </FormLabel>
                         <FormControl>
                           <Input placeholder="مثال: علوم الحاسب" {...field} />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          الاسم الرسمي الكامل للقسم الدراسي
+                          الاسم الرسمي الكامل للكلية
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -162,13 +180,13 @@ export function DepartmentFormPage() {
                       <FormItem className="space-y-3">
                         <FormLabel className="flex items-center gap-2">
                           <Hash className="h-4 w-4 text-primary" />
-                          رمز القسم
+                          رمز الكلية
                         </FormLabel>
                         <FormControl>
                           <Input placeholder="مثال: CS" {...field} dir="ltr" />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          رمز مختصر (مثلاً CS, IT, IS)
+                          رمز مختصر (مثلاً CS, IT, IS) للكلية
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -192,32 +210,84 @@ export function DepartmentFormPage() {
                         />
                       </FormControl>
                       <FormDescription className="text-xs">
-                        الكلية التابع لها هذا القسم
+                        الأقسام التابعة للكلية
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        الوصف التعريفي (اختياري)
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="اكتب نبذة مختصرة عن مهام هذا القسم..."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                {/* Specializations Section */}
+                <div className="space-y-4 pt-6 border-t border-border/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold">الأقسام التابعة للكلية</h3>
+                      <p className="text-sm text-muted-foreground">أضف أقسام فرعية للكلية لتتمكن من اختيارها للطلاب والمقررات</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => append({ name: "", code: "" })}
+                      className="gap-2 rounded-xl"
+                    >
+                      <Plus className="h-4 w-4" />
+                      إضافة كلية
+                    </Button>
+                  </div>
+
+                  {fields.length === 0 ? (
+                    <div className="text-center py-6 border border-dashed border-border rounded-2xl bg-muted/20 text-muted-foreground text-sm">
+                      لا توجد كليات مضافة بعد. اضغط على "إضافة كلية" للبدء.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {fields.map((field, index) => (
+                        <div key={field.id} className="flex items-start gap-4 p-4 rounded-2xl bg-muted/30 border border-border/50">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                            <FormField
+                              control={form.control}
+                              name={`specializations.${index}.name`}
+                              render={({ field: inputField }) => (
+                                <FormItem className="space-y-2">
+                                  <FormLabel className="text-xs">اسم التخصص</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="مثال: هندسة الاتصالات" {...inputField} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name={`specializations.${index}.code`}
+                              render={({ field: inputField }) => (
+                                <FormItem className="space-y-2">
+                                  <FormLabel className="text-xs">رمز التخصص (اختياري)</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="مثال: CCE" {...inputField} dir="ltr" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => remove(index)}
+                            className="mt-8 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl animate-none shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                />
+                </div>
 
                 <div className="flex items-center gap-4 pt-6 border-t border-border/50">
                   <Button
@@ -230,7 +300,7 @@ export function DepartmentFormPage() {
                     ) : (
                       <Save className="h-5 w-5" />
                     )}
-                    {isEditing ? "تحديث البيانات" : "إضافة القسم الآن"}
+                    {isEditing ? "تحديث البيانات" : "إضافة الكلية الآن"}
                   </Button>
                   <Button
                     type="button"
@@ -260,7 +330,7 @@ export function DepartmentFormPage() {
                   <Building2 className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">اسم القسم</p>
+                  <p className="font-medium text-foreground">اسم الكلية</p>
                   <p>استخدم الاسم الرسمي المعتمد</p>
                 </div>
               </div>
@@ -269,8 +339,8 @@ export function DepartmentFormPage() {
                   <Hash className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">رمز القسم</p>
-                  <p>رمز فريد مختصر للقسم</p>
+                  <p className="font-medium text-foreground">رمز الكلية</p>
+                  <p>رمز فريد مختصر للكلية</p>
                 </div>
               </div>
             </div>
@@ -280,7 +350,7 @@ export function DepartmentFormPage() {
           <div className="bg-muted/30 rounded-3xl border border-border/50 p-5">
             <h3 className="font-bold text-primary mb-2">💡 نصيحة</h3>
             <p className="text-sm text-muted-foreground">
-              تأكد من استخدام رمز فريد لكل قسم لتسهيل عملية البحث والتصنيف
+              تأكد من استخدام رمز فريد لكل كلية لتسهيل عملية البحث والتصنيف
             </p>
           </div>
         </div>

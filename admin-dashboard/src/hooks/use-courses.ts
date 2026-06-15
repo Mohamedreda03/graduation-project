@@ -70,10 +70,10 @@ export function useCreateCourse() {
     mutationFn: coursesService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: courseKeys.all });
-      toast.success("Course added successfully");
+      toast.success("تم إضافة الدورة بنجاح");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error adding course");
+      toast.error(error.message || "خطأ في إضافة الدورة");
     },
   });
 }
@@ -91,10 +91,10 @@ export function useUpdateCourse() {
     }) => coursesService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: courseKeys.all });
-      toast.success("Course updated successfully");
+      toast.success("تم تعديل الدورة بنجاح");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error updating course");
+      toast.error(error.message || "خطأ في تعديل الدورة");
     },
   });
 }
@@ -106,10 +106,10 @@ export function useDeleteCourse() {
     mutationFn: coursesService.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: courseKeys.all });
-      toast.success("Course deleted successfully");
+      toast.success("تم حذف الدورة بنجاح");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error deleting course");
+      toast.error(error.message || "خطأ في حذف الدورة");
     },
   });
 }
@@ -122,10 +122,10 @@ export function useEnrollStudents() {
       coursesService.enrollStudents(id, studentIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: courseKeys.all });
-      toast.success("Students enrolled successfully");
+      toast.success("تم تسجيل الطلاب بنجاح");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error enrolling students");
+      toast.error(error.message || "خطأ في تسجيل الطلاب");
     },
   });
 }
@@ -138,10 +138,10 @@ export function useUnenrollStudents() {
       coursesService.unenrollStudents(id, studentIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: courseKeys.all });
-      toast.success("Students unenrolled successfully");
+      toast.success("تم إلغاء تسجيل الطلاب بنجاح");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error unenrolling students");
+      toast.error(error.message || "خطأ في إلغاء تسجيل الطلاب");
     },
   });
 }
@@ -154,10 +154,10 @@ export function useEnrollByLevel() {
       coursesService.enrollByLevel(id, level),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: courseKeys.all });
-      toast.success(`${data.enrolled} students enrolled successfully`);
+      toast.success(`تم تسجيل ${data.enrolled} طالبًا بنجاح`);
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error enrolling students");
+      toast.error(error.message || "خطأ في تسجيل الطلاب");
     },
   });
 }

@@ -156,7 +156,7 @@ export function DoctorsPage() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to={`/doctors/${doctor._id}/courses`}>
+                <Link to={`/courses?doctor=${doctor._id}`}>
                   <BookOpen className="ml-2 h-4 w-4" />
                   المقررات
                 </Link>
@@ -181,7 +181,7 @@ export function DoctorsPage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-primary">
-            الأطباء
+            الدكاترة
           </h1>
           <p className="text-muted-foreground font-medium">
             إدارة بيانات أعضاء هيئة التدريس والمقررات الخاصة بهم

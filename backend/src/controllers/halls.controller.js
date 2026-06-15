@@ -39,8 +39,8 @@ exports.getHall = catchAsync(async (req, res, next) => {
  * POST /api/halls
  */
 exports.createHall = catchAsync(async (req, res, next) => {
-  // Generate API key for this hall's access point
-  const apiKey = crypto.randomBytes(32).toString("hex");
+  // Use provided API key or generate one
+  const apiKey = req.body.accessPoint?.apiKey || crypto.randomBytes(32).toString("hex");
 
   const hallData = {
     ...req.body,
@@ -103,7 +103,7 @@ exports.deleteHall = catchAsync(async (req, res, next) => {
  * PUT /api/halls/:id/access-point
  */
 exports.updateAccessPoint = catchAsync(async (req, res, next) => {
-  const { ssid, ipRange, apIdentifier, regenerateKey } = req.body;
+  const { ssid, ipRange, apIdentifier, apiKey, regenerateKey } = req.body;
 
   const hall = await Hall.findById(req.params.id);
 
@@ -111,9 +111,10 @@ exports.updateAccessPoint = catchAsync(async (req, res, next) => {
     throw ApiError.notFound("Hall not found");
   }
 
-  if (ssid) hall.accessPoint.ssid = ssid;
-  if (ipRange) hall.accessPoint.ipRange = ipRange;
-  if (apIdentifier) hall.accessPoint.apIdentifier = apIdentifier;
+  if (ssid !== undefined) hall.accessPoint.ssid = ssid;
+  if (ipRange !== undefined) hall.accessPoint.ipRange = ipRange;
+  if (apIdentifier !== undefined) hall.accessPoint.apIdentifier = apIdentifier;
+  if (apiKey !== undefined && apiKey.trim() !== '') hall.accessPoint.apiKey = apiKey;
 
   if (regenerateKey) {
     hall.accessPoint.apiKey = crypto.randomBytes(32).toString("hex");

@@ -224,6 +224,7 @@ const AIChatPageContent: React.FC = () => {
                     {msg.timestamp.toLocaleTimeString("ar-EG", {
                       hour: "2-digit",
                       minute: "2-digit",
+                      hour12: true,
                     })}
                   </div>
                   {msg.role === "assistant" && (

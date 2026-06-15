@@ -3,6 +3,7 @@ import { Calendar, Clock, MapPin, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { lecturesService, type WeekSchedule } from "@/services/lectures.service";
 import type { Lecture } from "@/types";
+import { formatTime12h } from "@/lib/utils";
 
 const DAYS = [
   { id: 0, name: "الأحد", short: "أحد" },
@@ -42,8 +43,10 @@ function LectureCard({ lecture }: { lecture: Lecture }) {
     >
       <div className="flex items-center gap-2 mb-2">
         <Clock className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-semibold">
-          {lecture.startTime} - {lecture.endTime}
+        <span className="text-sm font-semibold flex items-center gap-1" dir="ltr">
+          <span dir="rtl">{formatTime12h(lecture.startTime)}</span>
+          <span>-</span>
+          <span dir="rtl">{formatTime12h(lecture.endTime)}</span>
         </span>
       </div>
       <h4 className="font-semibold text-sm">{courseName}</h4>

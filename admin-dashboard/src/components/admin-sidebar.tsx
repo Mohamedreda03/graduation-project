@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -36,16 +36,16 @@ const navMainItems = [
     isActive: true,
   },
   {
-    title: "الأقسام",
+    title: "الكليات",
     url: "/departments",
     icon: Building2,
     items: [
       {
-        title: "جميع الأقسام",
+        title: "جميع الكليات",
         url: "/departments",
       },
       {
-        title: "إضافة قسم",
+        title: "إضافة كلية",
         url: "/departments/new",
       },
     ],
@@ -154,10 +154,10 @@ const navMainItems = [
         title: "🔴 مباشر",
         url: "/attendance/live",
       },
-      {
-        title: "التقارير",
-        url: "/attendance/reports",
-      },
+      // {
+      //   title: "التقارير",
+      //   url: "/attendance/reports",
+      // },
       {
         title: "طلاب متعثرون",
         url: "/attendance/at-risk",

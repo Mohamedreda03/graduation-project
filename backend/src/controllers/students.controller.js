@@ -252,7 +252,11 @@ exports.getStudentAttendanceSummary = catchAsync(async (req, res, next) => {
         id: course._id,
         name: course.name,
         code: course.code,
-        doctor: course.doctor?.name,
+        doctor: course.doctor
+          ? typeof course.doctor.name === "object"
+            ? `${course.doctor.name.first} ${course.doctor.name.last}`
+            : course.doctor.name || course.doctor.fullName
+          : undefined,
       },
       totalLectures: totalRecords,
       attendedLectures: presentRecords,

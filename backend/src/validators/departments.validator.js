@@ -8,6 +8,13 @@ const createDepartment = {
     faculty: Joi.string().required().trim(),
     description: Joi.string().max(1000).trim(),
     headOfDepartment: Joi.string().hex().length(24),
+    specializations: Joi.array().items(
+      Joi.object({
+        _id: Joi.string().hex().length(24).optional(),
+        name: Joi.string().required().trim(),
+        code: Joi.string().optional().allow("").trim().uppercase(),
+      })
+    ).default([]),
   }),
 };
 
@@ -23,6 +30,13 @@ const updateDepartment = {
     description: Joi.string().max(1000).trim(),
     headOfDepartment: Joi.string().hex().length(24).allow(null),
     isActive: Joi.boolean(),
+    specializations: Joi.array().items(
+      Joi.object({
+        _id: Joi.string().hex().length(24).optional(),
+        name: Joi.string().required().trim(),
+        code: Joi.string().optional().allow("").trim().uppercase(),
+      })
+    ),
   }),
 };
 

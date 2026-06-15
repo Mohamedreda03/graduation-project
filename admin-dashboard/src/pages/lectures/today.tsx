@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table";
 import { useTodayLectures, useStartLecture, useEndLecture } from "@/hooks";
+import { formatTime12h } from "@/lib/utils";
 import type { Lecture } from "@/types";
 
 const statusMap: Record<
@@ -91,8 +92,10 @@ export function TodayLecturesPage() {
       cell: ({ row }) => (
         <div className="flex items-center gap-2 text-sm">
           <Clock className="h-4 w-4 text-muted-foreground" />
-          <span dir="ltr">
-            {row.original.startTime} - {row.original.endTime}
+          <span dir="ltr" className="flex items-center gap-1">
+            <span dir="rtl">{formatTime12h(row.original.startTime)}</span>
+            <span>-</span>
+            <span dir="rtl">{formatTime12h(row.original.endTime)}</span>
           </span>
         </div>
       ),
@@ -278,7 +281,7 @@ export function TodayLecturesPage() {
           </CardTitle>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>{format(new Date(), "HH:mm", { locale: ar })}</span>
+            <span>{format(new Date(), "hh:mm a", { locale: ar })}</span>
           </div>
         </CardHeader>
 

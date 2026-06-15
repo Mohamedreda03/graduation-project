@@ -24,12 +24,12 @@ AP_IDENTIFIER = "AP_101"
 # Network settings
 SUBNET = "192.168.137."      # Hotspot IP Range (Windows default)
 THREAD_COUNT = 50
-MAX_MISSED_PINGS = 3
-SCAN_INTERVAL = 2
+MAX_MISSED_PINGS = 30
+SCAN_INTERVAL = 4
 
 # Server settings
 BACKEND_URL = "http://localhost:5000/api"
-AP_API_KEY = "your_access_point_api_key_change_this"
+AP_API_KEY = "MySuperSecretKey2024"
 HEARTBEAT_INTERVAL = 60
 # ===================================================
 

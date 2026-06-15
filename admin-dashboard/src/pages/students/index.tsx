@@ -148,10 +148,10 @@ export function StudentsPage() {
     },
     {
       accessorKey: "academicInfo.level",
-      header: "المستوى",
+      header: "الفرقه",
       cell: ({ row }) => (
         <Badge variant="outline">
-          المستوى {row.original.academicInfo?.level || "-"}
+          الفرقه {row.original.academicInfo?.level || "-"}
         </Badge>
       ),
     },
@@ -261,7 +261,7 @@ export function StudentsPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  المستوى {level}
+                  الفرقه {level}
                 </p>
                 <h3 className="text-2xl font-black">
                   {statsData?.levels[level] || 0}
@@ -296,14 +296,14 @@ export function StudentsPage() {
 
           <Select dir="rtl" value={levelFilter} onValueChange={setLevelFilter}>
             <SelectTrigger className="w-[180px] rounded-xl border-muted bg-background">
-              <SelectValue placeholder="جميع المستويات" />
+              <SelectValue placeholder="جميع الفرق" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">جميع المستويات</SelectItem>
-              <SelectItem value="1">المستوى 1</SelectItem>
-              <SelectItem value="2">المستوى 2</SelectItem>
-              <SelectItem value="3">المستوى 3</SelectItem>
-              <SelectItem value="4">المستوى 4</SelectItem>
+              <SelectItem value="all">جميع الفرق</SelectItem>
+              <SelectItem value="1">الفرقه 1</SelectItem>
+              <SelectItem value="2">الفرقه 2</SelectItem>
+              <SelectItem value="3">الفرقه 3</SelectItem>
+              <SelectItem value="4">الفرقه 4</SelectItem>
             </SelectContent>
           </Select>
 
