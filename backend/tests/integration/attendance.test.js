@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../../src/app');
-const { User, Department, Course, Hall, Lecture, AttendanceRecord, StudentSession } = require('../../src/models');
+const { User, Specialization, Course, Hall, Lecture, AttendanceRecord, StudentSession } = require('../../src/models');
 const { ROLES, CONNECTION_EVENTS, ATTENDANCE_STATUS } = require('../../src/config/constants');
 const jwt = require('jsonwebtoken');
 const config = require('../../src/config/env');
@@ -11,7 +11,7 @@ describe('Attendance API Integration Tests', () => {
   let doctorToken;
   let studentUser;
   let doctorUser;
-  let department;
+  let specialization;
   let hall;
   let course;
   let lecture;
@@ -35,8 +35,8 @@ describe('Attendance API Integration Tests', () => {
     });
     doctorToken = jwt.sign({ id: doctorUser._id }, config.jwt.secret, { expiresIn: '1h' });
 
-    // Setup Department
-    department = await Department.create({ name: 'CS', code: 'CS', faculty: 'Eng' });
+    // Setup Specialization
+    specialization = await Specialization.create({ name: 'CS', code: 'CS', faculty: 'Eng' });
 
     // Setup Student
     studentUser = await User.create({
@@ -63,7 +63,7 @@ describe('Attendance API Integration Tests', () => {
     course = await Course.create({
       name: 'Networking',
       code: 'CS401',
-      department: department._id,
+      specialization: specialization._id,
       doctor: doctorUser._id,
       level: 4,
       semester: 'Spring 2026',

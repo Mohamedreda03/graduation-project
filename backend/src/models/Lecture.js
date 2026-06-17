@@ -24,6 +24,10 @@ const lectureSchema = new mongoose.Schema(
       enum: ["lecture", "section", "lab"],
       default: "lecture",
     },
+    section: {
+      type: String,
+      default: "all",
+    },
     status: {
       type: String,
       enum: ["scheduled", "in-progress", "completed", "cancelled"],
@@ -65,8 +69,6 @@ const lectureSchema = new mongoose.Schema(
       min: 1,
       max: 6,
     },
-    specialization: String,
-
     isActive: {
       type: Boolean,
       default: true,

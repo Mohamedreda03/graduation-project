@@ -25,7 +25,7 @@ export function useStudentStats() {
 }
 
 export function useStudents(params?: {
-  department?: string;
+  specialization?: string;
   level?: number;
   page?: number;
   limit?: number;

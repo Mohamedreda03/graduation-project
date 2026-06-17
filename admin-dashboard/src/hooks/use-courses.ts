@@ -16,7 +16,7 @@ export const courseKeys = {
 };
 
 export function useCourses(params?: {
-  department?: string;
+  specialization?: string;
   doctor?: string;
   level?: number;
   semester?: number;

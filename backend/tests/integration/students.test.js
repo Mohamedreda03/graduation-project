@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../../src/app');
-const { User, Department, Course } = require('../../src/models');
+const { User, Specialization, Course } = require('../../src/models');
 const { ROLES, DEVICE_REQUEST_STATUS } = require('../../src/config/constants');
 const jwt = require('jsonwebtoken');
 const config = require('../../src/config/env');
@@ -9,7 +9,7 @@ describe('Students API Integration Tests', () => {
   let adminToken;
   let adminUser;
   let studentUser;
-  let department;
+  let specialization;
 
   beforeEach(async () => {
     adminUser = await User.create({
@@ -20,7 +20,7 @@ describe('Students API Integration Tests', () => {
       isActive: true
     });
 
-    department = await Department.create({
+    specialization = await Specialization.create({
       name: 'Computer Science',
       code: 'CS',
       faculty: 'Engineering'
@@ -33,7 +33,7 @@ describe('Students API Integration Tests', () => {
       name: { first: 'Student', last: 'User' },
       role: ROLES.STUDENT,
       academicInfo: {
-        department: department._id,
+        specialization: specialization._id,
         level: 3
       },
       isActive: true
@@ -94,7 +94,7 @@ describe('Students API Integration Tests', () => {
         password: 'password123',
         name: { first: 'New', last: 'Student' },
         academicInfo: {
-          department: department._id,
+          specialization: specialization._id,
           level: 1
         }
       };

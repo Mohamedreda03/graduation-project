@@ -16,7 +16,7 @@ const {
 
 // Models
 const User = require("../models/User");
-const Department = require("../models/Department");
+const Specialization = require("../models/Specialization");
 const Hall = require("../models/Hall");
 const Course = require("../models/Course");
 const Lecture = require("../models/Lecture");
@@ -66,8 +66,8 @@ const defaultSettings = [
   },
 ];
 
-// Departments
-const departments = [
+// Specializations
+const specializations = [
   {
     name: "علوم الحاسب",
     code: "CS",
@@ -209,8 +209,8 @@ const doctorNames = [
   { first: "مصطفى", last: "كمال" },
 ];
 
-// Course names per department
-const coursesByDepartment = {
+// Course names per specialization
+const coursesBySpecialization = {
   CS: [
     { name: "مقدمة في البرمجة", code: "CS101", level: 1 },
     { name: "هياكل البيانات", code: "CS201", level: 2 },
@@ -357,7 +357,7 @@ async function clearDatabase() {
     Course.deleteMany({}),
     Hall.deleteMany({}),
     User.deleteMany({}),
-    Department.deleteMany({}),
+    Specialization.deleteMany({}),
     Setting.deleteMany({}),
   ]);
   console.log("✅ Database cleared");
@@ -369,10 +369,10 @@ async function seedSettings() {
   console.log(`✅ Created ${defaultSettings.length} settings`);
 }
 
-async function seedDepartments() {
-  console.log("🏛️  Seeding departments...");
-  const created = await Department.insertMany(departments);
-  console.log(`✅ Created ${created.length} departments`);
+async function seedSpecializations() {
+  console.log("🏛️  Seeding specializations...");
+  const created = await Specialization.insertMany(specializations);
+  console.log(`✅ Created ${created.length} specializations`);
   return created;
 }
 
@@ -416,7 +416,7 @@ async function seedDoctors(deptList) {
 async function seedStudents(deptList) {
   console.log("👨‍🎓 Seeding students (this may take a moment)...");
   const students = [];
-  const csDept = deptList[0]; // CS is the first department
+  const csDept = deptList[0]; // CS is the first specialization
 
   // 1. Full Data Student
   students.push({
@@ -426,7 +426,7 @@ async function seedStudents(deptList) {
     studentId: "20240001",
     role: ROLES.STUDENT,
     academicInfo: {
-      department: csDept._id,
+      specialization: csDept._id,
       level: 3,
     },
     device: {
@@ -446,7 +446,7 @@ async function seedStudents(deptList) {
     studentId: "20240050",
     role: ROLES.STUDENT,
     academicInfo: {
-      department: csDept._id,
+      specialization: csDept._id,
       level: 3,
     },
     device: {
@@ -466,7 +466,7 @@ async function seedStudents(deptList) {
     studentId: "20240099",
     role: ROLES.STUDENT,
     academicInfo: {
-      department: csDept._id,
+      specialization: csDept._id,
       level: 3,
     },
     device: {
@@ -480,7 +480,7 @@ async function seedStudents(deptList) {
 
   let studentIndex = 1000;
   for (const dept of deptList) {
-    // 50 students per department, total 200. Since we manually inserted 3, let's distribute the remaining 197
+    // 50 students per specialization, total 200. Since we manually inserted 3, let's distribute the remaining 197
     const deptStudentsCount = dept.code === "CS" ? 47 : 50;
     for (let i = 0; i < deptStudentsCount; i++) {
       const firstName = randomElement(arabicFirstNames);
@@ -495,7 +495,7 @@ async function seedStudents(deptList) {
         studentId: studentId,
         role: ROLES.STUDENT,
         academicInfo: {
-          department: dept._id,
+          specialization: dept._id,
           level: level,
         },
         isActive: true,
@@ -524,7 +524,7 @@ async function seedCourses(deptList, doctors) {
 
   let doctorIndex = 0;
   for (const dept of deptList) {
-    const deptCourses = coursesByDepartment[dept.code] || [];
+    const deptCourses = coursesBySpecialization[dept.code] || [];
 
     for (const courseData of deptCourses) {
       const doctor = doctors[doctorIndex % doctors.length];
@@ -532,7 +532,7 @@ async function seedCourses(deptList, doctors) {
       const course = await Course.create({
         name: courseData.name,
         code: courseData.code,
-        department: dept._id,
+        specialization: dept._id,
         doctor: doctor._id,
         level: courseData.level,
         semester: semester,
@@ -553,7 +553,7 @@ async function enrollStudentsInCourses(courses, students) {
   console.log("📝 Enrolling students in courses...");
 
   for (const course of courses) {
-    // Find students in the same department and level
+    // Find students in the same specialization and level
     const eligibleStudents = students.filter(
       (s) => {
         // Skip empty student entirely (0 courses)
@@ -573,7 +573,7 @@ async function enrollStudentsInCourses(courses, students) {
         }
 
         return (
-          s.academicInfo.department.toString() === course.department.toString() &&
+          s.academicInfo.specialization.toString() === course.specialization.toString() &&
           s.academicInfo.level === course.level
         );
       }
@@ -791,7 +791,7 @@ async function seed() {
 
     // Seed data
     await seedSettings();
-    const deptList = await seedDepartments();
+    const deptList = await seedSpecializations();
     const hallList = await seedHalls();
     await seedAdmin();
     const doctors = await seedDoctors(deptList);
@@ -806,7 +806,7 @@ async function seed() {
     console.log("=".repeat(50));
     console.log("\n📋 Summary:");
     console.log(`   - Settings: ${defaultSettings.length}`);
-    console.log(`   - Departments: ${deptList.length}`);
+    console.log(`   - Specializations: ${deptList.length}`);
     console.log(`   - Halls: ${hallList.length}`);
     console.log(`   - Doctors: ${doctors.length}`);
     console.log(`   - Students: ${students.length}`);

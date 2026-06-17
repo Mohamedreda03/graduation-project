@@ -121,11 +121,11 @@ export function MyCoursesPage() {
                     <span>{course.creditHours} ساعة</span>
                   </div>
                 </div>
-                {course.department && (
+                {course.specialization && (
                   <p className="text-xs text-muted-foreground">
-                    {typeof course.department === "object"
-                      ? course.department.name
-                      : course.department}
+                    {typeof course.specialization === "object"
+                      ? course.specialization.name
+                      : course.specialization}
                   </p>
                 )}
                 <Button

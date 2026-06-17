@@ -1,5 +1,5 @@
 const User = require("./User");
-const Department = require("./Department");
+const Specialization = require("./Specialization");
 const Course = require("./Course");
 const Hall = require("./Hall");
 const Lecture = require("./Lecture");
@@ -17,7 +17,7 @@ module.exports = {
   User,
   Student,
   Doctor,
-  Department,
+  Specialization,
   Course,
   Hall,
   Lecture,

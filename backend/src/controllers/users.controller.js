@@ -8,7 +8,7 @@ const { catchAsync, paginationResponse } = require("../utils/helpers");
  */
 exports.getMe = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id)
-    .populate("academicInfo.department")
+    .populate("academicInfo.specialization")
     .populate("academicInfo.enrolledCourses");
 
   // Format user data for frontend
@@ -56,7 +56,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 
   const total = await User.countDocuments(query);
   const users = await User.find(query)
-    .populate("academicInfo.department")
+    .populate("academicInfo.specialization")
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
     .sort({ createdAt: -1 });
@@ -73,7 +73,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
  */
 exports.getUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.id)
-    .populate("academicInfo.department")
+    .populate("academicInfo.specialization")
     .populate("academicInfo.enrolledCourses");
 
   if (!user) {

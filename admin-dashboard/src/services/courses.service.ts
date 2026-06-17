@@ -4,16 +4,15 @@ import type { ApiResponse, PaginatedResponse, Course } from "@/types";
 interface CreateCourseRequest {
   name: string;
   code: string;
-  department: string;
+  specialization: string;
   doctor: string;
   level: number;
   semester: string;
-  specialization?: string;
 }
 
 export const coursesService = {
   getAll: async (params?: {
-    department?: string;
+    specialization?: string;
     doctor?: string;
     level?: number;
     semester?: number;

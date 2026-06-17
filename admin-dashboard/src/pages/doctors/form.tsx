@@ -380,7 +380,7 @@ export function DoctorFormPage() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 rounded-xl"
-                onClick={() => navigate("/departments")}
+                onClick={() => navigate("/specializations")}
               >
                 <Building2 className="h-4 w-4" />
                 إدارة الأقسام

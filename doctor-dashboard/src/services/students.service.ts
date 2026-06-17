@@ -16,7 +16,7 @@ interface CreateStudentRequest {
   studentId: string;
   phone?: string;
   academicInfo: {
-    department: string;
+    specialization: string;
     level: number;
     specialization?: string;
   };
@@ -29,7 +29,7 @@ interface BulkCreateStudentsRequest {
 
 export const studentsService = {
   getAll: async (params?: {
-    department?: string;
+    specialization?: string;
     level?: number;
     page?: number;
     limit?: number;

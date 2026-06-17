@@ -3,6 +3,7 @@ const {
   Course,
   AttendanceRecord,
   StudentSession,
+  Specialization,
 } = require("../models");
 const { ROLES, ATTENDANCE_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
@@ -26,9 +27,9 @@ exports.getAllLectures = catchAsync(async (req, res, next) => {
   const lectures = await Lecture.find(query)
     .populate({
       path: "course",
-      select: "name code department students",
+      select: "name code specialization students",
       populate: {
-        path: "department",
+        path: "specialization",
         select: "name code"
       }
     })
@@ -320,14 +321,45 @@ exports.getLecturesByDate = catchAsync(async (req, res, next) => {
  * GET /api/lectures/week-schedule?course=xxx&hall=xxx
  */
 exports.getWeekSchedule = catchAsync(async (req, res, next) => {
-  const { course, hall } = req.query;
+  const { course, hall, specialization, faculty, level, section } = req.query;
 
   const query = { isActive: true };
   if (course) query.course = course;
   if (hall) query.hall = hall;
+  if (level) query.level = parseInt(level);
+  if (section) query.section = section;
+
+  if (specialization || faculty) {
+    let specQuery = {};
+    if (specialization) specQuery._id = specialization;
+    if (faculty) specQuery.faculty = faculty;
+
+    const specializations = await Specialization.find(specQuery);
+    const specIds = specializations.map((s) => s._id);
+
+    const courses = await Course.find({ specialization: { $in: specIds } });
+    const courseIds = courses.map((c) => c._id);
+
+    if (query.course) {
+      const courseIdStr = query.course.toString();
+      const belongs = courseIds.some((cId) => cId.toString() === courseIdStr);
+      if (!belongs) {
+        query.course = null;
+      }
+    } else {
+      query.course = { $in: courseIds };
+    }
+  }
 
   const lectures = await Lecture.find(query)
-    .populate("course", "name code")
+    .populate({
+      path: "course",
+      select: "name code specialization level",
+      populate: {
+        path: "specialization",
+        select: "name code faculty",
+      },
+    })
     .populate("hall", "name building")
     .populate("doctor", "name")
     .sort({ dayOfWeek: 1, startTime: 1 });

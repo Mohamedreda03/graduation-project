@@ -14,10 +14,10 @@ const courseSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
-    department: {
+    specialization: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Department",
-      required: [true, "Department is required"],
+      ref: "Specialization",
+      required: [true, "Specialization is required"],
     },
     doctor: {
       type: mongoose.Schema.Types.ObjectId,
@@ -29,10 +29,6 @@ const courseSchema = new mongoose.Schema(
       required: [true, "Level is required"],
       min: 1,
       max: 6,
-    },
-    specialization: {
-      type: String,
-      trim: true,
     },
     semester: {
       type: String,
@@ -56,7 +52,7 @@ const courseSchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-courseSchema.index({ department: 1, level: 1 });
+courseSchema.index({ specialization: 1, level: 1 });
 courseSchema.index({ doctor: 1 });
 courseSchema.index({ semester: 1 });
 

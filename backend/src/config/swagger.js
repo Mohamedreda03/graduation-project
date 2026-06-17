@@ -49,7 +49,7 @@ const baseOptions = {
             email: { type: "string", format: "email", example: "ahmed@university.edu" },
             role: { type: "string", enum: ["student", "doctor", "admin"], example: "student" },
             studentId: { type: "string", example: "20210001" },
-            department: { type: "string", example: "507f1f77bcf86cd799439011" },
+            specialization: { type: "string", example: "507f1f77bcf86cd799439011" },
             level: { type: "integer", minimum: 1, maximum: 6, example: 3 },
             phone: { type: "string", example: "01012345678" },
             isActive: { type: "boolean", example: true },
@@ -57,8 +57,8 @@ const baseOptions = {
           },
         },
 
-        // Department Schema
-        Department: {
+        // Specialization Schema
+        Specialization: {
           type: "object",
           properties: {
             _id: { type: "string", example: "507f1f77bcf86cd799439011" },
@@ -77,7 +77,7 @@ const baseOptions = {
             _id: { type: "string", example: "507f1f77bcf86cd799439011" },
             name: { type: "string", example: "هياكل البيانات" },
             code: { type: "string", example: "CS201" },
-            department: { type: "string" },
+            specialization: { type: "string" },
             doctor: { type: "string" },
             creditHours: { type: "integer", example: 3 },
             level: { type: "integer", example: 2 },
@@ -297,7 +297,7 @@ const baseOptions = {
       { name: "Profile", description: "Current logged-in user profile" },
       { name: "Students", description: "Student management" },
       { name: "Doctors", description: "Doctor management" },
-      { name: "Departments", description: "Department management" },
+      { name: "Specializations", description: "Specialization management" },
       { name: "Courses", description: "Course management" },
       { name: "Halls", description: "Hall & Access Point management" },
       { name: "Lectures", description: "Lecture schedule management" },
@@ -359,7 +359,7 @@ const adminTags = [
   "Profile",
   "Students",
   "Doctors",
-  "Departments",
+  "Specializations",
   "Courses",
   "Halls",
   "Lectures",

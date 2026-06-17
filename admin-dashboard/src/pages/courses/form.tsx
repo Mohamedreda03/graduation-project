@@ -42,19 +42,18 @@ import {
   useCreateCourse,
   useUpdateCourse,
   useCourse,
-  useDepartments,
+  useSpecializations,
   useDoctors,
 } from "@/hooks";
-import type { Department, Doctor } from "@/types";
+import type { Specialization, Doctor } from "@/types";
 
 const formSchema = z.object({
   name: z.string().min(2, "اسم المقرر يجب أن يكون حرفين على الأقل"),
   code: z.string().min(2, "رمز المقرر مطلوب"),
-  department: z.string().min(1, "الكلية مطلوبة"),
+  specialization: z.string().min(1, "التخصص مطلوب"),
   doctor: z.string().min(1, "الدكتور مطلوب"),
   level: z.number().min(1).max(6),
   semester: z.string().min(1, "الفصل الدراسي مطلوب"),
-  specialization: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -65,7 +64,7 @@ export function CourseFormPage() {
   const isEditing = !!id;
 
   const { data: course, isLoading: courseLoading } = useCourse(id ?? "");
-  const { data: departmentsData } = useDepartments();
+  const { data: specializationsData } = useSpecializations();
   const { data: doctorsData } = useDoctors();
   const createMutation = useCreateCourse();
   const updateMutation = useUpdateCourse();
@@ -75,36 +74,28 @@ export function CourseFormPage() {
     defaultValues: {
       name: "",
       code: "",
-      department: "",
+      specialization: "",
       doctor: "",
       level: 1,
       semester: "",
-      specialization: "",
     },
   });
-
-  const selectedDepartmentId = form.watch("department");
-  const selectedDepartment = departmentsData?.find(
-    (dept: Department) => dept._id === selectedDepartmentId
-  );
-  const specializations = selectedDepartment?.specializations || [];
 
   useEffect(() => {
     if (course) {
       form.reset({
         name: course.name,
         code: course.code,
-        department:
-          typeof course.department === "object"
-            ? course.department._id
-            : course.department,
+        specialization:
+          typeof course.specialization === "object"
+            ? course.specialization._id
+            : course.specialization,
         doctor:
           typeof course.doctor === "object"
             ? course.doctor._id
             : course.doctor || "",
         level: course.level,
         semester: course.semester,
-        specialization: course.specialization || "",
       });
     }
   }, [course, form]);
@@ -212,26 +203,26 @@ export function CourseFormPage() {
 
                   <FormField
                     control={form.control}
-                    name="department"
+                    name="specialization"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
                         <FormLabel className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
-                          الكلية
+                          التخصص
                         </FormLabel>
                         <Select
-                          key={`dept-${field.value}-${departmentsData?.length ?? 0}`}
+                          key={`dept-${field.value}-${specializationsData?.length ?? 0}`}
                           dir="rtl"
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="اختر الكلية" />
+                              <SelectValue placeholder="اختر التخصص" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {departmentsData?.map((dept: Department) => (
+                            {specializationsData?.map((dept: Specialization) => (
                               <SelectItem key={dept._id} value={dept._id}>
                                 {dept.name}
                               </SelectItem>
@@ -332,45 +323,7 @@ export function CourseFormPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="specialization"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          التخصص (اختياري)
-                        </FormLabel>
-                        <Select
-                          key={`spec-${field.value}-${specializations.length}`}
-                          dir="rtl"
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={!selectedDepartmentId || specializations.length === 0}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder={
-                                !selectedDepartmentId 
-                                  ? "اختر الكلية أولاً" 
-                                  : specializations.length === 0 
-                                    ? "لا توجد تخصصات" 
-                                    : "اختر التخصص"
-                              } />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {specializations.map((spec: any) => (
-                              <SelectItem key={spec._id} value={spec._id}>
-                                {spec.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
                 </div>
 
                 <div className="flex gap-4 pt-6 border-t border-border/50">

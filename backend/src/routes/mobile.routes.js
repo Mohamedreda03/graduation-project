@@ -301,7 +301,7 @@ router.get("/attendance/history", mobileController.getAttendanceHistory);
  *                       type: string
  *                     phone:
  *                       type: string
- *                     department:
+ *                     specialization:
  *                       type: string
  *                       example: هندسة اتصالات
  *                     level:

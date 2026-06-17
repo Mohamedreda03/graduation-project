@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import {
   Upload,
   FileSpreadsheet,
@@ -25,8 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useDepartments, useCreateStudentsBulk } from "@/hooks";
-import type { Department } from "@/types";
+import { useSpecializations, useCreateStudentsBulk } from "@/hooks";
+import type { Specialization } from "@/types";
 
 interface ParsedStudent {
   name: {
@@ -35,6 +36,11 @@ interface ParsedStudent {
   };
   email: string;
   studentId: string;
+  phone?: string;
+  device?: {
+    macAddress: string;
+    isVerified: boolean;
+  };
   academicInfo: {
     level: number;
   };
@@ -42,10 +48,10 @@ interface ParsedStudent {
 
 export function ImportStudentsPage() {
   const navigate = useNavigate();
-  const { data: departmentsData } = useDepartments();
+  const { data: specializationsData } = useSpecializations();
   const createBulkMutation = useCreateStudentsBulk();
 
-  const [department, setDepartment] = useState("");
+  const [specialization, setSpecialization] = useState("");
   const [defaultPassword, setDefaultPassword] = useState("123456");
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedStudent[]>([]);
@@ -63,53 +69,79 @@ export function ImportStudentsPage() {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const text = event.target?.result as string;
-        const lines = text.split("\n").filter((line) => line.trim());
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Get array of arrays (raw values)
+        const rows = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
 
-        if (lines.length < 2) {
+        if (rows.length < 2) {
           setParseError("الملف فارغ أو لا يحتوي على بيانات كافية");
           return;
         }
 
-        const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+        const headers = (rows[0] as string[]).map((h) => String(h || "").trim().toLowerCase());
         const nameIdx = headers.findIndex(
-          (h) => h.includes("name") || h.includes("اسم"),
+          (h) => h.includes("name") || h.includes("اسم") || h.includes("الاسم")
         );
         const emailIdx = headers.findIndex(
-          (h) => h.includes("email") || h.includes("بريد"),
+          (h) => h.includes("email") || h.includes("بريد") || h.includes("البريد")
         );
         const idIdx = headers.findIndex(
-          (h) => h.includes("id") || h.includes("رقم"),
+          (h) => h.includes("id") || h.includes("رقم") || h.includes("الرقم") || h.includes("كود") || h.includes("studentid")
         );
         const levelIdx = headers.findIndex(
-          (h) => h.includes("level") || h.includes("مستوى"),
+          (h) => h.includes("level") || h.includes("مستوى") || h.includes("المستوى") || h.includes("فرقة") || h.includes("فرقه") || h.includes("الفرقة")
+        );
+        const phoneIdx = headers.findIndex(
+          (h) => h.includes("phone") || h.includes("هاتف") || h.includes("تليفون") || h.includes("موبايل") || h.includes("جوال")
+        );
+        const macIdx = headers.findIndex(
+          (h) => h.includes("mac") || h.includes("ماك") || h.includes("عنوان الماك") || h.includes("عنوان ماك") || h.includes("جهاز")
         );
 
         if (nameIdx === -1 || emailIdx === -1 || idIdx === -1) {
-          setParseError("الملف يجب أن يحتوي على أعمدة: name, email, studentId");
+          setParseError("الملف يجب أن يحتوي على الأعمدة الأساسية: الاسم (Name)، البريد الإلكتروني (Email)، الرقم الأكاديمي (Student ID)");
           return;
         }
 
         const students: ParsedStudent[] = [];
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(",").map((c) => c.trim());
-          if (cols.length < 3) continue;
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || row.length === 0) continue;
 
-          const fullName = cols[nameIdx] || "";
+          const fullName = String(row[nameIdx] || "").trim();
+          const email = String(row[emailIdx] || "").trim();
+          const studentId = String(row[idIdx] || "").trim();
+
+          if (!fullName || !email || !studentId) continue;
+
           const nameParts = fullName.split(" ");
           const firstName = nameParts[0] || "";
           const lastName = nameParts.slice(1).join(" ") || firstName;
+          
+          const phone = phoneIdx !== -1 ? String(row[phoneIdx] || "").trim() : "";
+          const macAddress = macIdx !== -1 ? String(row[macIdx] || "").trim() : "";
 
           students.push({
             name: {
               first: firstName,
               last: lastName,
             },
-            email: cols[emailIdx] || "",
-            studentId: cols[idIdx] || "",
+            email,
+            studentId,
+            phone: phone || undefined,
             academicInfo: {
-              level: levelIdx !== -1 ? parseInt(cols[levelIdx]) || 1 : 1,
+              level: levelIdx !== -1 ? parseInt(String(row[levelIdx])) || 1 : 1,
             },
+            ...(macAddress ? {
+              device: {
+                macAddress,
+                isVerified: true,
+              }
+            } : {})
           });
         }
 
@@ -120,15 +152,40 @@ export function ImportStudentsPage() {
 
         setParsedData(students);
         setCurrentStep(2);
-      } catch {
-        setParseError("حدث خطأ أثناء قراءة الملف");
+      } catch (error) {
+        console.error(error);
+        setParseError("حدث خطأ أثناء قراءة الملف. يرجى التأكد من اختيار ملف Excel (.xlsx/.xls) أو CSV صالح.");
       }
     };
-    reader.readAsText(selectedFile);
+    reader.readAsArrayBuffer(selectedFile);
+  };
+
+  const downloadTemplate = () => {
+    const headers = ["الاسم (Name)", "البريد الإلكتروني (Email)", "الرقم الأكاديمي (Student ID)", "الفرقة (Level)", "الهاتف (Phone)", "عنوان الماك (MAC Address)"];
+    const sampleData = [
+      headers,
+      ["أحمد محمد", "ahmed.mohamed@example.com", "20230001", "1", "01012345678", "00:11:22:33:44:55"],
+      ["سارة علي", "sara.ali@example.com", "20230002", "2", "01212345678", "AA:BB:CC:DD:EE:FF"]
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(sampleData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "الطلاب (Students)");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const fileData = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+    const url = URL.createObjectURL(fileData);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "template_students.xlsx");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleImport = async () => {
-    if (!department || parsedData.length === 0) return;
+    if (!specialization || parsedData.length === 0) return;
 
     try {
       await createBulkMutation.mutateAsync({
@@ -136,7 +193,7 @@ export function ImportStudentsPage() {
           ...s,
           academicInfo: {
             ...s.academicInfo,
-            department,
+            specialization,
           },
         })),
         defaultPassword,
@@ -147,7 +204,7 @@ export function ImportStudentsPage() {
     }
   };
 
-  const departments: Department[] = departmentsData || [];
+  const specializations: Specialization[] = specializationsData || [];
 
   const steps = [
     { id: 1, title: "رفع الملف", icon: Upload },
@@ -170,7 +227,7 @@ export function ImportStudentsPage() {
                   استيراد الطلاب
                 </h1>
                 <p className="text-muted-foreground">
-                  استيراد مجموعة طلاب من ملف CSV بخطوات بسيطة
+                  استيراد مجموعة طلاب من ملف Excel أو CSV بخطوات بسيطة
                 </p>
               </div>
             </div>
@@ -193,9 +250,9 @@ export function ImportStudentsPage() {
           </div>
 
           {/* Download Template */}
-          <Button variant="outline" className="rounded-xl gap-2 shrink-0">
+          <Button variant="outline" onClick={downloadTemplate} className="rounded-xl gap-2 shrink-0">
             <Download className="h-4 w-4" />
-            تحميل قالب CSV
+            تحميل قالب Excel
           </Button>
         </div>
       </div>
@@ -246,7 +303,7 @@ export function ImportStudentsPage() {
               >
                 <input
                   type="file"
-                  accept=".csv"
+                  accept=".xlsx,.xls,.csv"
                   onChange={handleFileChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
@@ -284,7 +341,7 @@ export function ImportStudentsPage() {
                         اسحب الملف هنا أو اضغط للاختيار
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        يدعم ملفات CSV فقط
+                        يدعم ملفات Excel (.xlsx, .xls) و CSV
                       </p>
                     </div>
                   </div>
@@ -332,6 +389,12 @@ export function ImportStudentsPage() {
                       <th className="p-4 text-right font-bold text-sm">
                         الفرقه
                       </th>
+                      <th className="p-4 text-right font-bold text-sm">
+                        الهاتف
+                      </th>
+                      <th className="p-4 text-right font-bold text-sm">
+                        عنوان الماك
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
@@ -352,6 +415,12 @@ export function ImportStudentsPage() {
                             الفرقه {student.academicInfo.level}
                           </span>
                         </td>
+                        <td className="p-4 text-muted-foreground" dir="ltr">
+                          {student.phone || "-"}
+                        </td>
+                        <td className="p-4 font-mono text-xs text-muted-foreground" dir="ltr">
+                          {student.device?.macAddress || "-"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -368,7 +437,7 @@ export function ImportStudentsPage() {
 
         {/* Sidebar Settings */}
         <div className="space-y-6">
-          {/* Department Selection */}
+          {/* Specialization Selection */}
           <div className="bg-card/50 dark:bg-card/20 rounded-3xl border border-border/50 shadow-sm overflow-hidden">
             <div className="p-5 sm:p-6 border-b border-border/50 bg-muted/30">
               <h2 className="text-lg font-bold">إعدادات الاستيراد</h2>
@@ -379,12 +448,12 @@ export function ImportStudentsPage() {
                   <GraduationCap className="h-4 w-4 text-primary" />
                   القسم
                 </label>
-                <Select dir="rtl" value={department} onValueChange={setDepartment}>
+                <Select dir="rtl" value={specialization} onValueChange={setSpecialization}>
                   <SelectTrigger>
                     <SelectValue placeholder="اختر القسم" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((dept) => (
+                    {specializations.map((dept) => (
                       <SelectItem key={dept._id} value={dept._id}>
                         {dept.name}
                       </SelectItem>
@@ -419,7 +488,7 @@ export function ImportStudentsPage() {
                 handleImport();
               }}
               disabled={
-                !department ||
+                !specialization ||
                 parsedData.length === 0 ||
                 createBulkMutation.isPending
               }
@@ -453,8 +522,7 @@ export function ImportStudentsPage() {
               نصيحة
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              تأكد من أن ملف CSV يحتوي على الأعمدة التالية: name, email,
-              studentId, level (الفرقه - اختياري)
+              تأكد من أن ملف Excel أو CSV يحتوي على الأعمدة التالية: الاسم (Name)، البريد الإلكتروني (Email)، الرقم الأكاديمي (Student ID)، والفرقة (Level - اختياري)، الهاتف (Phone - اختياري)، وعنوان الماك (MAC Address - اختياري).
             </p>
           </div>
         </div>

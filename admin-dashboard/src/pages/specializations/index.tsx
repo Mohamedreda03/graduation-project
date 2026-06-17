@@ -21,12 +21,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DataTable } from "@/components/data-table";
-import { useDepartments, useDeleteDepartment } from "@/hooks";
-import type { Department } from "@/types";
+import { useSpecializations, useDeleteSpecialization } from "@/hooks";
+import type { Specialization } from "@/types";
 
-export function DepartmentsPage() {
-  const { data, isLoading } = useDepartments();
-  const deleteMutation = useDeleteDepartment();
+export function SpecializationsPage() {
+  const { data, isLoading } = useSpecializations();
+  const deleteMutation = useDeleteSpecialization();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleDelete = async () => {
@@ -36,7 +36,7 @@ export function DepartmentsPage() {
     }
   };
 
-  const columns: ColumnDef<Department>[] = [
+  const columns: ColumnDef<Specialization>[] = [
     {
       accessorKey: "name",
       header: "اسم الكلية",
@@ -58,7 +58,7 @@ export function DepartmentsPage() {
       id: "actions",
       header: "الإجراءات",
       cell: ({ row }) => {
-        const department = row.original;
+        const specialization = row.original;
 
         return (
           <DropdownMenu>
@@ -73,14 +73,14 @@ export function DepartmentsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link to={`/departments/${department._id}/edit`}>
+                <Link to={`/specializations/${specialization._id}/edit`}>
                   <Pencil className="ml-2 h-4 w-4" />
                   تعديل
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive"
-                onClick={() => setDeleteId(department._id)}
+                onClick={() => setDeleteId(specialization._id)}
               >
                 <Trash2 className="ml-2 h-4 w-4" />
                 حذف
@@ -105,7 +105,7 @@ export function DepartmentsPage() {
           </p>
         </div>
         <Button asChild className="rounded-xl h-11 px-6">
-          <Link to="/departments/new">
+          <Link to="/specializations/new">
             <Plus className="ml-2 h-5 w-5" />
             إضافة كلية جديدة
           </Link>

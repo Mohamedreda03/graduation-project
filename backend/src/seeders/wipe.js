@@ -12,7 +12,7 @@ const config = require("../config/env");
 
 // Models
 const User = require("../models/User");
-const Department = require("../models/Department");
+const Specialization = require("../models/Specialization");
 const Course = require("../models/Course");
 const Hall = require("../models/Hall");
 const Lecture = require("../models/Lecture");
@@ -24,7 +24,7 @@ const Setting = require("../models/Setting");
 
 const allCollections = [
   { model: User,             name: "Users (all)" },
-  { model: Department,       name: "Departments" },
+  { model: Specialization,       name: "Specializations" },
   { model: Course,           name: "Courses" },
   { model: Hall,             name: "Halls" },
   { model: Lecture,          name: "Lectures" },

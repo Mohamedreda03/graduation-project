@@ -28,23 +28,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTable } from "@/components/data-table";
-import { useDoctors, useDeleteDoctor, useDepartments } from "@/hooks";
+import { useDoctors, useDeleteDoctor, useSpecializations } from "@/hooks";
 import type { Doctor } from "@/types";
 
 export function DoctorsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const departmentFilter = searchParams.get("department") || "";
+  const specializationFilter = searchParams.get("specialization") || "";
   const searchQuery = searchParams.get("q") || "";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
 
-  const setDepartmentFilter = (value: string) => {
+  const setSpecializationFilter = (value: string) => {
     setSearchParams((prev) => {
       const newParams = new URLSearchParams(prev);
       if (value && value !== "all" && value !== " ") {
-        newParams.set("department", value);
+        newParams.set("specialization", value);
       } else {
-        newParams.delete("department");
+        newParams.delete("specialization");
       }
       newParams.set("page", "1");
       return newParams;
@@ -82,15 +82,15 @@ export function DoctorsPage() {
   };
 
   const { data, isLoading } = useDoctors({
-    department:
-      departmentFilter && departmentFilter !== "all" && departmentFilter !== " "
-        ? departmentFilter
+    specialization:
+      specializationFilter && specializationFilter !== "all" && specializationFilter !== " "
+        ? specializationFilter
         : undefined,
     page,
     limit,
     search: searchQuery || undefined,
   });
-  const { data: departmentsData } = useDepartments();
+  const { data: specializationsData } = useSpecializations();
   const deleteMutation = useDeleteDoctor();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -197,13 +197,13 @@ export function DoctorsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-2xl border shadow-sm">
-        <Select dir="rtl" value={departmentFilter} onValueChange={setDepartmentFilter}>
+        <Select dir="rtl" value={specializationFilter} onValueChange={setSpecializationFilter}>
           <SelectTrigger className="w-[180px] rounded-xl border-muted bg-background">
             <SelectValue placeholder="جميع الأقسام" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value=" ">جميع الأقسام</SelectItem>
-            {departmentsData?.map((dept: { _id: string; name: string }) => (
+            {specializationsData?.map((dept: { _id: string; name: string }) => (
               <SelectItem key={dept._id} value={dept._id}>
                 {dept.name}
               </SelectItem>

@@ -5,7 +5,7 @@ const createCourse = {
   body: Joi.object({
     name: Joi.string().required().min(3).max(200).trim(),
     code: Joi.string().required().uppercase().trim(),
-    department: Joi.string().hex().length(24).required(),
+    specialization: Joi.string().hex().length(24).required(),
     doctor: Joi.string().hex().length(24).required(),
     creditHours: Joi.number().min(1).max(6).default(3),
     level: Joi.number().min(1).max(6),
@@ -22,7 +22,7 @@ const updateCourse = {
   body: Joi.object({
     name: Joi.string().min(3).max(200).trim(),
     code: Joi.string().uppercase().trim(),
-    department: Joi.string().hex().length(24),
+    specialization: Joi.string().hex().length(24),
     doctor: Joi.string().hex().length(24),
     creditHours: Joi.number().min(1).max(6),
     level: Joi.number().min(1).max(6),

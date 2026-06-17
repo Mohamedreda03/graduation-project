@@ -1,8 +1,8 @@
-﻿const authController = require("./auth.controller");
+const authController = require("./auth.controller");
 const usersController = require("./users.controller");
 const studentsController = require("./students.controller");
 const doctorsController = require("./doctors.controller");
-const departmentsController = require("./departments.controller");
+const specializationsController = require("./specializations.controller");
 const coursesController = require("./courses.controller");
 const hallsController = require("./halls.controller");
 const lecturesController = require("./lectures.controller");
@@ -15,7 +15,7 @@ module.exports = {
   usersController,
   studentsController,
   doctorsController,
-  departmentsController,
+  specializationsController,
   coursesController,
   hallsController,
   lecturesController,

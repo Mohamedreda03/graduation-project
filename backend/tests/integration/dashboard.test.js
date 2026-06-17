@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../../src/app');
-const { User, Department, Course, Hall, Lecture, AttendanceRecord } = require('../../src/models');
+const { User, Specialization, Course, Hall, Lecture, AttendanceRecord } = require('../../src/models');
 const { ROLES } = require('../../src/config/constants');
 const jwt = require('jsonwebtoken');
 const config = require('../../src/config/env');
@@ -20,7 +20,7 @@ describe('Dashboard API Integration Tests', () => {
     adminToken = jwt.sign({ id: adminUser._id }, config.jwt.secret, { expiresIn: '1h' });
 
     // Seed some data for stats
-    const dept = await Department.create({ name: 'CS', code: 'CS', faculty: 'Eng' });
+    const dept = await Specialization.create({ name: 'CS', code: 'CS', faculty: 'Eng' });
     const doctor = await User.create({
       email: 'doc@test.com',
       password: 'password123',
@@ -36,7 +36,7 @@ describe('Dashboard API Integration Tests', () => {
     const course = await Course.create({
       name: 'Test Course',
       code: 'TC101',
-      department: dept._id,
+      specialization: dept._id,
       doctor: doctor._id,
       level: 1,
       semester: 'Fall'

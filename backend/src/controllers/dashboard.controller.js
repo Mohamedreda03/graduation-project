@@ -1,4 +1,4 @@
-const { Student, Doctor, Course, Department, Hall, Lecture, AttendanceRecord, User } = require("../models");
+const { Student, Doctor, Course, Specialization, Hall, Lecture, AttendanceRecord, User } = require("../models");
 const { catchAsync, getTodayDate } = require("../utils/helpers");
 const { ROLES } = require("../config/constants");
 
@@ -12,13 +12,13 @@ exports.getStats = catchAsync(async (req, res, next) => {
     totalStudents,
     totalDoctors,
     totalCourses,
-    totalDepartments,
+    totalSpecializations,
     totalHalls,
   ] = await Promise.all([
     User.countDocuments({ role: ROLES.STUDENT }),
     User.countDocuments({ role: ROLES.DOCTOR }),
     Course.countDocuments(),
-    Department.countDocuments(),
+    Specialization.countDocuments(),
     Hall.countDocuments({ isActive: true }),
   ]);
 
@@ -143,7 +143,7 @@ exports.getStats = catchAsync(async (req, res, next) => {
       totalStudents,
       totalDoctors,
       totalCourses,
-      totalDepartments,
+      totalSpecializations,
       totalHalls,
       activeLectures: todayLectures,
       todayAttendance: {

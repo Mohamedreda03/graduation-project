@@ -40,7 +40,7 @@ import {
   useCreateStudent,
   useUpdateStudent,
   useStudent,
-  useDepartments,
+  useSpecializations,
 } from "@/hooks";
 
 const formSchema = z.object({
@@ -53,9 +53,8 @@ const formSchema = z.object({
     .optional()
     .or(z.literal("")),
   studentId: z.string().min(1, "الرقم الأكاديمي مطلوب"),
-  department: z.string().min(1, "القسم مطلوب"),
+  specialization: z.string().min(1, "التخصص مطلوب"),
   level: z.number().min(1).max(6),
-  specialization: z.string().optional(),
   phone: z.string().optional(),
   macAddress: z.string().optional(),
 });
@@ -68,7 +67,7 @@ export function StudentFormPage() {
   const isEditing = !!id;
 
   const { data: student, isLoading: studentLoading } = useStudent(id ?? "");
-  const { data: departmentsData } = useDepartments();
+  const { data: specializationsData } = useSpecializations();
   const createMutation = useCreateStudent();
   const updateMutation = useUpdateStudent();
 
@@ -80,19 +79,12 @@ export function StudentFormPage() {
       email: "",
       password: "",
       studentId: "",
-      department: "",
-      level: 1,
       specialization: "",
+      level: 1,
       phone: "",
       macAddress: "",
     },
   });
-
-  const selectedDepartmentId = form.watch("department");
-  const selectedDepartment = departmentsData?.find(
-    (dept: any) => dept._id === selectedDepartmentId
-  );
-  const specializations = selectedDepartment?.specializations || [];
 
   useEffect(() => {
     if (student) {
@@ -112,12 +104,11 @@ export function StudentFormPage() {
         email: student.email,
         password: "",
         studentId: student.studentId,
-        department:
-          typeof student.academicInfo?.department === "object"
-            ? student.academicInfo.department._id
-            : student.academicInfo?.department || "",
+        specialization:
+          typeof student.academicInfo?.specialization === "object"
+            ? student.academicInfo.specialization._id
+            : student.academicInfo?.specialization || "",
         level: student.academicInfo?.level || 1,
-        specialization: student.academicInfo?.specialization || "",
         phone: student.phone || "",
         macAddress: student.device?.macAddress || "",
       });
@@ -137,9 +128,8 @@ export function StudentFormPage() {
         studentId: values.studentId,
         phone: values.phone || undefined,
         academicInfo: {
-          department: values.department,
+          specialization: values.specialization,
           level: values.level,
-          specialization: values.specialization || undefined,
         },
         device: values.macAddress
           ? {
@@ -317,26 +307,26 @@ export function StudentFormPage() {
 
                   <FormField
                     control={form.control}
-                    name="department"
+                    name="specialization"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
                         <FormLabel className="flex items-center gap-2">
                           <GraduationCap className="h-4 w-4 text-primary" />
-                          القسم
+                          التخصص
                         </FormLabel>
                         <Select
-                          key={`dept-${field.value}-${departmentsData?.length ?? 0}`}
+                          key={`dept-${field.value}-${specializationsData?.length ?? 0}`}
                           dir="rtl"
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="اختر القسم" />
+                              <SelectValue placeholder="اختر التخصص" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {departmentsData?.map(
+                            {specializationsData?.map(
                               (dept: { _id: string; name: string }) => (
                                 <SelectItem key={dept._id} value={dept._id}>
                                   {dept.name}
@@ -384,45 +374,7 @@ export function StudentFormPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="specialization"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <GraduationCap className="h-4 w-4 text-primary" />
-                          التخصص (اختياري)
-                        </FormLabel>
-                        <Select
-                          key={`spec-${field.value}-${specializations.length}`}
-                          dir="rtl"
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={!selectedDepartmentId || specializations.length === 0}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder={
-                                !selectedDepartmentId 
-                                  ? "اختر القسم أولاً" 
-                                  : specializations.length === 0 
-                                    ? "لا توجد تخصصات" 
-                                    : "اختر التخصص"
-                              } />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {specializations.map((spec: any) => (
-                              <SelectItem key={spec._id} value={spec._id}>
-                                {spec.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
 
                   <FormField
                     control={form.control}
@@ -531,7 +483,7 @@ export function StudentFormPage() {
                   <GraduationCap className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">القسم والفرقه</p>
+                  <p className="font-medium text-foreground">التخصص والفرقه</p>
                   <p>لربط الطالب بالمقررات</p>
                 </div>
               </div>

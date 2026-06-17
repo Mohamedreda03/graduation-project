@@ -10,7 +10,7 @@
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
 const app = require("../../src/app");
-const { User, Course, Lecture, Hall, Department, AttendanceRecord } =
+const { User, Course, Lecture, Hall, Specialization, AttendanceRecord } =
   require("../../src/models");
 const { ROLES } = require("../../src/config/constants");
 const config = require("../../src/config/env");
@@ -30,7 +30,7 @@ function makeToken(userId) {
 describe("Mobile API Integration Tests (/api/mobile)", () => {
   let token;
   let student;
-  let department;
+  let specialization;
   let hall;
   let course1;
   let course2;
@@ -39,8 +39,8 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
   let lecture2; // another day
 
   beforeEach(async () => {
-    // 1. Department
-    department = await Department.create({
+    // 1. Specialization
+    specialization = await Specialization.create({
       name: "هندسة الاتصالات",
       code: "COMM",
       faculty: "كلية الهندسة",
@@ -66,7 +66,7 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
     course1 = await Course.create({
       name: "هياكل البيانات",
       code: "CS201",
-      department: department._id,
+      specialization: specialization._id,
       doctor: doctor._id,
       level: 2,
       semester: "Fall 2025",
@@ -74,7 +74,7 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
     course2 = await Course.create({
       name: "قواعد البيانات",
       code: "CS301",
-      department: department._id,
+      specialization: specialization._id,
       doctor: doctor._id,
       level: 2,
       semester: "Fall 2025",
@@ -90,7 +90,7 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
       role: ROLES.STUDENT,
       isActive: true,
       academicInfo: {
-        department: department._id,
+        specialization: specialization._id,
         level: 2,
         enrolledCourses: [course1._id, course2._id],
       },
@@ -486,7 +486,7 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
       expect(data).toHaveProperty("firstName");
       expect(data).toHaveProperty("studentId");
       expect(data).toHaveProperty("email");
-      expect(data).toHaveProperty("department");
+      expect(data).toHaveProperty("specialization");
       expect(data).toHaveProperty("level");
       expect(data).toHaveProperty("enrolledCourses");
       expect(data).toHaveProperty("device");

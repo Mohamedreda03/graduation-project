@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../../src/app');
-const { User, Department, Course, Hall, Lecture } = require('../../src/models');
+const { User, Specialization, Course, Hall, Lecture } = require('../../src/models');
 const { ROLES } = require('../../src/config/constants');
 const jwt = require('jsonwebtoken');
 const config = require('../../src/config/env');
@@ -9,7 +9,7 @@ describe('Academic API Integration Tests', () => {
   let adminToken;
   let adminUser;
   let doctorUser;
-  let department;
+  let specialization;
   let hall;
 
   beforeEach(async () => {
@@ -29,7 +29,7 @@ describe('Academic API Integration Tests', () => {
       isActive: true
     });
 
-    department = await Department.create({
+    specialization = await Specialization.create({
       name: 'Computer Science',
       code: 'CS',
       faculty: 'Engineering'
@@ -46,19 +46,19 @@ describe('Academic API Integration Tests', () => {
     });
   });
 
-  describe('Departments API', () => {
-    it('should create and list departments', async () => {
+  describe('Specializations API', () => {
+    it('should create and list specializations', async () => {
       const res = await request(app)
-        .get('/api/departments')
+        .get('/api/specializations')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.data).toHaveLength(1);
     });
 
-    it('should update a department', async () => {
+    it('should update a specialization', async () => {
       const res = await request(app)
-        .put(`/api/departments/${department._id}`)
+        .put(`/api/specializations/${specialization._id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'CS - Updated' });
 
@@ -74,7 +74,7 @@ describe('Academic API Integration Tests', () => {
       course = await Course.create({
         name: 'Algorithms',
         code: 'CS301',
-        department: department._id,
+        specialization: specialization._id,
         doctor: doctorUser._id,
         level: 3,
         semester: 'Fall 2025'
@@ -119,7 +119,7 @@ describe('Academic API Integration Tests', () => {
       course = await Course.create({
         name: 'Database',
         code: 'CS302',
-        department: department._id,
+        specialization: specialization._id,
         doctor: doctorUser._id,
         level: 3,
         semester: 'Fall 2025'

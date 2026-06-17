@@ -27,10 +27,19 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  useCreateDepartment,
-  useUpdateDepartment,
-  useDepartment,
+  useCreateSpecialization,
+  useUpdateSpecialization,
+  useSpecialization,
 } from "@/hooks";
+
+const levelNames: Record<string, string> = {
+  "1": "الفرقة الإعدادية",
+  "2": "الفرقة الأولى",
+  "3": "الفرقة الثانية",
+  "4": "الفرقة الثالثة",
+  "5": "الفرقة الرابعة",
+  "6": "الفرقة الخامسة",
+};
 
 const formSchema = z.object({
   name: z.string().min(2, "اسم الكلية يجب أن يكون حرفين على الأقل"),
@@ -40,29 +49,21 @@ const formSchema = z.object({
     .max(10, "رمز الكلية لا يجب أن يتجاوز 10 أحرف"),
   faculty: z.string().min(2, "اسم الكلية مطلوب"),
   description: z.string().optional(),
-  specializations: z
-    .array(
-      z.object({
-        _id: z.string().optional(),
-        name: z.string().min(2, "اسم التخصص يجب أن يكون حرفين على الأقل"),
-        code: z.string().optional(),
-      })
-    )
-    .default([]),
+  sectionsCount: z.record(z.string(), z.number().min(1).max(8)).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function DepartmentFormPage() {
+export function SpecializationFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = !!id;
 
-  const { data: department, isLoading: departmentLoading } = useDepartment(
+  const { data: specialization, isLoading: specializationLoading } = useSpecialization(
     id ?? "",
   );
-  const createMutation = useCreateDepartment();
-  const updateMutation = useUpdateDepartment();
+  const createMutation = useCreateSpecialization();
+  const updateMutation = useUpdateSpecialization();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -71,26 +72,35 @@ export function DepartmentFormPage() {
       code: "",
       faculty: "",
       description: "",
-      specializations: [],
+      sectionsCount: {
+        "1": 2,
+        "2": 2,
+        "3": 2,
+        "4": 2,
+        "5": 2,
+        "6": 2,
+      },
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "specializations",
-  });
-
   useEffect(() => {
-    if (department) {
+    if (specialization) {
       form.reset({
-        name: department.name,
-        code: department.code,
-        faculty: department.faculty || "",
-        description: department.description || "",
-        specializations: department.specializations || [],
+        name: specialization.name,
+        code: specialization.code,
+        faculty: specialization.faculty || "",
+        description: specialization.description || "",
+        sectionsCount: {
+          "1": specialization.sectionsCount?.["1"] ?? 2,
+          "2": specialization.sectionsCount?.["2"] ?? 2,
+          "3": specialization.sectionsCount?.["3"] ?? 2,
+          "4": specialization.sectionsCount?.["4"] ?? 2,
+          "5": specialization.sectionsCount?.["5"] ?? 2,
+          "6": specialization.sectionsCount?.["6"] ?? 2,
+        },
       });
     }
-  }, [department, form]);
+  }, [specialization, form]);
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -99,7 +109,7 @@ export function DepartmentFormPage() {
       } else {
         await createMutation.mutateAsync(values);
       }
-      navigate("/departments");
+      navigate("/specializations");
     } catch (error) {
       // Error is handled by the mutation
     }
@@ -107,7 +117,7 @@ export function DepartmentFormPage() {
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  if (isEditing && departmentLoading) {
+  if (isEditing && specializationLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -217,76 +227,40 @@ export function DepartmentFormPage() {
                   )}
                 />
 
-                {/* Specializations Section */}
+                {/* Sections Count Per Level */}
                 <div className="space-y-4 pt-6 border-t border-border/50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold">الأقسام التابعة للكلية</h3>
-                      <p className="text-sm text-muted-foreground">أضف أقسام فرعية للكلية لتتمكن من اختيارها للطلاب والمقررات</p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => append({ name: "", code: "" })}
-                      className="gap-2 rounded-xl"
-                    >
-                      <Plus className="h-4 w-4" />
-                      إضافة كلية
-                    </Button>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">عدد السكاشن لكل فرقة دراسية</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      حدد عدد السكاشن الافتراضي لكل فرقة دراسية في هذا التخصص. سيتم استخدام هذه القيم تلقائياً في صفحة الجداول.
+                    </p>
                   </div>
-
-                  {fields.length === 0 ? (
-                    <div className="text-center py-6 border border-dashed border-border rounded-2xl bg-muted/20 text-muted-foreground text-sm">
-                      لا توجد كليات مضافة بعد. اضغط على "إضافة كلية" للبدء.
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {fields.map((field, index) => (
-                        <div key={field.id} className="flex items-start gap-4 p-4 rounded-2xl bg-muted/30 border border-border/50">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-                            <FormField
-                              control={form.control}
-                              name={`specializations.${index}.name`}
-                              render={({ field: inputField }) => (
-                                <FormItem className="space-y-2">
-                                  <FormLabel className="text-xs">اسم التخصص</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="مثال: هندسة الاتصالات" {...inputField} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name={`specializations.${index}.code`}
-                              render={({ field: inputField }) => (
-                                <FormItem className="space-y-2">
-                                  <FormLabel className="text-xs">رمز التخصص (اختياري)</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="مثال: CCE" {...inputField} dir="ltr" />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => remove(index)}
-                            className="mt-8 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl animate-none shrink-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                    {Object.entries(levelNames).map(([levelVal, levelLabel]) => (
+                      <FormField
+                        key={levelVal}
+                        control={form.control}
+                        name={`sectionsCount.${levelVal}`}
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-xs font-semibold">{levelLabel}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={8}
+                                className="rounded-xl text-center font-bold"
+                                {...field}
+                                value={field.value ?? 2}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 2)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-4 pt-6 border-t border-border/50">
@@ -305,7 +279,7 @@ export function DepartmentFormPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => navigate("/departments")}
+                    onClick={() => navigate("/specializations")}
                     className="rounded-xl h-12 px-6 font-medium hover:bg-destructive/10 hover:text-destructive gap-2"
                   >
                     <ArrowRight className="h-4 w-4" />

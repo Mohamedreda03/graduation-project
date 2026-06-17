@@ -30,24 +30,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTable } from "@/components/data-table";
-import { useStudents, useDepartments, useStudentStats } from "@/hooks";
+import { useStudents, useSpecializations, useStudentStats } from "@/hooks";
 import type { Student } from "@/types";
 
 export function StudentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const departmentFilter = searchParams.get("department") || "";
+  const specializationFilter = searchParams.get("specialization") || "";
   const levelFilter = searchParams.get("level") || "";
   const searchQuery = searchParams.get("q") || "";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
 
-  const setDepartmentFilter = (value: string) => {
+  const setSpecializationFilter = (value: string) => {
     setSearchParams((prev) => {
       const newParams = new URLSearchParams(prev);
       if (value && value !== "all") {
-        newParams.set("department", value);
+        newParams.set("specialization", value);
       } else {
-        newParams.delete("department");
+        newParams.delete("specialization");
       }
       newParams.set("page", "1"); // Reset to first page on filter change
       return newParams;
@@ -98,9 +98,9 @@ export function StudentsPage() {
   };
 
   const { data, isLoading } = useStudents({
-    department:
-      departmentFilter && departmentFilter !== "all"
-        ? departmentFilter
+    specialization:
+      specializationFilter && specializationFilter !== "all"
+        ? specializationFilter
         : undefined,
     level:
       levelFilter && levelFilter !== "all" ? parseInt(levelFilter) : undefined,
@@ -109,7 +109,7 @@ export function StudentsPage() {
     search: searchQuery || undefined,
   });
   const { data: statsData } = useStudentStats();
-  const { data: departmentsData } = useDepartments();
+  const { data: specializationsData } = useSpecializations();
 
   const columns: ColumnDef<Student>[] = [
     {
@@ -137,10 +137,10 @@ export function StudentsPage() {
       ),
     },
     {
-      accessorKey: "academicInfo.department",
+      accessorKey: "academicInfo.specialization",
       header: "القسم",
       cell: ({ row }) => {
-        const dept = row.original.academicInfo?.department;
+        const dept = row.original.academicInfo?.specialization;
         return dept && typeof dept === "object"
           ? (dept as any).name
           : "غير متوفر";
@@ -280,13 +280,13 @@ export function StudentsPage() {
             <span>تصفية حسب:</span>
           </div>
 
-          <Select dir="rtl" value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <Select dir="rtl" value={specializationFilter} onValueChange={setSpecializationFilter}>
             <SelectTrigger className="w-[180px] rounded-xl border-muted bg-background">
               <SelectValue placeholder="جميع الأقسام" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">جميع الأقسام</SelectItem>
-              {departmentsData?.map((dept: { _id: string; name: string }) => (
+              {specializationsData?.map((dept: { _id: string; name: string }) => (
                 <SelectItem key={dept._id} value={dept._id}>
                   {dept.name}
                 </SelectItem>
@@ -308,7 +308,7 @@ export function StudentsPage() {
           </Select>
 
           <div className="mr-auto">
-            {(departmentFilter || levelFilter || searchQuery) && (
+            {(specializationFilter || levelFilter || searchQuery) && (
               <Button
                 variant="ghost"
                 size="sm"

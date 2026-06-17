@@ -50,18 +50,14 @@ const userSchema = new mongoose.Schema(
 
     // Academic Info (for students)
     academicInfo: {
-      department: {
+      specialization: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Department",
+        ref: "Specialization",
       },
       level: {
         type: Number,
         min: 1,
         max: 6,
-      },
-      specialization: {
-        type: String,
-        trim: true,
       },
       enrolledCourses: [
         {
@@ -120,7 +116,7 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ "device.macAddress": 1 });
 userSchema.index({ "device.deviceId": 1 });
 userSchema.index({ role: 1 });
-userSchema.index({ "academicInfo.department": 1, "academicInfo.level": 1 });
+userSchema.index({ "academicInfo.specialization": 1, "academicInfo.level": 1 });
 
 // Virtual for full name
 userSchema.virtual("fullName").get(function () {

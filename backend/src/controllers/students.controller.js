@@ -43,12 +43,12 @@ exports.getStudentStats = catchAsync(async (req, res, next) => {
  * GET /api/students
  */
 exports.getAllStudents = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 10, department, level, search } = req.query;
+  const { page = 1, limit = 10, specialization, level, search } = req.query;
 
   const query = { role: ROLES.STUDENT };
 
-  if (department) {
-    query["academicInfo.department"] = department;
+  if (specialization) {
+    query["academicInfo.specialization"] = specialization;
   }
 
   if (level) {
@@ -65,7 +65,7 @@ exports.getAllStudents = catchAsync(async (req, res, next) => {
 
   const total = await User.countDocuments(query);
   const students = await User.find(query)
-    .populate("academicInfo.department")
+    .populate("academicInfo.specialization")
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
     .sort({ studentId: 1 });
@@ -85,7 +85,7 @@ exports.getStudent = catchAsync(async (req, res, next) => {
     _id: req.params.id,
     role: ROLES.STUDENT,
   })
-    .populate("academicInfo.department")
+    .populate("academicInfo.specialization")
     .populate("academicInfo.enrolledCourses");
 
   if (!student) {
@@ -121,7 +121,7 @@ exports.createStudent = catchAsync(async (req, res, next) => {
  * POST /api/students/bulk
  */
 exports.createStudentsBulk = catchAsync(async (req, res, next) => {
-  const { students } = req.body;
+  const { students, defaultPassword = "123456" } = req.body;
 
   if (!Array.isArray(students) || students.length === 0) {
     throw ApiError.badRequest("Students array is required");
@@ -136,6 +136,7 @@ exports.createStudentsBulk = catchAsync(async (req, res, next) => {
     try {
       const student = await User.create({
         ...studentData,
+        password: studentData.password || defaultPassword,
         role: ROLES.STUDENT,
       });
       results.success.push({

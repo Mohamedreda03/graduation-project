@@ -100,7 +100,7 @@ router.use(adminOnly);
  *               studentId:
  *                 type: string
  *                 description: Required for students
- *               department:
+ *               specialization:
  *                 type: string
  *               level:
  *                 type: integer

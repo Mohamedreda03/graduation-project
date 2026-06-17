@@ -13,7 +13,7 @@ export const doctorKeys = {
 };
 
 export function useDoctors(params?: {
-  department?: string;
+  specialization?: string;
   page?: number;
   limit?: number;
   search?: string;

@@ -11,7 +11,7 @@ exports.getAllCourses = catchAsync(async (req, res, next) => {
   const {
     page = 1,
     limit = 10,
-    department,
+    specialization,
     level,
     semester,
     doctor,
@@ -20,7 +20,7 @@ exports.getAllCourses = catchAsync(async (req, res, next) => {
 
   const query = { isActive: true };
 
-  if (department) query.department = department;
+  if (specialization) query.specialization = specialization;
   if (level) query.level = parseInt(level);
   if (semester) query.semester = semester;
   if (doctor) query.doctor = doctor;
@@ -34,7 +34,7 @@ exports.getAllCourses = catchAsync(async (req, res, next) => {
 
   const total = await Course.countDocuments(query);
   const courses = await Course.find(query)
-    .populate("department", "name code")
+    .populate("specialization", "name code")
     .populate("doctor", "name email")
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
@@ -52,7 +52,7 @@ exports.getAllCourses = catchAsync(async (req, res, next) => {
  */
 exports.getCourse = catchAsync(async (req, res, next) => {
   const course = await Course.findById(req.params.id)
-    .populate("department", "name code")
+    .populate("specialization", "name code")
     .populate("doctor", "name email");
 
   if (!course) {
@@ -127,7 +127,7 @@ exports.getCourseStudents = catchAsync(async (req, res, next) => {
   const course = await Course.findById(req.params.id).populate({
     path: "students",
     select: "studentId name email academicInfo",
-    populate: { path: "academicInfo.department", select: "name" },
+    populate: { path: "academicInfo.specialization", select: "name" },
   });
 
   if (!course) {

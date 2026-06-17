@@ -11,7 +11,7 @@ const { ROLES } = require("../config/constants");
 
 // Models
 const User = require("../models/User");
-const Department = require("../models/Department");
+const Specialization = require("../models/Specialization");
 const Setting = require("../models/Setting");
 
 // Default Admin
@@ -67,12 +67,12 @@ const defaultSettings = [
   },
 ];
 
-// Sample Department (for testing)
-const sampleDepartment = {
+// Sample Specialization (for testing)
+const sampleSpecialization = {
   name: "Computer Science",
   code: "CS",
   faculty: "Faculty of Computers and Information",
-  description: "Computer Science Department",
+  description: "Computer Science Specialization",
 };
 
 async function seed() {
@@ -104,15 +104,15 @@ async function seed() {
     }
     console.log(`✅ Settings seeded (${settingsCreated} new)`);
 
-    // Seed Sample Department
-    let department = await Department.findOne({
-      code: sampleDepartment.code,
+    // Seed Sample Specialization
+    let specialization = await Specialization.findOne({
+      code: sampleSpecialization.code,
     });
-    if (!department) {
-      department = await Department.create(sampleDepartment);
-      console.log("✅ Sample department created");
+    if (!specialization) {
+      specialization = await Specialization.create(sampleSpecialization);
+      console.log("✅ Sample specialization created");
     } else {
-      console.log("ℹ️  Sample department already exists");
+      console.log("ℹ️  Sample specialization already exists");
     }
 
     // Seed Sample Students
@@ -124,7 +124,7 @@ async function seed() {
         studentId: "20240001",
         role: ROLES.STUDENT,
         academicInfo: {
-          department: department._id,
+          specialization: specialization._id,
           level: 3,
         },
         device: {
@@ -142,7 +142,7 @@ async function seed() {
         studentId: "20240050",
         role: ROLES.STUDENT,
         academicInfo: {
-          department: department._id,
+          specialization: specialization._id,
           level: 3,
         },
         device: {
@@ -160,7 +160,7 @@ async function seed() {
         studentId: "20240099",
         role: ROLES.STUDENT,
         academicInfo: {
-          department: department._id,
+          specialization: specialization._id,
           level: 3,
         },
         device: {
@@ -178,7 +178,7 @@ async function seed() {
         studentId: "20210001",
         role: ROLES.STUDENT,
         academicInfo: {
-          department: department._id,
+          specialization: specialization._id,
           level: 3,
         },
         isActive: true,
@@ -190,7 +190,7 @@ async function seed() {
         studentId: "20210002",
         role: ROLES.STUDENT,
         academicInfo: {
-          department: department._id,
+          specialization: specialization._id,
           level: 3,
         },
         isActive: true,
@@ -202,7 +202,7 @@ async function seed() {
         studentId: "20210003",
         role: ROLES.STUDENT,
         academicInfo: {
-          department: department._id,
+          specialization: specialization._id,
           level: 2,
         },
         isActive: true,
@@ -214,7 +214,7 @@ async function seed() {
         studentId: "20210004",
         role: ROLES.STUDENT,
         academicInfo: {
-          department: department._id,
+          specialization: specialization._id,
           level: 1,
         },
         isActive: true,
@@ -226,7 +226,7 @@ async function seed() {
         studentId: "20210005",
         role: ROLES.STUDENT,
         academicInfo: {
-          department: department._id,
+          specialization: specialization._id,
           level: 4,
         },
         isActive: true,

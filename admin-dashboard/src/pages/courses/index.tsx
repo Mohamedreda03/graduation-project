@@ -37,12 +37,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTable } from "@/components/data-table";
-import { useCourses, useDeleteCourse, useDepartments, useDoctor } from "@/hooks";
-import type { Course, Department } from "@/types";
+import { useCourses, useDeleteCourse, useSpecializations, useDoctor } from "@/hooks";
+import type { Course, Specialization } from "@/types";
 
 export function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const departmentFilter = searchParams.get("department") || "";
+  const specializationFilter = searchParams.get("specialization") || "";
   const doctorFilter = searchParams.get("doctor") || "";
   const { data: doctorData } = useDoctor(doctorFilter);
   const levelFilter = searchParams.get("level") || "";
@@ -50,13 +50,13 @@ export function CoursesPage() {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
 
-  const setDepartmentFilter = (value: string) => {
+  const setSpecializationFilter = (value: string) => {
     setSearchParams((prev) => {
       const newParams = new URLSearchParams(prev);
       if (value && value !== "all") {
-        newParams.set("department", value);
+        newParams.set("specialization", value);
       } else {
-        newParams.delete("department");
+        newParams.delete("specialization");
       }
       newParams.set("page", "1");
       return newParams;
@@ -107,9 +107,9 @@ export function CoursesPage() {
   };
 
   const { data, isLoading } = useCourses({
-    department:
-      departmentFilter && departmentFilter !== "all"
-        ? departmentFilter
+    specialization:
+      specializationFilter && specializationFilter !== "all"
+        ? specializationFilter
         : undefined,
     doctor: doctorFilter || undefined,
     level:
@@ -118,7 +118,7 @@ export function CoursesPage() {
     limit,
     search: searchQuery || undefined,
   });
-  const { data: departmentsData } = useDepartments();
+  const { data: specializationsData } = useSpecializations();
   const deleteMutation = useDeleteCourse();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -139,10 +139,10 @@ export function CoursesPage() {
       header: "اسم المقرر",
     },
     {
-      accessorKey: "department",
+      accessorKey: "specialization",
       header: "الكلية",
       cell: ({ row }) => {
-        const dept = row.original.department;
+        const dept = row.original.specialization;
         return dept && typeof dept === "object"
           ? (dept as any).name
           : "غير متوفر";
@@ -248,13 +248,13 @@ export function CoursesPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-2xl border shadow-sm">
-        <Select dir="rtl" value={departmentFilter} onValueChange={setDepartmentFilter}>
+        <Select dir="rtl" value={specializationFilter} onValueChange={setSpecializationFilter}>
           <SelectTrigger className="w-[180px] rounded-xl border-muted bg-background">
             <SelectValue placeholder="جميع الكليات" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">جميع الكليات</SelectItem>
-            {departmentsData?.map((dept: Department) => (
+            {specializationsData?.map((dept: Specialization) => (
               <SelectItem key={dept._id} value={dept._id}>
                 {dept.name}
               </SelectItem>

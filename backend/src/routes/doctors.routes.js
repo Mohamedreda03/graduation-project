@@ -55,7 +55,7 @@ router.get("/:id/lectures", adminOrDoctor, doctorsController.getDoctorLectures);
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: department
+ *         name: specialization
  *         schema:
  *           type: string
  *       - in: query
@@ -100,7 +100,7 @@ router.get("/", adminOnly, doctorsController.getAllDoctors);
  *                 format: email
  *               password:
  *                 type: string
- *               department:
+ *               specialization:
  *                 type: string
  *               phone:
  *                 type: string
@@ -148,7 +148,7 @@ router.post("/", adminOnly, doctorsController.createDoctor);
  *             properties:
  *               name:
  *                 type: string
- *               department:
+ *               specialization:
  *                 type: string
  *               isActive:
  *                 type: boolean

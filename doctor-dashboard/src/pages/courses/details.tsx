@@ -53,10 +53,10 @@ export function CourseDetailsPage() {
       cell: ({ row }) => row.original.email,
     },
     {
-      accessorKey: "academicInfo.department",
+      accessorKey: "academicInfo.specialization",
       header: "القسم",
       cell: ({ row }) => {
-        const dept = row.original.academicInfo?.department;
+        const dept = row.original.academicInfo?.specialization;
         if (!dept) return "-";
         return typeof dept === "object" ? dept.name : dept;
       },
@@ -211,9 +211,9 @@ export function CourseDetailsPage() {
             <div className="p-3 rounded-lg bg-muted/50">
               <p className="text-xs text-muted-foreground mb-1">القسم</p>
               <p className="font-medium">
-                {typeof course.department === "object"
-                  ? course.department.name
-                  : course.department || "غير محدد"}
+                {typeof course.specialization === "object"
+                  ? course.specialization.name
+                  : course.specialization || "غير محدد"}
               </p>
             </div>
             <div className="p-3 rounded-lg bg-muted/50">

@@ -13,7 +13,7 @@ interface CreateDoctorRequest {
 
 export const doctorsService = {
   getAll: async (params?: {
-    department?: string;
+    specialization?: string;
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<Doctor>> => {

@@ -46,9 +46,8 @@ export interface UserName {
 }
 
 export interface AcademicInfo {
-  department?: Department | string;
+  specialization?: Specialization | string;
   level?: number;
-  specialization?: string;
   enrolledCourses?: string[];
 }
 
@@ -97,19 +96,19 @@ export interface Doctor extends User {
   role: "doctor";
 }
 
-// ============ Department ============
-export interface Department {
+// ============ Specialization ============
+export interface Specialization {
   _id: string;
   name: string;
   code: string;
   faculty: string;
   description?: string;
-  headOfDepartment?: string;
+  headOfSpecialization?: string;
   isActive: boolean;
   createdAt: string;
 }
 
-export interface CreateDepartmentRequest {
+export interface CreateSpecializationRequest {
   name: string;
   code: string;
   faculty: string;
@@ -151,10 +150,9 @@ export interface Course {
   _id: string;
   name: string;
   code: string;
-  department: Department | string;
+  specialization: Specialization | string;
   doctor: Doctor | string;
   level: number;
-  specialization?: string;
   semester: string;
   students: string[];
   isActive: boolean;
@@ -166,11 +164,10 @@ export interface Course {
 export interface CreateCourseRequest {
   name: string;
   code: string;
-  department: string;
+  specialization: string;
   doctor: string;
   level: number;
   semester: string;
-  specialization?: string;
 }
 
 // ============ Lecture ============

@@ -83,7 +83,7 @@ router.get("/stats", adminOrDoctor, studentsController.getStudentStats);
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: department
+ *         name: specialization
  *         schema:
  *           type: string
  *       - in: query
@@ -279,7 +279,7 @@ router.get(
  *               - email
  *               - password
  *               - studentId
- *               - department
+ *               - specialization
  *               - level
  *             properties:
  *               name:
@@ -291,7 +291,7 @@ router.get(
  *                 type: string
  *               studentId:
  *                 type: string
- *               department:
+ *               specialization:
  *                 type: string
  *               level:
  *                 type: integer
@@ -331,7 +331,7 @@ router.post("/", adminOnly, studentsController.createStudent);
  *                       type: string
  *                     studentId:
  *                       type: string
- *                     department:
+ *                     specialization:
  *                       type: string
  *                     level:
  *                       type: integer

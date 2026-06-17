@@ -15,7 +15,7 @@ router.use(protect);
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: department
+ *         name: specialization
  *         schema:
  *           type: string
  *       - in: query
@@ -144,14 +144,14 @@ router.get(
  *             required:
  *               - name
  *               - code
- *               - department
+ *               - specialization
  *               - doctor
  *             properties:
  *               name:
  *                 type: string
  *               code:
  *                 type: string
- *               department:
+ *               specialization:
  *                 type: string
  *               doctor:
  *                 type: string

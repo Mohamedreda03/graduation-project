@@ -1,21 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const departmentsController = require("../controllers/departments.controller");
+const specializationsController = require("../controllers/specializations.controller");
 const { protect, adminOnly } = require("../middlewares");
 
 router.use(protect);
 
 /**
  * @swagger
- * /departments:
+ * /specializations:
  *   get:
- *     summary: Get all departments
- *     tags: [Departments]
+ *     summary: Get all specializations
+ *     tags: [Specializations]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of departments
+ *         description: List of specializations
  *         content:
  *           application/json:
  *             schema:
@@ -26,16 +26,30 @@ router.use(protect);
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Department'
+ *                     $ref: '#/components/schemas/Specialization'
  */
-router.get("/", departmentsController.getAllDepartments);
+router.get("/", specializationsController.getAllSpecializations);
 
 /**
  * @swagger
- * /departments/{id}:
+ * /specializations/faculties:
  *   get:
- *     summary: Get department by ID
- *     tags: [Departments]
+ *     summary: Get all unique faculties
+ *     tags: [Specializations]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of unique faculties
+ */
+router.get("/faculties", specializationsController.getFaculties);
+
+/**
+ * @swagger
+ * /specializations/{id}:
+ *   get:
+ *     summary: Get specialization by ID
+ *     tags: [Specializations]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -46,18 +60,18 @@ router.get("/", departmentsController.getAllDepartments);
  *           type: string
  *     responses:
  *       200:
- *         description: Department details
+ *         description: Specialization details
  *       404:
- *         description: Department not found
+ *         description: Specialization not found
  */
-router.get("/:id", departmentsController.getDepartment);
+router.get("/:id", specializationsController.getSpecialization);
 
 /**
  * @swagger
- * /departments:
+ * /specializations:
  *   post:
- *     summary: Create a new department (Admin only)
- *     tags: [Departments]
+ *     summary: Create a new specialization (Admin only)
+ *     tags: [Specializations]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -84,16 +98,16 @@ router.get("/:id", departmentsController.getDepartment);
  *                 type: string
  *     responses:
  *       201:
- *         description: Department created
+ *         description: Specialization created
  */
-router.post("/", adminOnly, departmentsController.createDepartment);
+router.post("/", adminOnly, specializationsController.createSpecialization);
 
 /**
  * @swagger
- * /departments/{id}:
+ * /specializations/{id}:
  *   put:
- *     summary: Update department (Admin only)
- *     tags: [Departments]
+ *     summary: Update specialization (Admin only)
+ *     tags: [Specializations]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -118,10 +132,10 @@ router.post("/", adminOnly, departmentsController.createDepartment);
  *                 type: boolean
  *     responses:
  *       200:
- *         description: Department updated
+ *         description: Specialization updated
  *   delete:
- *     summary: Delete department (Admin only)
- *     tags: [Departments]
+ *     summary: Delete specialization (Admin only)
+ *     tags: [Specializations]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -132,9 +146,9 @@ router.post("/", adminOnly, departmentsController.createDepartment);
  *           type: string
  *     responses:
  *       200:
- *         description: Department deleted
+ *         description: Specialization deleted
  */
-router.put("/:id", adminOnly, departmentsController.updateDepartment);
-router.delete("/:id", adminOnly, departmentsController.deleteDepartment);
+router.put("/:id", adminOnly, specializationsController.updateSpecialization);
+router.delete("/:id", adminOnly, specializationsController.deleteSpecialization);
 
 module.exports = router;

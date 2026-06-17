@@ -18,7 +18,7 @@ const {
 // Models
 const {
   User,
-  Department,
+  Specialization,
   Hall,
   Course,
   Lecture,
@@ -32,7 +32,7 @@ const {
 // DATA DEFINITIONS
 // ----------------------------------------------------------------------
 
-const DEPARTMENTS = [
+const SPECIALIZATIONS = [
   {
     name: "علوم الحاسب",
     code: "CS",
@@ -219,7 +219,7 @@ async function seed() {
     // 1. Clear Database
     console.log("🧹 Clearing old data...");
     await User.deleteMany({});
-    await Department.deleteMany({});
+    await Specialization.deleteMany({});
     await Hall.deleteMany({});
     await Course.deleteMany({});
     await Lecture.deleteMany({});
@@ -232,9 +232,9 @@ async function seed() {
     console.log("⚙️  Creating settings...");
     await Setting.insertMany(DEFAULT_SETTINGS);
 
-    // 3. Create Departments
-    console.log("🏢 Creating departments...");
-    const createdDepts = await Department.create(DEPARTMENTS);
+    // 3. Create Specializations
+    console.log("🏢 Creating specializations...");
+    const createdDepts = await Specialization.create(SPECIALIZATIONS);
     const csDept = createdDepts.find((d) => d.code === "CS");
     const isDept = createdDepts.find((d) => d.code === "IS");
 
@@ -259,7 +259,7 @@ async function seed() {
       studentId: "20240001",
       role: ROLES.STUDENT,
       academicInfo: {
-        department: csDept._id,
+        specialization: csDept._id,
         level: 3,
         specialization: "Computer Science",
       },
@@ -280,7 +280,7 @@ async function seed() {
       studentId: "20240050",
       role: ROLES.STUDENT,
       academicInfo: {
-        department: csDept._id,
+        specialization: csDept._id,
         level: 3,
         specialization: "Computer Science",
       },
@@ -301,7 +301,7 @@ async function seed() {
       studentId: "20240099",
       role: ROLES.STUDENT,
       academicInfo: {
-        department: csDept._id,
+        specialization: csDept._id,
         level: 3,
         specialization: "Computer Science",
       },
@@ -328,7 +328,7 @@ async function seed() {
         studentId: `${20240100 + i}`,
         role: ROLES.STUDENT,
         academicInfo: {
-          department: dept._id,
+          specialization: dept._id,
           level,
         },
         device: {
@@ -348,7 +348,7 @@ async function seed() {
       {
         name: "هندسة البرمجيات",
         code: "CS351",
-        department: csDept._id,
+        specialization: csDept._id,
         doctor: createdDoctors[0]._id, // Dr. Mohamed Abdullah
         level: 3,
         semester: "Spring 2024",
@@ -356,7 +356,7 @@ async function seed() {
       {
         name: "الذكاء الاصطناعي",
         code: "CS361",
-        department: csDept._id,
+        specialization: csDept._id,
         doctor: createdDoctors[0]._id, // Dr. Mohamed Abdullah
         level: 3,
         semester: "Spring 2024",
@@ -364,7 +364,7 @@ async function seed() {
       {
         name: "قواعد البيانات",
         code: "IS211",
-        department: isDept._id,
+        specialization: isDept._id,
         doctor: createdDoctors[1]._id,
         level: 2,
         semester: "Spring 2024",
@@ -372,7 +372,7 @@ async function seed() {
       {
         name: "شبكات الحاسب",
         code: "IT321",
-        department: csDept._id,
+        specialization: csDept._id,
         doctor: createdDoctors[2]._id,
         level: 3,
         semester: "Spring 2024",
@@ -380,7 +380,7 @@ async function seed() {
       {
         name: "أمن المعلومات",
         code: "CS451",
-        department: csDept._id,
+        specialization: csDept._id,
         doctor: createdDoctors[3]._id,
         level: 4,
         semester: "Spring 2024",
@@ -450,6 +450,7 @@ async function seed() {
             lectureType: "lecture",
             status: "scheduled",
             isActive: true,
+            level: course.level,
           });
         }
       } else if (course.code === "CS361") {
@@ -466,6 +467,7 @@ async function seed() {
             lectureType: "lecture",
             status: "scheduled",
             isActive: true,
+            level: course.level,
           });
         }
       } else {
@@ -485,6 +487,7 @@ async function seed() {
           lectureType: "lecture",
           status: "scheduled",
           isActive: true,
+          level: course.level,
         });
 
         lecturesData.push({
@@ -498,6 +501,7 @@ async function seed() {
           lectureType: "section",
           status: "scheduled",
           isActive: true,
+          level: course.level,
         });
       }
     });

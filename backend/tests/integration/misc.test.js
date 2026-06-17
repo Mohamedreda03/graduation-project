@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../../src/app');
-const { User, Setting, Department, Course, Lecture } = require('../../src/models');
+const { User, Setting, Specialization, Course, Lecture } = require('../../src/models');
 const { ROLES } = require('../../src/config/constants');
 const jwt = require('jsonwebtoken');
 const config = require('../../src/config/env');
@@ -58,13 +58,13 @@ describe('Miscellaneous API Integration Tests (Settings, Doctors, AI)', () => {
     let dept;
 
     beforeEach(async () => {
-      dept = await Department.create({ name: 'CS', code: 'CS', faculty: 'Eng' });
+      dept = await Specialization.create({ name: 'CS', code: 'CS', faculty: 'Eng' });
       doctor = await User.create({
         email: 'doc@test.com',
         password: 'password123',
         name: { first: 'Doc', last: 'User' },
         role: ROLES.DOCTOR,
-        academicInfo: { department: dept._id }
+        academicInfo: { specialization: dept._id }
       });
     });
 
@@ -79,7 +79,7 @@ describe('Miscellaneous API Integration Tests (Settings, Doctors, AI)', () => {
 
     it('should assign courses to a doctor', async () => {
       const course = await Course.create({
-        name: 'Test', code: 'T1', department: dept._id, doctor: adminUser._id, level: 1, semester: '1'
+        name: 'Test', code: 'T1', specialization: dept._id, doctor: adminUser._id, level: 1, semester: '1'
       });
 
       const res = await request(app)

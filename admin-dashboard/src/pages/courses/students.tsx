@@ -53,7 +53,7 @@ interface Student {
   email: string;
   academicInfo?: {
     level?: number;
-    department?: { _id: string; name: string } | string;
+    specialization?: { _id: string; name: string } | string;
   };
 }
 

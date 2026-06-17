@@ -108,7 +108,7 @@ app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/users", require("./routes/users.routes"));
 app.use("/api/students", require("./routes/students.routes"));
 app.use("/api/doctors", require("./routes/doctors.routes"));
-app.use("/api/departments", require("./routes/departments.routes"));
+app.use("/api/specializations", require("./routes/specializations.routes"));
 app.use("/api/courses", require("./routes/courses.routes"));
 app.use("/api/halls", require("./routes/halls.routes"));
 app.use("/api/lectures", require("./routes/lectures.routes"));

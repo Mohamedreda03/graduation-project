@@ -4,7 +4,7 @@ const {
   User,
   Course,
   AttendanceRecord,
-  Department,
+  Specialization,
   Lecture,
 } = require("../models");
 const { ROLES, ATTENDANCE_STATUS } = require("../config/constants");

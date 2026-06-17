@@ -8,12 +8,12 @@ const { catchAsync, paginationResponse } = require("../utils/helpers");
  * GET /api/doctors
  */
 exports.getAllDoctors = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 10, department, search } = req.query;
+  const { page = 1, limit = 10, specialization, search } = req.query;
 
   const query = { role: ROLES.DOCTOR };
 
-  if (department) {
-    query["academicInfo.department"] = department;
+  if (specialization) {
+    query["academicInfo.specialization"] = specialization;
   }
 
   if (search) {
@@ -26,7 +26,7 @@ exports.getAllDoctors = catchAsync(async (req, res, next) => {
 
   const total = await User.countDocuments(query);
   const doctors = await User.find(query)
-    .populate("academicInfo.department")
+    .populate("academicInfo.specialization")
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
     .sort({ "name.first": 1 });
@@ -45,7 +45,7 @@ exports.getDoctor = catchAsync(async (req, res, next) => {
   const doctor = await User.findOne({
     _id: req.params.id,
     role: ROLES.DOCTOR,
-  }).populate("academicInfo.department");
+  }).populate("academicInfo.specialization");
 
   if (!doctor) {
     throw ApiError.notFound("Doctor not found");
@@ -133,7 +133,7 @@ exports.getDoctorCourses = catchAsync(async (req, res, next) => {
   }
 
   const courses = await Course.find({ doctor: doctorId, isActive: true })
-    .populate("department", "name code")
+    .populate("specialization", "name code")
     .sort({ name: 1 });
 
   res.status(200).json({

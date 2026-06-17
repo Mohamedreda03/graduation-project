@@ -1,5 +1,5 @@
 ﻿export * from "./auth.service";
-export * from "./departments.service";
+export * from "./specializations.service";
 export * from "./halls.service";
 export * from "./students.service";
 export * from "./doctors.service";

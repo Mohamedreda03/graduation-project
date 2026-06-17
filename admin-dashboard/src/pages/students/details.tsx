@@ -79,8 +79,8 @@ export function StudentDetailsPage() {
     return (s.name as string) || "غير متوفر";
   };
 
-  const getDepartmentName = (s: typeof student) => {
-    const dept = s.academicInfo?.department;
+  const getSpecializationName = (s: typeof student) => {
+    const dept = s.academicInfo?.specialization;
     return dept && typeof dept === "object" ? (dept as any).name : (dept as string) || "غير محدد";
   };
 
@@ -158,21 +158,14 @@ export function StudentDetailsPage() {
 
                 <div className="pt-3 border-t border-border/50 grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">القسم</label>
-                    <Badge variant="secondary" className="font-semibold">{getDepartmentName(student)}</Badge>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">التخصص</label>
+                    <Badge variant="secondary" className="font-semibold">{getSpecializationName(student)}</Badge>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">الفرقه</label>
                     <Badge variant="outline" className="font-semibold">الفرقه {student.academicInfo?.level || "-"}</Badge>
                   </div>
                 </div>
-
-                {student.academicInfo?.specialization && (
-                  <div>
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">التخصص</label>
-                    <p className="text-sm font-medium text-foreground">{student.academicInfo.specialization}</p>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>

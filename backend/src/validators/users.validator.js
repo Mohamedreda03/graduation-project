@@ -15,7 +15,7 @@ const createUser = {
       then: Joi.string().required().trim(),
       otherwise: Joi.forbidden(),
     }),
-    department: Joi.string().hex().length(24),
+    specialization: Joi.string().hex().length(24),
     level: Joi.when("role", {
       is: ROLES.STUDENT,
       then: Joi.number().min(1).max(6),
@@ -38,7 +38,7 @@ const updateUser = {
     phone: Joi.string()
       .pattern(/^01[0125][0-9]{8}$/)
       .message("Invalid Egyptian phone number"),
-    department: Joi.string().hex().length(24),
+    specialization: Joi.string().hex().length(24),
     level: Joi.number().min(1).max(6),
     isActive: Joi.boolean(),
   }),

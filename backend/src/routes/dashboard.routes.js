@@ -33,7 +33,7 @@ router.use(protect);
  *                       type: integer
  *                     totalCourses:
  *                       type: integer
- *                     totalDepartments:
+ *                     totalSpecializations:
  *                       type: integer
  *                     totalHalls:
  *                       type: integer

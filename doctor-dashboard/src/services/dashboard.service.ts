@@ -4,7 +4,7 @@ interface DashboardStats {
   totalStudents: number;
   totalDoctors: number;
   totalCourses: number;
-  totalDepartments: number;
+  totalSpecializations: number;
   totalHalls: number;
   activeLectures: number;
   todayAttendance: {

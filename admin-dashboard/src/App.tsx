@@ -11,8 +11,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 // Pages
 import { LoginPage } from "@/pages/login";
 import { DashboardPage } from "@/pages/dashboard";
-import { DepartmentsPage } from "@/pages/departments";
-import { DepartmentFormPage } from "@/pages/departments/form";
+import { SpecializationsPage } from "@/pages/specializations";
+import { SpecializationFormPage } from "@/pages/specializations/form";
 import { HallsPage } from "@/pages/halls";
 import { HallFormPage } from "@/pages/halls/form";
 import { AccessPointsPage } from "@/pages/halls/access-points";
@@ -74,15 +74,15 @@ function App() {
                 >
                   <Route path="/" element={<DashboardPage />} />
 
-                  {/* Departments */}
-                  <Route path="/departments" element={<DepartmentsPage />} />
+                  {/* Specializations */}
+                  <Route path="/specializations" element={<SpecializationsPage />} />
                   <Route
-                    path="/departments/new"
-                    element={<DepartmentFormPage />}
+                    path="/specializations/new"
+                    element={<SpecializationFormPage />}
                   />
                   <Route
-                    path="/departments/:id/edit"
-                    element={<DepartmentFormPage />}
+                    path="/specializations/:id/edit"
+                    element={<SpecializationFormPage />}
                   />
 
                   {/* Halls */}

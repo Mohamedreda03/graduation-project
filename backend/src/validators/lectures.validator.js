@@ -26,6 +26,7 @@ const createLecture = {
     lectureType: Joi.string()
       .valid("lecture", "section", "lab")
       .default("lecture"),
+    section: Joi.string().default("all"),
     weekPattern: Joi.string().valid("weekly", "odd", "even").default("weekly"),
   }),
 };
@@ -49,6 +50,7 @@ const updateLecture = {
       .pattern(timePattern)
       .messages({ "string.pattern.base": "End time must be in HH:MM format" }),
     lectureType: Joi.string().valid("lecture", "section", "lab"),
+    section: Joi.string(),
     weekPattern: Joi.string().valid("weekly", "odd", "even"),
     isActive: Joi.boolean(),
   }),

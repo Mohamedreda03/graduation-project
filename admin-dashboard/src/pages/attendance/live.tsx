@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAttendance, useLectures, useDepartments } from "@/hooks";
+import { useAttendance, useLectures, useSpecializations } from "@/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -46,8 +46,8 @@ export function LiveAttendancePage() {
     status: "in-progress",
   });
 
-  const { data: departmentsData } = useDepartments();
-  const departments = departmentsData || [];
+  const { data: specializationsData } = useSpecializations();
+  const specializations = specializationsData || [];
 
   const inProgressLectures: Lecture[] = (lecturesData?.data ?? []).filter(
     (l) => l.status === "in-progress",
@@ -76,13 +76,13 @@ export function LiveAttendancePage() {
 
   // Apply filters
   const filteredLectures = inProgressLectures.filter((lecture) => {
-    // 1. Department Filter
+    // 1. Specialization Filter
     if (selectedDept !== "all") {
       const deptId =
         typeof lecture.course === "object"
-          ? typeof lecture.course.department === "object"
-            ? lecture.course.department?._id
-            : lecture.course.department
+          ? typeof lecture.course.specialization === "object"
+            ? lecture.course.specialization?._id
+            : lecture.course.specialization
           : "";
       if (deptId !== selectedDept) return false;
     }
@@ -187,7 +187,7 @@ export function LiveAttendancePage() {
             </SelectTrigger>
             <SelectContent dir="rtl">
               <SelectItem value="all">جميع الأقسام</SelectItem>
-              {departments.map((dept: any) => (
+              {specializations.map((dept: any) => (
                 <SelectItem key={dept._id} value={dept._id}>
                   {dept.name}
                 </SelectItem>
@@ -286,9 +286,9 @@ export function LiveAttendancePage() {
 
           const courseDeptName =
             typeof lecture.course === "object"
-              ? typeof lecture.course.department === "object"
-                ? lecture.course.department?.name
-                : lecture.course.department
+              ? typeof lecture.course.specialization === "object"
+                ? lecture.course.specialization?.name
+                : lecture.course.specialization
               : "";
 
           const doctorName =

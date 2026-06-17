@@ -43,7 +43,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import {
   useCourses,
-  useDepartments,
+  useSpecializations,
   useDashboardStats,
   useAtRiskStudents,
 } from "@/hooks";
@@ -55,12 +55,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function AttendanceReportsPage() {
   const [course, setCourse] = useState("all");
-  const [department, setDepartment] = useState("all");
+  const [specialization, setSpecialization] = useState("all");
 
   const { data: coursesData } = useCourses(
-    department !== "all" ? { department } : undefined
+    specialization !== "all" ? { specialization } : undefined
   );
-  const { data: departmentsData } = useDepartments();
+  const { data: specializationsData } = useSpecializations();
   const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
   
   // Fetch weekly summary
@@ -75,7 +75,7 @@ export function AttendanceReportsPage() {
   const { data: atRiskStudents } = useAtRiskStudents(course !== "all" ? course : undefined);
 
   const courses = coursesData?.data || [];
-  const departments = departmentsData || [];
+  const specializations = specializationsData || [];
 
   // Parse course report data
   const courseStudents: any[] = Array.isArray(courseReportData) ? courseReportData : ((courseReportData as any)?.data || []);
@@ -141,13 +141,13 @@ export function AttendanceReportsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">الكلية</label>
-              <Select dir="rtl" value={department} onValueChange={setDepartment}>
+              <Select dir="rtl" value={specialization} onValueChange={setSpecialization}>
                 <SelectTrigger>
                   <SelectValue placeholder="جميع الأقسام" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الأقسام</SelectItem>
-                  {departments.map((dept: any) => (
+                  {specializations.map((dept: any) => (
                     <SelectItem key={dept._id} value={dept._id}>
                       {dept.name}
                     </SelectItem>

@@ -27,8 +27,8 @@ const ApiError = require("../utils/ApiError");
 // Arabic helpers
 // ─────────────────────────────────────────────
 
-/** Egyptian academic week: Saturday(6) → Thursday(4) + Friday(5)  */
-const DAY_ORDER = [6, 0, 1, 2, 3, 4, 5];
+/** Egyptian academic week: Saturday(6) → Thursday(4) (Friday excluded as holiday) */
+const DAY_ORDER = [6, 0, 1, 2, 3, 4];
 
 const DAY_NAMES_AR = {
   0: "الأحد",
@@ -465,9 +465,9 @@ exports.getAttendanceHistory = catchAsync(async (req, res) => {
 // GET /api/mobile/profile
 // ─────────────────────────────────────────────
 exports.getProfile = catchAsync(async (req, res) => {
-  // Re-fetch with department populated
+  // Re-fetch with specialization populated
   const student = await User.findById(req.user._id)
-    .populate("academicInfo.department", "name")
+    .populate("academicInfo.specialization", "name")
     .populate("academicInfo.enrolledCourses", "name code")
     .select("-password");
 
@@ -512,7 +512,7 @@ exports.getProfile = catchAsync(async (req, res) => {
       phone: student.phone || "",
 
       // Academic
-      department: student.academicInfo?.department?.name || "",
+      specialization: student.academicInfo?.specialization?.name || "",
       level: student.academicInfo?.level || null,
 
       // Enrolled courses (for reference)

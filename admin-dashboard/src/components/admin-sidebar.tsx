@@ -37,16 +37,16 @@ const navMainItems = [
   },
   {
     title: "الكليات",
-    url: "/departments",
+    url: "/specializations",
     icon: Building2,
     items: [
       {
         title: "جميع الكليات",
-        url: "/departments",
+        url: "/specializations",
       },
       {
         title: "إضافة كلية",
-        url: "/departments/new",
+        url: "/specializations/new",
       },
     ],
   },

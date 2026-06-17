@@ -1,4 +1,4 @@
-﻿export * from "./use-departments";
+﻿export * from "./use-specializations";
 export * from "./use-halls";
 export * from "./use-students";
 export * from "./use-doctors";
