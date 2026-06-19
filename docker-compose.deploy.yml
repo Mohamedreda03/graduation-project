@@ -3,6 +3,7 @@ services:
     image: mongo:latest
     container_name: attendance-db
     restart: unless-stopped
+    command: mongod --wiredTigerCacheSizeGB 0.25
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
