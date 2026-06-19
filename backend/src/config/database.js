@@ -3,7 +3,10 @@ const config = require("./env");
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(config.mongodbUri);
+    const conn = await mongoose.connect(config.mongodbUri, {
+      maxIdleTimeMS: 30000, // Close sockets after 30s of inactivity to avoid firewall drops
+      keepAliveInitialDelay: 10000 // Send TCP keepalive every 10s
+    });
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     console.log(`📊 Database: ${conn.connection.name}`);
   } catch (error) {
