@@ -77,14 +77,24 @@ app.get("/api-docs.json", (req, res) => {
 // Ignore favicon requests (browser auto-requests it)
 app.get("/favicon.ico", (req, res) => res.status(204).end());
 
-// Health check endpoint
+// Health check endpoint (includes DB status)
+const mongoose = require("mongoose");
 app.get("/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Server is running",
+  const dbStates = ["disconnected", "connected", "connecting", "disconnecting"];
+  const dbState = mongoose.connection.readyState;
+  const isHealthy = dbState === 1;
+
+  res.status(isHealthy ? 200 : 503).json({
+    success: isHealthy,
+    message: isHealthy ? "Server is running" : "Server is degraded",
     timestamp: new Date().toISOString(),
+    database: {
+      status: dbStates[dbState] || "unknown",
+      readyState: dbState,
+    },
   });
 });
+
 
 // Root endpoint (/)
 app.get("/", (req, res) => {

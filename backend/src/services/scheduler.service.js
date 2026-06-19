@@ -1,4 +1,5 @@
 const cron = require("node-cron");
+const mongoose = require("mongoose");
 const {
   AttendanceRecord,
   Lecture,
@@ -7,6 +8,14 @@ const {
   Course,
 } = require("../models");
 const { ATTENDANCE_STATUS } = require("../config/constants");
+
+/**
+ * Check if MongoDB is connected before running scheduler tasks
+ * @returns {boolean}
+ */
+function isDbReady() {
+  return mongoose.connection.readyState === 1;
+}
 
 /**
  * Finalize attendance records for ended lectures
@@ -304,29 +313,46 @@ async function resetLecturesStatus() {
 function initScheduler() {
   console.log("[Scheduler] Initializing scheduled jobs...");
 
-  // Run every 1 minute
-  cron.schedule("* * * * *", async () => {
+  // Run every 2 minutes (reduced from 1 minute to lower DB pressure)
+  cron.schedule("*/2 * * * *", async () => {
+    if (!isDbReady()) {
+      console.log("[Scheduler] Skipping finalization - DB not ready");
+      return;
+    }
     await finalizeAttendanceRecords();
     await autoCompleteLectures();
   });
 
   // Run every hour at minute 30
   cron.schedule("30 * * * *", async () => {
+    if (!isDbReady()) {
+      console.log("[Scheduler] Skipping absent marking - DB not ready");
+      return;
+    }
     await markAbsentStudents();
   });
 
   // Run every hour at minute 0
   cron.schedule("0 * * * *", async () => {
+    if (!isDbReady()) {
+      console.log("[Scheduler] Skipping session cleanup - DB not ready");
+      return;
+    }
     await cleanupStaleSessions();
   });
 
   // Run every day at midnight (00:00)
   cron.schedule("0 0 * * *", async () => {
+    if (!isDbReady()) {
+      console.log("[Scheduler] Skipping lecture reset - DB not ready");
+      return;
+    }
     await resetLecturesStatus();
   });
 
   console.log("[Scheduler] Scheduled jobs initialized");
 }
+
 
 module.exports = {
   initScheduler,
