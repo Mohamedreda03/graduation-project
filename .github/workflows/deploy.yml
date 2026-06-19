@@ -18,10 +18,17 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 30m
           script: |
-            # تثبيت Docker و Docker Compose
+            set -e
+
+            echo "========================================="
+            echo "🚀 Starting Deployment..."
+            echo "========================================="
+
+            # --------- Install Docker ---------
             if ! command -v docker &> /dev/null; then
-              echo "Installing Docker..."
+              echo "📦 Installing Docker..."
               sudo apt-get update
               sudo apt-get install -y docker.io
               sudo systemctl start docker
@@ -29,63 +36,94 @@ jobs:
               sudo usermod -aG docker ${{ secrets.SERVER_USER }}
             fi
 
+            # --------- Install Docker Compose ---------
             if ! command -v docker-compose &> /dev/null; then
-              echo "Installing Docker Compose..."
+              echo "📦 Installing Docker Compose..."
               sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
             fi
 
-            # تثبيت Nginx
+            # --------- Install Nginx ---------
             if ! command -v nginx &> /dev/null; then
-              echo "Installing Nginx..."
+              echo "📦 Installing Nginx..."
+              sudo apt-get update
               sudo apt-get install -y nginx
               sudo systemctl start nginx
               sudo systemctl enable nginx
             fi
 
-            # ادخل المسار الصحيح هنا
+            # --------- Setup Swap (if not already) ---------
+            if [ ! -f /swapfile ]; then
+              echo "💾 Creating 2GB swap..."
+              sudo fallocate -l 2G /swapfile
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+              sudo swapon /swapfile
+              echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+            fi
+
+            # --------- Clone or Pull Project ---------
             PROJECT_PATH="/home/${{ secrets.SERVER_USER }}/graduation-project"
 
             if [ ! -d "$PROJECT_PATH" ]; then
-              echo "Project directory not found. Cloning for the first time..."
+              echo "📥 Cloning project..."
               git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git "$PROJECT_PATH"
               cd "$PROJECT_PATH"
             else
               cd "$PROJECT_PATH"
+              echo "📥 Pulling latest changes..."
               git fetch --all
               git reset --hard origin/main
             fi
 
-            # إنشاء ملف الـ .env من الـ Secrets
+            # --------- Setup .env ---------
+            echo "⚙️ Setting up environment..."
             echo "${{ secrets.BACKEND_ENV }}" > "$PROJECT_PATH/backend/.env"
 
-            # نسخ إعدادات Nginx
+            # --------- Setup Nginx ---------
+            echo "🔧 Configuring Nginx..."
+
+            # Remove default nginx site to prevent conflicts
+            sudo rm -f /etc/nginx/sites-enabled/default
+
+            # Copy our config
             sudo cp "$PROJECT_PATH/server-nginx.conf" /etc/nginx/sites-available/attendance
             sudo ln -sf /etc/nginx/sites-available/attendance /etc/nginx/sites-enabled/attendance
-            sudo nginx -t && sudo systemctl restart nginx
 
-            # تثبيت Certbot
-            if ! command -v certbot &> /dev/null; then
-              echo "Installing Certbot..."
-              sudo apt-get install -y certbot python3-certbot-nginx
+            # Test and reload nginx
+            if sudo nginx -t; then
+              sudo systemctl reload nginx
+              echo "✅ Nginx configured successfully"
+            else
+              echo "❌ Nginx config test failed!"
+              exit 1
             fi
 
-            # إنشاء/تجديد شهادات SSL
-            echo "Setting up SSL certificates..."
-            sudo certbot --nginx \
-              -d att-admin.${{ secrets.SERVER_IP }}.nip.io \
-              -d att-doctor.${{ secrets.SERVER_IP }}.nip.io \
-              -d api.${{ secrets.SERVER_IP }}.nip.io \
-              --non-interactive \
-              --agree-tos \
-              --register-unsafely-without-email \
-              --redirect
-
-            # تفعيل التجديد التلقائي
-            sudo systemctl enable certbot.timer
-            sudo systemctl start certbot.timer
-
-            # تشغيل الـ Docker
+            # --------- Build and Start Docker Containers ---------
+            echo "🐳 Building and starting containers..."
             cd "$PROJECT_PATH"
+
+            # Stop existing containers
+            sudo docker-compose -f docker-compose.deploy.yml down
+
+            # Build and start
             sudo docker-compose -f docker-compose.deploy.yml up -d --build
+
+            # Wait for health check
+            echo "⏳ Waiting for services to be healthy..."
+            sleep 15
+
+            # Check if containers are running
+            echo "📊 Container status:"
+            sudo docker-compose -f docker-compose.deploy.yml ps
+
+            # Cleanup old images
             sudo docker image prune -f
+
+            echo "========================================="
+            echo "✅ Deployment Complete!"
+            echo "========================================="
+            echo "🌐 API:    http://api.${{ secrets.SERVER_IP }}.nip.io"
+            echo "💻 Admin:  http://att-admin.${{ secrets.SERVER_IP }}.nip.io"
+            echo "👨‍🏫 Doctor: http://att-doctor.${{ secrets.SERVER_IP }}.nip.io"
+            echo "========================================="
