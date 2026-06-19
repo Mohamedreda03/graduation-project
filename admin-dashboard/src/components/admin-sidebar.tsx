@@ -33,7 +33,7 @@ import type { AdminRole } from "@/types";
 type NavItem = {
   title: string;
   url: string;
-  icon?: any;
+  icon: any;
   isActive?: boolean;
   allowedAdminRoles?: AdminRole[];
   items?: Omit<NavItem, "icon" | "items">[];

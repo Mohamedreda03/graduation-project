@@ -32,7 +32,7 @@ export function AccessPointsPage() {
     const minDelay = new Promise((resolve) => setTimeout(resolve, 800));
     try {
       const [result] = await Promise.all([refetch(), minDelay]);
-      if (result.isError || result.status === "error") {
+      if (result.isError) {
         toast.error("حدث خطأ أثناء تحديث البيانات");
       } else {
         toast.success("تم تحديث البيانات بنجاح");

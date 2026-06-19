@@ -8,7 +8,6 @@ interface CreateCourseRequest {
   doctor: string;
   level: number;
   semester: string;
-  specialization?: string;
 }
 
 export const coursesService = {

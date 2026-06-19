@@ -103,11 +103,6 @@ export function DoctorsPage() {
 
   const columns: ColumnDef<Doctor>[] = [
     {
-      accessorKey: "employeeId",
-      header: "الرقم الوظيفي",
-      cell: ({ row }) => <span className="tabular-nums font-mono text-sm">{row.original.employeeId || "—"}</span>,
-    },
-    {
       accessorKey: "name",
       header: "الاسم",
       cell: ({ row }) => {

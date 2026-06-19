@@ -18,7 +18,6 @@ interface CreateStudentRequest {
   academicInfo: {
     specialization: string;
     level: number;
-    specialization?: string;
   };
 }
 

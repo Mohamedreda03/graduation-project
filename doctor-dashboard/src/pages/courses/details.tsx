@@ -69,12 +69,14 @@ export function CourseDetailsPage() {
         return typeof dept === "object" ? dept.name : dept;
       },
     },
+    {
       accessorKey: "academicInfo.level",
       header: "الفرقه",
       cell: ({ row }) => {
         const lvl = row.original.academicInfo?.level;
-        return lvl ? (levelLabels[lvl] || `الفرقة ${lvl}`) : "-";
+        return lvl ? `الفرقة ${lvl}` : "-";
       },
+    },
     {
       id: "actions",
       header: "الإجراءات",

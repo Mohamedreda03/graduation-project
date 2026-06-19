@@ -73,8 +73,8 @@ export function AttendanceReportsPage() {
       attendanceService.getAtRiskStudents(selectedCourse || undefined),
   });
 
-  const students: StudentReport[] = reportData?.data || reportData?.students || [];
-  const pagination = reportData?.pagination || { total: 0, pages: 0 };
+  const students: StudentReport[] = (reportData as any)?.data || reportData?.students || [];
+  const pagination = (reportData as any)?.pagination || { total: 0, pages: 0 };
   const atRiskCount = atRiskData?.length || 0;
 
   // Calculate averages
