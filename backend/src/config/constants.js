@@ -6,6 +6,14 @@ module.exports = {
     ADMIN: "admin",
   },
 
+  // Admin Sub-Roles (Egyptian College System)
+  ADMIN_ROLES: {
+    SUPER_ADMIN: "super_admin", // IT / System Manager
+    DEAN: "dean", // Dean / Vice Dean
+    STUDENT_AFFAIRS: "student_affairs", // Student Affairs
+    HEAD_OF_DEPT: "head_of_department", // Head of Department
+  },
+
   // Attendance Status
   ATTENDANCE_STATUS: {
     IN_PROGRESS: "in-progress",

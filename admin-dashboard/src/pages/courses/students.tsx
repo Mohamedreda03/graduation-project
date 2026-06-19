@@ -57,6 +57,14 @@ interface Student {
   };
 }
 
+const levelLabels: Record<number | string, string> = {
+  "1": "إعدادي",
+  "2": "الفرقة الأولى",
+  "3": "الفرقة الثانية",
+  "4": "الفرقة الثالثة",
+  "5": "الفرقة الرابعة",
+};
+
 export function CourseStudentsPage() {
   const { id } = useParams<{ id: string }>();
   const courseId = id ?? "";
@@ -252,7 +260,7 @@ export function CourseStudentsPage() {
                           </TableCell>
                           <TableCell>{student.studentId}</TableCell>
                           <TableCell>
-                            {student.academicInfo?.level ? `الفرقه ${student.academicInfo.level}` : "-"}
+                            {student.academicInfo?.level ? (levelLabels[student.academicInfo.level] || `الفرقة ${student.academicInfo.level}`) : "-"}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -302,12 +310,11 @@ export function CourseStudentsPage() {
                   <SelectValue placeholder="اختر الفرقه" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">الفرقه 1</SelectItem>
-                  <SelectItem value="2">الفرقه 2</SelectItem>
-                  <SelectItem value="3">الفرقه 3</SelectItem>
-                  <SelectItem value="4">الفرقه 4</SelectItem>
-                  <SelectItem value="5">الفرقه 5</SelectItem>
-                  <SelectItem value="6">الفرقه 6</SelectItem>
+                  <SelectItem value="1">إعدادي</SelectItem>
+                  <SelectItem value="2">الفرقة الأولى</SelectItem>
+                  <SelectItem value="3">الفرقة الثانية</SelectItem>
+                  <SelectItem value="4">الفرقة الثالثة</SelectItem>
+                  <SelectItem value="5">الفرقة الرابعة</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -321,7 +328,7 @@ export function CourseStudentsPage() {
                 ) : (
                   <UserPlus className="h-4 w-4" />
                 )}
-                تسجيل جميع طلاب الفرقه {selectedLevel || "..."}
+                تسجيل جميع طلاب {levelLabels[selectedLevel] || "..."}
               </Button>
             </div>
           </DialogContent>
@@ -373,7 +380,7 @@ export function CourseStudentsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          الفرقه {student.academicInfo?.level || "-"}
+                          {student.academicInfo?.level ? (levelLabels[student.academicInfo.level] || `الفرقة ${student.academicInfo.level}`) : "-"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">

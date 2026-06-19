@@ -82,7 +82,6 @@ const levelNames: Record<string, string> = {
   "3": "الثانية",
   "4": "الثالثة",
   "5": "الرابعة",
-  "6": "الخامسة",
 };
 
 // Standard 8 periods of 45 minutes from the uploaded design
@@ -247,10 +246,10 @@ export function LectureSchedulePage() {
       if (typeof dbSections === "number") {
         setSectionsCount(dbSections);
       } else {
-        setSectionsCount(2); // fallback
+        setSectionsCount(selectedLevel === "1" ? 6 : 3); // fallback
       }
     } else {
-      setSectionsCount(2); // default
+      setSectionsCount(selectedLevel === "1" ? 6 : 3); // default
     }
   }, [selectedSpecialization, selectedLevel, selectedSpecializationObj]);
 

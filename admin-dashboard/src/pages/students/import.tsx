@@ -19,6 +19,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -207,74 +208,52 @@ export function ImportStudentsPage() {
   const specializations: Specialization[] = specializationsData || [];
 
   const steps = [
-    { id: 1, title: "رفع الملف", icon: Upload },
-    { id: 2, title: "مراجعة البيانات", icon: FileText },
-    { id: 3, title: "تأكيد الاستيراد", icon: CheckCircle2 },
+    { id: 1, title: "اختيار الملف", icon: Upload },
+    { id: 2, title: "مراجعة السجلات", icon: FileText },
+    { id: 3, title: "تنفيذ الاستيراد", icon: CheckCircle2 },
   ];
 
   return (
-    <div className="w-full">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-muted/30 p-8 mb-8 border border-border/50">
-        <div className="relative flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-primary/10 rounded-2xl">
-                <Upload className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight text-foreground">
-                  استيراد الطلاب
-                </h1>
-                <p className="text-muted-foreground">
-                  استيراد مجموعة طلاب من ملف Excel أو CSV بخطوات بسيطة
-                </p>
-              </div>
-            </div>
-
-            {/* Features */}
-            <div className="flex flex-wrap gap-3 mt-6">
-              <div className="flex items-center gap-2 text-sm bg-background/50 px-4 py-2 rounded-full border border-border/50">
-                <Zap className="h-4 w-4 text-amber-500" />
-                <span>استيراد سريع</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm bg-background/50 px-4 py-2 rounded-full border border-border/50">
-                <Shield className="h-4 w-4 text-green-500" />
-                <span>تحقق تلقائي</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm bg-background/50 px-4 py-2 rounded-full border border-border/50">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span>معالجة ذكية</span>
-              </div>
-            </div>
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-dashed pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-md">
+            <Upload className="h-6 w-6 text-primary" />
           </div>
-
-          {/* Download Template */}
-          <Button variant="outline" onClick={downloadTemplate} className="rounded-xl gap-2 shrink-0">
-            <Download className="h-4 w-4" />
-            تحميل قالب Excel
-          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              استيراد سجلات الطلاب
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              إدخال دفعة من الطلاب إلى قاعدة البيانات عبر ملف Excel أو CSV
+            </p>
+          </div>
         </div>
+        <Button variant="outline" onClick={downloadTemplate} className="h-10 px-4 gap-2">
+          <Download className="h-4 w-4" />
+          تحميل قالب الإدخال المعتمد
+        </Button>
       </div>
 
       {/* Progress Steps */}
-      <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8 overflow-x-auto pb-2">
+      <div className="flex items-center gap-2 mb-6">
         {steps.map((step, idx) => (
-          <div key={step.id} className="flex items-center shrink-0">
+          <div key={step.id} className="flex items-center">
             <div
-              className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-xl ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md border ${
                 currentStep >= step.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
+                  ? "bg-primary/10 border-primary/30 text-primary"
+                  : "bg-muted/30 border-transparent text-muted-foreground"
               }`}
             >
-              <step.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="font-medium text-sm sm:text-base">
+              <step.icon className="h-4 w-4" />
+              <span className="font-semibold text-sm">
                 {step.title}
               </span>
             </div>
             {idx < steps.length - 1 && (
-              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mx-1 sm:mx-2 text-muted-foreground" />
+              <ArrowLeft className="h-4 w-4 mx-2 text-muted-foreground/50" />
             )}
           </div>
         ))}
@@ -284,21 +263,21 @@ export function ImportStudentsPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Step 1: Upload */}
-          <div className="bg-card/50 dark:bg-card/20 backdrop-blur-sm rounded-3xl border border-border/50 shadow-sm overflow-hidden">
-            <div className="p-5 sm:p-6 border-b border-border/50 bg-muted/30">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+          <div className="bg-card rounded-lg border shadow-sm overflow-hidden">
+            <div className="p-4 border-b bg-muted/30">
+              <h2 className="text-base font-bold flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-primary font-bold text-sm tabular-nums">
                   1
                 </div>
-                رفع ملف البيانات
+                مصدر البيانات
               </h2>
             </div>
-            <div className="p-5 sm:p-6">
+            <div className="p-5">
               <div
-                className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center ${
+                className={`relative border border-dashed rounded-lg p-8 text-center transition-colors ${
                   file
                     ? "border-primary/50 bg-primary/5"
-                    : "border-border/50 hover:border-primary/30 hover:bg-muted/30"
+                    : "border-border hover:border-primary/30 hover:bg-muted/30"
                 }`}
               >
                 <input
@@ -309,18 +288,19 @@ export function ImportStudentsPage() {
                 />
                 {file ? (
                   <div className="space-y-3">
-                    <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center">
-                      <FileSpreadsheet className="h-8 w-8 text-primary" />
+                    <div className="w-12 h-12 mx-auto bg-primary/10 rounded-md flex items-center justify-center">
+                      <FileSpreadsheet className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="font-bold text-foreground">{file.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-bold text-foreground text-sm" dir="ltr">{file.name}</p>
+                      <p className="text-xs text-muted-foreground tabular-nums">
                         {(file.size / 1024).toFixed(1)} KB
                       </p>
                     </div>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
+                      className="h-8 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
                         setFile(null);
@@ -332,16 +312,16 @@ export function ImportStudentsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="w-20 h-20 mx-auto bg-muted rounded-2xl flex items-center justify-center">
-                      <Upload className="h-10 w-10 text-muted-foreground" />
+                  <div className="space-y-3">
+                    <div className="w-12 h-12 mx-auto bg-muted rounded-md flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-foreground">
+                      <p className="text-sm font-bold text-foreground">
                         اسحب الملف هنا أو اضغط للاختيار
                       </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        يدعم ملفات Excel (.xlsx, .xls) و CSV
+                      <p className="text-xs text-muted-foreground mt-1" dir="ltr">
+                        .xlsx, .xls, .csv
                       </p>
                     </div>
                   </div>
@@ -349,8 +329,8 @@ export function ImportStudentsPage() {
               </div>
 
               {parseError && (
-                <div className="mt-4 flex items-center gap-3 text-destructive bg-destructive/10 p-4 rounded-xl border border-destructive/20">
-                  <AlertCircle className="h-5 w-5 shrink-0" />
+                <div className="mt-4 flex items-center gap-2 text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 text-sm">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
                   <span className="font-medium">{parseError}</span>
                 </div>
               )}
@@ -359,75 +339,54 @@ export function ImportStudentsPage() {
 
           {/* Step 2: Preview */}
           {parsedData.length > 0 && (
-            <div className="bg-card/50 dark:bg-card/20 rounded-3xl border border-border/50 shadow-sm overflow-hidden">
-              <div className="p-5 sm:p-6 border-b border-border/50 bg-muted/30 flex items-center justify-between flex-wrap gap-3">
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+            <div className="bg-card rounded-lg border shadow-sm overflow-hidden">
+              <div className="p-4 border-b bg-muted/30 flex items-center justify-between gap-3">
+                <h2 className="text-base font-bold flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-primary font-bold text-sm tabular-nums">
                     2
                   </div>
-                  معاينة البيانات
+                  معاينة السجلات المكتشفة
                 </h2>
-                <div className="flex items-center gap-2 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-full text-sm font-medium">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {parsedData.length} طالب
-                </div>
+                <Badge variant="secondary" className="font-mono tabular-nums">
+                  {parsedData.length} سجل
+                </Badge>
               </div>
               <div className="overflow-x-auto max-h-80">
-                <table className="w-full min-w-[500px]">
-                  <thead className="bg-muted/50 sticky top-0">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 sticky top-0 border-b">
                     <tr>
-                      <th className="p-4 text-right font-bold text-sm">#</th>
-                      <th className="p-4 text-right font-bold text-sm">
-                        الاسم
-                      </th>
-                      <th className="p-4 text-right font-bold text-sm">
-                        البريد
-                      </th>
-                      <th className="p-4 text-right font-bold text-sm">
-                        الرقم
-                      </th>
-                      <th className="p-4 text-right font-bold text-sm">
-                        الفرقه
-                      </th>
-                      <th className="p-4 text-right font-bold text-sm">
-                        الهاتف
-                      </th>
-                      <th className="p-4 text-right font-bold text-sm">
-                        عنوان الماك
-                      </th>
+                      <th className="px-4 py-2.5 text-right font-bold text-muted-foreground w-12">#</th>
+                      <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">الاسم</th>
+                      <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">الرقم الأكاديمي</th>
+                      <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">البريد الجامعي</th>
+                      <th className="px-4 py-2.5 text-right font-bold text-muted-foreground">الفرقة</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/30">
+                  <tbody className="divide-y">
                     {parsedData.slice(0, 10).map((student, idx) => (
                       <tr key={idx} className="hover:bg-muted/30">
-                        <td className="p-4 text-muted-foreground">{idx + 1}</td>
-                        <td className="p-4 font-medium">
+                        <td className="px-4 py-2 text-muted-foreground tabular-nums">{idx + 1}</td>
+                        <td className="px-4 py-2 font-medium">
                           {student.name.first} {student.name.last}
                         </td>
-                        <td className="p-4 text-left" dir="ltr">
-                          {student.email}
-                        </td>
-                        <td className="p-4" dir="ltr">
+                        <td className="px-4 py-2 font-mono text-muted-foreground tabular-nums" dir="ltr">
                           {student.studentId}
                         </td>
-                        <td className="p-4">
-                          <span className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-sm font-medium">
-                            الفرقه {student.academicInfo.level}
-                          </span>
+                        <td className="px-4 py-2 font-mono text-muted-foreground" dir="ltr">
+                          {student.email}
                         </td>
-                        <td className="p-4 text-muted-foreground" dir="ltr">
-                          {student.phone || "-"}
-                        </td>
-                        <td className="p-4 font-mono text-xs text-muted-foreground" dir="ltr">
-                          {student.device?.macAddress || "-"}
+                        <td className="px-4 py-2">
+                          <Badge variant="outline" className="font-medium">
+                            الفرقة {student.academicInfo.level}
+                          </Badge>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 {parsedData.length > 10 && (
-                  <div className="p-4 text-center text-muted-foreground bg-muted/30 border-t border-border/30">
-                    و {parsedData.length - 10} طالب آخر...
+                  <div className="p-3 text-center text-xs text-muted-foreground bg-muted/30 border-t">
+                    يوجد {parsedData.length - 10} سجل إضافي لم يتم عرضه...
                   </div>
                 )}
               </div>
@@ -437,19 +396,18 @@ export function ImportStudentsPage() {
 
         {/* Sidebar Settings */}
         <div className="space-y-6">
-          {/* Specialization Selection */}
-          <div className="bg-card/50 dark:bg-card/20 rounded-3xl border border-border/50 shadow-sm overflow-hidden">
-            <div className="p-5 sm:p-6 border-b border-border/50 bg-muted/30">
-              <h2 className="text-lg font-bold">إعدادات الاستيراد</h2>
+          <div className="bg-card rounded-lg border shadow-sm">
+            <div className="p-4 border-b bg-muted/30">
+              <h2 className="text-base font-bold">توجيه البيانات (التخصيص)</h2>
             </div>
-            <div className="p-5 sm:p-6 space-y-6">
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-foreground/80 flex items-center gap-2">
+            <div className="p-5 space-y-5">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 text-primary" />
-                  القسم
+                  القسم الأكاديمي الموجه إليه
                 </label>
                 <Select dir="rtl" value={specialization} onValueChange={setSpecialization}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="اختر القسم" />
                   </SelectTrigger>
                   <SelectContent>
@@ -460,10 +418,13 @@ export function ImportStudentsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  سيتم قيد جميع الطلاب المستوردين في هذا القسم.
+                </p>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-foreground/80 flex items-center gap-2">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Shield className="h-4 w-4 text-primary" />
                   كلمة المرور الافتراضية
                 </label>
@@ -472,16 +433,17 @@ export function ImportStudentsPage() {
                   onChange={(e) => setDefaultPassword(e.target.value)}
                   placeholder="كلمة المرور"
                   dir="ltr"
+                  className="h-10 font-mono text-left"
                 />
                 <p className="text-xs text-muted-foreground">
-                  سيتم تعيين هذه الكلمة لجميع الطلاب المستوردين
+                  كلمة المرور المؤقتة لدخول هؤلاء الطلاب.
                 </p>
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="bg-card/50 dark:bg-card/20 rounded-3xl border border-border/50 shadow-sm p-5 sm:p-6">
+          <div className="bg-card rounded-lg border shadow-sm p-4 space-y-3">
             <Button
               onClick={() => {
                 setCurrentStep(3);
@@ -492,38 +454,28 @@ export function ImportStudentsPage() {
                 parsedData.length === 0 ||
                 createBulkMutation.isPending
               }
-              className="w-full h-12 sm:h-14 rounded-xl text-base sm:text-lg font-bold gap-2 sm:gap-3"
+              className="w-full h-10 font-bold gap-2"
             >
               {createBulkMutation.isPending ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  جاري الاستيراد...
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  جاري تسجيل البيانات...
                 </>
               ) : (
                 <>
-                  <Users className="h-5 w-5" />
-                  استيراد {parsedData.length || 0} طالب
+                  <Users className="h-4 w-4" />
+                  بدء تسجيل ({parsedData.length || 0}) طالب
                 </>
               )}
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => navigate("/students")}
-              className="w-full mt-3 rounded-xl"
+              className="w-full h-10"
+              disabled={createBulkMutation.isPending}
             >
-              إلغاء والعودة
+              إلغاء الأمر
             </Button>
-          </div>
-
-          {/* Help Card */}
-          <div className="bg-muted/30 rounded-3xl border border-border/50 p-5 sm:p-6">
-            <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              نصيحة
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              تأكد من أن ملف Excel أو CSV يحتوي على الأعمدة التالية: الاسم (Name)، البريد الإلكتروني (Email)، الرقم الأكاديمي (Student ID)، والفرقة (Level - اختياري)، الهاتف (Phone - اختياري)، وعنوان الماك (MAC Address - اختياري).
-            </p>
           </div>
         </div>
       </div>

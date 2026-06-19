@@ -1,7 +1,7 @@
 const { User, AttendanceRecord, Course } = require("../models");
 const { ROLES, DEVICE_REQUEST_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
-const { catchAsync, paginationResponse } = require("../utils/helpers");
+const { catchAsync, paginationResponse, buildNameSearchQuery } = require("../utils/helpers");
 
 /**
  * Get student statistics
@@ -56,11 +56,7 @@ exports.getAllStudents = catchAsync(async (req, res, next) => {
   }
 
   if (search) {
-    query.$or = [
-      { "name.first": { $regex: search, $options: "i" } },
-      { "name.last": { $regex: search, $options: "i" } },
-      { studentId: { $regex: search, $options: "i" } },
-    ];
+    Object.assign(query, buildNameSearchQuery(search, ["studentId"]));
   }
 
   const total = await User.countDocuments(query);

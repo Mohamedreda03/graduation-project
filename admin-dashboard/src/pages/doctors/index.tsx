@@ -105,6 +105,7 @@ export function DoctorsPage() {
     {
       accessorKey: "employeeId",
       header: "الرقم الوظيفي",
+      cell: ({ row }) => <span className="tabular-nums font-mono text-sm">{row.original.employeeId || "—"}</span>,
     },
     {
       accessorKey: "name",
@@ -112,16 +113,16 @@ export function DoctorsPage() {
       cell: ({ row }) => {
         const name = row.original.name;
         if (name && typeof name === "object") {
-          return `${(name as any).first} ${(name as any).last}`;
+          return <span className="font-medium">{`${(name as any).first} ${(name as any).last}`}</span>;
         }
-        return (name as string) || "غير متوفر";
+        return <span className="font-medium">{(name as string) || "غير متوفر"}</span>;
       },
     },
     {
       accessorKey: "email",
       header: "البريد الإلكتروني",
       cell: ({ row }) => (
-        <span dir="ltr" className="text-muted-foreground">
+        <span dir="ltr" className="text-muted-foreground text-sm font-mono">
           {row.original.email}
         </span>
       ),
@@ -129,7 +130,7 @@ export function DoctorsPage() {
     {
       accessorKey: "phone",
       header: "الهاتف",
-      cell: ({ row }) => row.original.phone || "غير متوفر",
+      cell: ({ row }) => <span className="tabular-nums" dir="ltr">{row.original.phone || "—"}</span>,
     },
     {
       id: "actions",
@@ -142,7 +143,7 @@ export function DoctorsPage() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-9 w-9 p-0 rounded-full hover:bg-muted/50"
+                className="h-8 w-8 p-0"
               >
                 <span className="sr-only">فتح القائمة</span>
                 <MoreHorizontal className="h-4 w-4" />
@@ -162,7 +163,7 @@ export function DoctorsPage() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-destructive"
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                 onClick={() => setDeleteId(doctor._id)}
               >
                 <Trash2 className="ml-2 h-4 w-4" />
@@ -178,28 +179,28 @@ export function DoctorsPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4 border-dashed">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-primary">
-            الدكاترة
+          <h1 className="text-3xl font-bold text-foreground">
+            أعضاء هيئة التدريس
           </h1>
-          <p className="text-muted-foreground font-medium">
-            إدارة بيانات أعضاء هيئة التدريس والمقررات الخاصة بهم
+          <p className="text-sm text-muted-foreground mt-1">
+            إدارة بيانات الدكاترة والمقررات الأكاديمية الخاصة بهم
           </p>
         </div>
-        <Button asChild className="rounded-xl h-11 px-6">
+        <Button asChild className="h-10 px-5">
           <Link to="/doctors/new">
-            <Plus className="ml-2 h-5 w-5" />
-            إضافة طبيب جديد
+            <Plus className="ml-2 h-4 w-4" />
+            إضافة عضو هيئة تدريس
           </Link>
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-2xl border shadow-sm">
+      <div className="flex flex-wrap gap-4 items-center bg-card p-3 rounded-lg border shadow-sm">
         <Select dir="rtl" value={specializationFilter} onValueChange={setSpecializationFilter}>
-          <SelectTrigger className="w-[180px] rounded-xl border-muted bg-background">
-            <SelectValue placeholder="جميع الأقسام" />
+          <SelectTrigger className="w-[200px] h-9">
+            <SelectValue placeholder="تصفية حسب القسم..." />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value=" ">جميع الأقسام</SelectItem>
@@ -218,7 +219,7 @@ export function DoctorsPage() {
         data={data?.data ?? []}
         isLoading={isLoading}
         searchKey="name"
-        searchPlaceholder="البحث باسم الطبيب أو الرقم الوظيفي..."
+        searchPlaceholder="البحث باسم العضو أو الرقم الوظيفي..."
         defaultSearchValue={searchQuery}
         onSearch={handeSearch}
         pageIndex={page - 1}
@@ -234,10 +235,9 @@ export function DoctorsPage() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف بيانات هذا الطبيب نهائياً. لا يمكن التراجع عن هذا
-              الإجراء.
+              هل أنت متأكد من رغبتك في حذف هذا السجل الأكاديمي؟ لا يمكن التراجع عن هذا الإجراء وسيتم إزالة ارتباط العضو بالمقررات الدراسية.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -246,7 +246,7 @@ export function DoctorsPage() {
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              حذف
+              تأكيد الحذف
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

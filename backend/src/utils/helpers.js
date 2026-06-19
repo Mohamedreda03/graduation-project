@@ -81,6 +81,37 @@ const paginationResponse = (data, total, page, limit) => {
   };
 };
 
+/**
+ * Build MongoDB search query for name (supporting first + last name search) and other optional fields.
+ */
+const buildNameSearchQuery = (search, otherFields = []) => {
+  if (!search) return {};
+  const cleanSearch = search.trim();
+  const parts = cleanSearch.split(/\s+/);
+
+  const orQueries = [
+    { "name.first": { $regex: cleanSearch, $options: "i" } },
+    { "name.last": { $regex: cleanSearch, $options: "i" } },
+  ];
+
+  if (parts.length > 1) {
+    const firstNameSearch = parts[0];
+    const lastNameSearch = parts.slice(1).join(" ");
+    orQueries.push({
+      $and: [
+        { "name.first": { $regex: firstNameSearch, $options: "i" } },
+        { "name.last": { $regex: lastNameSearch, $options: "i" } },
+      ],
+    });
+  }
+
+  for (const field of otherFields) {
+    orQueries.push({ [field]: { $regex: cleanSearch, $options: "i" } });
+  }
+
+  return { $or: orQueries };
+};
+
 module.exports = {
   catchAsync,
   getTodayDate,
@@ -91,4 +122,5 @@ module.exports = {
   normalizeMacAddress,
   paginate,
   paginationResponse,
+  buildNameSearchQuery,
 };

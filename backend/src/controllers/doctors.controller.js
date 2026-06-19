@@ -1,7 +1,7 @@
 const { User, Course, Lecture } = require("../models");
 const { ROLES } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
-const { catchAsync, paginationResponse } = require("../utils/helpers");
+const { catchAsync, paginationResponse, buildNameSearchQuery } = require("../utils/helpers");
 
 /**
  * Get all doctors
@@ -17,11 +17,7 @@ exports.getAllDoctors = catchAsync(async (req, res, next) => {
   }
 
   if (search) {
-    query.$or = [
-      { "name.first": { $regex: search, $options: "i" } },
-      { "name.last": { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-    ];
+    Object.assign(query, buildNameSearchQuery(search, ["email"]));
   }
 
   const total = await User.countDocuments(query);

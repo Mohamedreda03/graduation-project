@@ -11,7 +11,7 @@ import type {
   SortingState,
   ColumnFiltersState,
 } from "@tanstack/react-table";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search,
   ChevronLeft,
@@ -84,6 +84,16 @@ export function DataTable<TData, TValue>({
   );
   const [searchValue, setSearchValue] = useState(defaultSearchValue);
 
+  // Sync state when defaultSearchValue changes
+  useEffect(() => {
+    setSearchValue(defaultSearchValue);
+    setColumnFilters(
+      searchKey && defaultSearchValue
+        ? [{ id: searchKey, value: defaultSearchValue }]
+        : [],
+    );
+  }, [defaultSearchValue, searchKey]);
+
   const table = useReactTable({
     data,
     columns,
@@ -97,6 +107,7 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     manualPagination,
+    manualFiltering: manualPagination,
     state: {
       sorting,
       columnFilters,

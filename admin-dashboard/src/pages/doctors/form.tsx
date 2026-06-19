@@ -120,270 +120,238 @@ export function DoctorFormPage() {
   if (isEditing && doctorLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="w-full">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-muted/30 p-8 mb-8 border border-border/50">
-        <div className="relative">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-primary/20 rounded-2xl">
-              {isEditing ? (
-                <Stethoscope className="h-8 w-8 text-primary" />
-              ) : (
-                <UserPlus className="h-8 w-8 text-primary" />
-              )}
-            </div>
-            <div>
-              <h1 className="text-3xl font-black text-foreground">
-                {isEditing ? "تعديل بيانات الدكتور" : "إضافة دكتور جديد"}
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                {isEditing
-                  ? "تعديل تفاصيل سجل الدكتور"
-                  : "أدخل المعلومات الأساسية لتعريف عضو هيئة تدريس جديد"}
-              </p>
-            </div>
-          </div>
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-dashed pb-4">
+        <div className="p-2 bg-primary/10 rounded-md">
+          {isEditing ? (
+            <Stethoscope className="h-6 w-6 text-primary" />
+          ) : (
+            <UserPlus className="h-6 w-6 text-primary" />
+          )}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isEditing ? "تعديل بيانات عضو هيئة التدريس" : "تسجيل عضو هيئة تدريس جديد"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {isEditing
+              ? "تحديث السجل الأكاديمي والبيانات الشخصية"
+              : "إدخال البيانات الأساسية لإنشاء حساب جديد"}
+          </p>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Form Section */}
-        <div className="lg:col-span-2">
-          <div className="bg-card/50 dark:bg-card/20 p-8 rounded-3xl border border-border/50 shadow-sm">
+        <div className="xl:col-span-2">
+          <div className="bg-card rounded-lg border shadow-sm">
             {/* Section Header */}
-            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-border/50">
-              <GraduationCap className="h-6 w-6 text-primary" />
-              <h2 className="text-xl font-bold">معلومات عضو هيئة التدريس</h2>
+            <div className="flex items-center gap-2 p-4 border-b bg-muted/30">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              <h2 className="text-base font-bold">البيانات الشخصية والأكاديمية</h2>
             </div>
 
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-8"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          الاسم الأول
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="أحمد" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <div className="p-5">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-sm">
+                            <User className="h-3.5 w-3.5 text-primary" />
+                            الاسم الأول
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="أحمد" className="h-10" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          الاسم الأخير
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="كمال" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-sm">
+                            <User className="h-3.5 w-3.5 text-primary" />
+                            الاسم الأخير
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="كمال" className="h-10" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          البريد الإلكتروني
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="doctor@example.com"
-                            {...field}
-                            dir="ltr"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-sm">
+                            <Mail className="h-3.5 w-3.5 text-primary" />
+                            البريد الإلكتروني الجامعي
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="doctor@university.edu"
+                              className="h-10 font-mono text-left"
+                              {...field}
+                              dir="ltr"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                          {isEditing
-                            ? "كلمة مرور جديدة (اختياري)"
-                            : "كلمة المرور"}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="******"
-                            {...field}
-                            dir="ltr"
-                          />
-                        </FormControl>
-                        {isEditing && (
-                          <FormDescription className="text-xs">
-                            اترك الحقل فارغاً إذا كنت لا تريد تغيير كلمة المرور
-                          </FormDescription>
-                        )}
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-sm">
+                            <Lock className="h-3.5 w-3.5 text-primary" />
+                            {isEditing
+                              ? "كلمة مرور جديدة (اختياري)"
+                              : "كلمة المرور"}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="password"
+                              placeholder="******"
+                              className="h-10 font-mono text-left"
+                              {...field}
+                              dir="ltr"
+                            />
+                          </FormControl>
+                          {isEditing && (
+                            <FormDescription className="text-xs">
+                              اترك الحقل فارغاً للإبقاء على كلمة المرور الحالية
+                            </FormDescription>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          رقم الهاتف (اختياري)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="01xxxxxxxxx"
-                            {...field}
-                            dir="ltr"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-sm">
+                            <Phone className="h-3.5 w-3.5 text-primary" />
+                            رقم الهاتف (اختياري)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="01xxxxxxxxx"
+                              className="h-10 font-mono text-left tabular-nums"
+                              {...field}
+                              dir="ltr"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                <div className="flex gap-4 pt-6 border-t border-border/50">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="rounded-xl px-8 gap-2"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    {isEditing ? "حفظ التغييرات" : "إضافة دكتور"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    className="rounded-xl px-8 gap-2"
-                    onClick={() => navigate("/doctors")}
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                    إلغاء
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                  <div className="flex gap-3 pt-6 border-t border-dashed">
+                    <Button
+                      type="submit"
+                      className="h-10 px-6 gap-2"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      {isEditing ? "حفظ التغييرات" : "تأكيد الإضافة"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-10 px-4"
+                      onClick={() => navigate("/doctors")}
+                    >
+                      إلغاء الأمر
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Info Card */}
-          <div className="bg-card/50 dark:bg-card/20 p-6 rounded-3xl border border-border/50">
-            <div className="flex items-center gap-3 mb-4">
-              <Info className="h-5 w-5 text-primary" />
-              <h3 className="font-bold">معلومات مهمة</h3>
+          <div className="bg-card rounded-lg border shadow-sm">
+            <div className="flex items-center gap-2 p-4 border-b bg-muted/30">
+              <Info className="h-4 w-4 text-primary" />
+              <h3 className="font-bold text-sm">متطلبات النظام</h3>
             </div>
-            <div className="space-y-4 text-sm text-muted-foreground">
+            <div className="p-4 space-y-4 text-sm text-muted-foreground">
               <div className="flex items-start gap-3">
-                <User className="h-4 w-4 mt-0.5 text-primary/60" />
+                <Mail className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                 <div>
-                  <p className="font-medium text-foreground">الاسم الكامل</p>
-                  <p>أدخل الاسم مع اللقب العلمي (د. / أ.د.)</p>
+                  <p className="font-semibold text-foreground mb-0.5">تسجيل الدخول</p>
+                  <p className="text-xs leading-relaxed">يستخدم عضو هيئة التدريس البريد الإلكتروني للوصول إلى تطبيق تسجيل الحضور.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Hash className="h-4 w-4 mt-0.5 text-primary/60" />
+                <Hash className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                 <div>
-                  <p className="font-medium text-foreground">الرقم الوظيفي</p>
-                  <p>رقم فريد لتمييز عضو هيئة التدريس</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Mail className="h-4 w-4 mt-0.5 text-primary/60" />
-                <div>
-                  <p className="font-medium text-foreground">
-                    البريد الإلكتروني
-                  </p>
-                  <p>يستخدم لتسجيل الدخول للنظام</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Building2 className="h-4 w-4 mt-0.5 text-primary/60" />
-                <div>
-                  <p className="font-medium text-foreground">القسم</p>
-                  <p>القسم الأكاديمي التابع له</p>
+                  <p className="font-semibold text-foreground mb-0.5">الرقم الوظيفي</p>
+                  <p className="text-xs leading-relaxed">يتم إنشاؤه تلقائياً لتمييز السجل الأكاديمي في النظام.</p>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Tip Card */}
-          <div className="bg-muted/30 p-6 rounded-3xl border border-border/50">
-            <div className="flex items-center gap-3 mb-3">
-              <Lightbulb className="h-5 w-5 text-amber-500" />
-              <h3 className="font-bold text-amber-700 dark:text-amber-400">
-                نصيحة
-              </h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              يمكن للدكتور استخدام البريد الإلكتروني وكلمة المرور لتسجيل الدخول
-              إلى التطبيق وتسجيل حضور الطلاب في المحاضرات.
-            </p>
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-card/50 dark:bg-card/20 p-6 rounded-3xl border border-border/50">
-            <div className="flex items-center gap-3 mb-4">
-              <FileText className="h-5 w-5 text-primary" />
-              <h3 className="font-bold">روابط مفيدة</h3>
+          <div className="bg-card rounded-lg border shadow-sm">
+            <div className="flex items-center gap-2 p-4 border-b bg-muted/30">
+              <FileText className="h-4 w-4 text-primary" />
+              <h3 className="font-bold text-sm">إدارة الكوادر</h3>
             </div>
-            <div className="space-y-2">
+            <div className="p-2 space-y-1">
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 rounded-xl"
+                className="w-full justify-start gap-2 h-9 text-sm"
                 onClick={() => navigate("/doctors")}
               >
                 <Stethoscope className="h-4 w-4" />
-                عرض جميع الدكاترة
+                سجل أعضاء هيئة التدريس
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 rounded-xl"
-                onClick={() => navigate("/specializations")}
+                className="w-full justify-start gap-2 h-9 text-sm"
+                onClick={() => navigate("/courses")}
               >
                 <Building2 className="h-4 w-4" />
-                إدارة الأقسام
+                المقررات الأكاديمية
               </Button>
             </div>
           </div>

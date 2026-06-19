@@ -33,6 +33,14 @@ import { DataTable } from "@/components/data-table";
 import { useStudents, useSpecializations, useStudentStats } from "@/hooks";
 import type { Student } from "@/types";
 
+const levelLabels: Record<number | string, string> = {
+  "1": "إعدادي",
+  "2": "الفرقة الأولى",
+  "3": "الفرقة الثانية",
+  "4": "الفرقة الثالثة",
+  "5": "الفرقة الرابعة",
+};
+
 export function StudentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const specializationFilter = searchParams.get("specialization") || "";
@@ -115,6 +123,7 @@ export function StudentsPage() {
     {
       accessorKey: "studentId",
       header: "الرقم الأكاديمي",
+      cell: ({ row }) => <span className="tabular-nums font-mono text-sm">{row.original.studentId || "—"}</span>,
     },
     {
       accessorKey: "name",
@@ -122,16 +131,16 @@ export function StudentsPage() {
       cell: ({ row }) => {
         const name = row.original.name;
         if (name && typeof name === "object") {
-          return `${(name as any).first} ${(name as any).last}`;
+          return <span className="font-medium">{`${(name as any).first} ${(name as any).last}`}</span>;
         }
-        return (name as string) || "غير متوفر";
+        return <span className="font-medium">{(name as string) || "غير متوفر"}</span>;
       },
     },
     {
       accessorKey: "email",
       header: "البريد الإلكتروني",
       cell: ({ row }) => (
-        <span dir="ltr" className="text-muted-foreground">
+        <span dir="ltr" className="text-muted-foreground text-sm font-mono">
           {row.original.email}
         </span>
       ),
@@ -149,11 +158,14 @@ export function StudentsPage() {
     {
       accessorKey: "academicInfo.level",
       header: "الفرقه",
-      cell: ({ row }) => (
-        <Badge variant="outline">
-          الفرقه {row.original.academicInfo?.level || "-"}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const lvl = row.original.academicInfo?.level;
+        return (
+          <Badge variant="outline" className="font-medium">
+            {lvl ? (levelLabels[lvl] || `الفرقة ${lvl}`) : "-"}
+          </Badge>
+        );
+      },
     },
     {
       accessorKey: "device",
@@ -161,6 +173,7 @@ export function StudentsPage() {
       cell: ({ row }) => (
         <Badge
           variant={row.original.device?.isVerified ? "default" : "secondary"}
+          className="font-medium"
         >
           <Smartphone className="ml-1 h-3 w-3" />
           {row.original.device?.isVerified ? "مسجل" : "غير مسجل"}
@@ -178,7 +191,7 @@ export function StudentsPage() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-9 w-9 p-0 rounded-full hover:bg-muted/50"
+                className="h-8 w-8 p-0"
               >
                 <span className="sr-only">فتح القائمة</span>
                 <MoreHorizontal className="h-4 w-4" />
@@ -205,83 +218,67 @@ export function StudentsPage() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4 border-dashed">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-primary">
+          <h1 className="text-3xl font-bold text-foreground">
             الطلاب
           </h1>
-          <p className="text-muted-foreground font-medium">
-            إدارة بيانات الطلاب وتتبع تسجيل الأجهزة
+          <p className="text-sm text-muted-foreground mt-1">
+            إدارة بيانات الطلاب وتتبع تسجيل الأجهزة الأكاديمية
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" asChild className="rounded-xl h-11 px-6">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild className="h-10 px-4">
             <Link to="/students/import">استيراد طلاب</Link>
           </Button>
           <Button
             asChild
-            className="rounded-xl h-11 px-6 shadow-lg shadow-primary/20"
+            className="h-10 px-4"
           >
             <Link to="/students/new">
-              <Plus className="ml-2 h-5 w-5" />
-              إضافة طالب جديد
+              <Plus className="ml-2 h-4 w-4" />
+              إضافة طالب
             </Link>
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="rounded-2xl border-none shadow-sm bg-primary/5">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Users className="size-6 text-primary" />
+      {/* Formal Stats Summary */}
+      <div className="bg-card border rounded-lg shadow-sm p-4 flex flex-wrap items-center gap-6 divide-x divide-x-reverse">
+        <div className="flex items-center gap-3 pl-6">
+          <div className="p-2 bg-primary/10 rounded-md">
+            <Users className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <div className="text-sm font-bold text-muted-foreground">إجمالي المقيدين</div>
+            <div className="text-xl font-bold tabular-nums text-foreground">
+              {statsData?.total || 0}
             </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                إجمالي الطلاب
-              </p>
-              <h3 className="text-2xl font-black text-primary">
-                {statsData?.total || 0}
-              </h3>
+          </div>
+        </div>
+        
+        <div className="flex gap-4 pr-6 flex-1 overflow-x-auto pb-1">
+          {[1, 2, 3, 4, 5].map((level) => (
+            <div key={level} className="flex flex-col min-w-[80px]">
+              <span className="text-xs text-muted-foreground font-medium mb-0.5">{levelLabels[level]}</span>
+              <span className="font-bold tabular-nums text-foreground">{statsData?.levels[level] || 0}</span>
             </div>
-          </CardContent>
-        </Card>
-
-        {[1, 2, 3, 4].map((level) => (
-          <Card
-            key={level}
-            className="rounded-2xl border-none shadow-sm bg-muted/30"
-          >
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="size-12 rounded-xl bg-background flex items-center justify-center shadow-sm">
-                <GraduationCap className="size-6 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  الفرقه {level}
-                </p>
-                <h3 className="text-2xl font-black">
-                  {statsData?.levels[level] || 0}
-                </h3>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+          ))}
+        </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-2xl border shadow-sm">
+        <div className="flex flex-wrap gap-4 items-center bg-card p-3 rounded-lg border shadow-sm">
           <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground ml-2">
             <Layers className="size-4" />
-            <span>تصفية حسب:</span>
+            <span>تصفية:</span>
           </div>
 
           <Select dir="rtl" value={specializationFilter} onValueChange={setSpecializationFilter}>
-            <SelectTrigger className="w-[180px] rounded-xl border-muted bg-background">
+            <SelectTrigger className="w-[180px] h-9">
               <SelectValue placeholder="جميع الأقسام" />
             </SelectTrigger>
             <SelectContent>
@@ -295,15 +292,16 @@ export function StudentsPage() {
           </Select>
 
           <Select dir="rtl" value={levelFilter} onValueChange={setLevelFilter}>
-            <SelectTrigger className="w-[180px] rounded-xl border-muted bg-background">
+            <SelectTrigger className="w-[150px] h-9">
               <SelectValue placeholder="جميع الفرق" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">جميع الفرق</SelectItem>
-              <SelectItem value="1">الفرقه 1</SelectItem>
-              <SelectItem value="2">الفرقه 2</SelectItem>
-              <SelectItem value="3">الفرقه 3</SelectItem>
-              <SelectItem value="4">الفرقه 4</SelectItem>
+              <SelectItem value="1">إعدادي</SelectItem>
+              <SelectItem value="2">الفرقة الأولى</SelectItem>
+              <SelectItem value="3">الفرقة الثانية</SelectItem>
+              <SelectItem value="4">الفرقة الثالثة</SelectItem>
+              <SelectItem value="5">الفرقة الرابعة</SelectItem>
             </SelectContent>
           </Select>
 
@@ -313,7 +311,7 @@ export function StudentsPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setSearchParams({})}
-                className="text-muted-foreground hover:text-primary rounded-lg"
+                className="text-muted-foreground hover:text-primary h-9"
               >
                 إعادة تعيين
               </Button>

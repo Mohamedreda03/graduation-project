@@ -120,64 +120,59 @@ export function SpecializationFormPage() {
   if (isEditing && specializationLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="w-full">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-muted/30 p-8 mb-8 border border-border/50">
-        <div className="relative flex items-center gap-4">
-          <div className="p-3 bg-primary/10 rounded-2xl">
-            <GraduationCap className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-foreground">
-              {isEditing ? "تعديل كلية" : "إضافة كلية جديدة"}
-            </h1>
-            <p className="text-muted-foreground">
-              {isEditing
-                ? "تعديل تفاصيل الكلية الحالية"
-                : "أدخل المعلومات الأساسية لتعريف الكلية الجديدة"}
-            </p>
-          </div>
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-dashed pb-4">
+        <div className="p-2 bg-primary/10 rounded-md">
+          <GraduationCap className="h-6 w-6 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isEditing ? "تعديل بيانات الكلية" : "تسجيل كلية جديدة"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {isEditing
+              ? "تحديث السجل الأكاديمي والإداري للكلية"
+              : "إدخال البيانات الأساسية لإنشاء سجل كلية جديد"}
+          </p>
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Main Form */}
-        <div className="lg:col-span-2 bg-card/50 dark:bg-card/20 rounded-3xl border border-border/50 shadow-sm overflow-hidden">
-          <div className="p-5 sm:p-6 border-b border-border/50 bg-muted/30">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              بيانات الكلية
+        <div className="xl:col-span-2 bg-card rounded-lg border shadow-sm">
+          <div className="p-4 border-b bg-muted/30">
+            <h2 className="text-base font-bold flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              البيانات الأساسية
             </h2>
           </div>
-          <div className="p-5 sm:p-6">
+          <div className="p-5">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-primary" />
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Building2 className="h-3.5 w-3.5 text-primary" />
                           اسم الكلية
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="مثال: علوم الحاسب" {...field} />
+                          <Input placeholder="مثال: علوم الحاسب" className="h-10" {...field} />
                         </FormControl>
-                        <FormDescription className="text-xs">
-                          الاسم الرسمي الكامل للكلية
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -187,17 +182,14 @@ export function SpecializationFormPage() {
                     control={form.control}
                     name="code"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Hash className="h-4 w-4 text-primary" />
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Hash className="h-3.5 w-3.5 text-primary" />
                           رمز الكلية
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="مثال: CS" {...field} dir="ltr" />
+                          <Input placeholder="مثال: CS" className="h-10 font-mono text-left" {...field} dir="ltr" />
                         </FormControl>
-                        <FormDescription className="text-xs">
-                          رمز مختصر (مثلاً CS, IT, IS) للكلية
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -208,48 +200,46 @@ export function SpecializationFormPage() {
                   control={form.control}
                   name="faculty"
                   render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel className="flex items-center gap-2">
-                        <GraduationCap className="h-4 w-4 text-primary" />
-                        اسم الكلية
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 text-sm">
+                        <GraduationCap className="h-3.5 w-3.5 text-primary" />
+                        الأقسام التابعة
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="مثال: كلية الحاسبات والمعلومات"
+                          placeholder="مثال: قسم علوم الحاسب، قسم نظم المعلومات"
+                          className="h-10"
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription className="text-xs">
-                        الأقسام التابعة للكلية
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
                 {/* Sections Count Per Level */}
-                <div className="space-y-4 pt-6 border-t border-border/50">
+                <div className="space-y-4 pt-6 border-t border-dashed">
                   <div>
-                    <h3 className="text-sm font-bold text-foreground">عدد السكاشن لكل فرقة دراسية</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      حدد عدد السكاشن الافتراضي لكل فرقة دراسية في هذا التخصص. سيتم استخدام هذه القيم تلقائياً في صفحة الجداول.
+                    <h3 className="text-base font-bold text-foreground">السعة الاستيعابية (عدد السكاشن)</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      العدد الافتراضي للسكاشن لكل فرقة دراسية، يستخدم في جدولة المحاضرات.
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {Object.entries(levelNames).map(([levelVal, levelLabel]) => (
                       <FormField
                         key={levelVal}
                         control={form.control}
                         name={`sectionsCount.${levelVal}`}
                         render={({ field }) => (
-                          <FormItem className="space-y-2">
+                          <FormItem className="space-y-1.5 p-3 rounded-md border bg-muted/20">
                             <FormLabel className="text-xs font-semibold">{levelLabel}</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
                                 min={1}
                                 max={8}
-                                className="rounded-xl text-center font-bold"
+                                className="h-9 text-center tabular-nums"
                                 {...field}
                                 value={field.value ?? 2}
                                 onChange={(e) => field.onChange(parseInt(e.target.value) || 2)}
@@ -263,27 +253,26 @@ export function SpecializationFormPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 pt-6 border-t border-border/50">
+                <div className="flex items-center gap-3 pt-6 border-t border-dashed">
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="rounded-xl h-12 px-8 font-bold gap-2"
+                    className="h-10 px-6"
                   >
                     {isLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
                     ) : (
-                      <Save className="h-5 w-5" />
+                      <Save className="h-4 w-4 ml-2" />
                     )}
-                    {isEditing ? "تحديث البيانات" : "إضافة الكلية الآن"}
+                    {isEditing ? "حفظ التعديلات" : "تأكيد الإضافة"}
                   </Button>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     onClick={() => navigate("/specializations")}
-                    className="rounded-xl h-12 px-6 font-medium hover:bg-destructive/10 hover:text-destructive gap-2"
+                    className="h-10 px-4"
                   >
-                    <ArrowRight className="h-4 w-4" />
-                    إلغاء
+                    إلغاء الأمر
                   </Button>
                 </div>
               </form>
@@ -292,40 +281,31 @@ export function SpecializationFormPage() {
         </div>
 
         {/* Sidebar Tips */}
-        <div className="space-y-6">
-          {/* Quick Info */}
-          <div className="bg-card/50 dark:bg-card/20 rounded-3xl border border-border/50 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-border/50 bg-muted/30">
-              <h3 className="font-bold">معلومات مفيدة</h3>
+        <div className="space-y-4">
+          <div className="bg-card rounded-lg border shadow-sm">
+            <div className="p-4 border-b bg-muted/30">
+              <h3 className="font-bold text-sm">ضوابط الإدخال</h3>
             </div>
-            <div className="p-5 space-y-4 text-sm text-muted-foreground">
+            <div className="p-4 space-y-4 text-sm text-muted-foreground">
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Building2 className="h-4 w-4 text-primary" />
+                <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                  <Building2 className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">اسم الكلية</p>
-                  <p>استخدم الاسم الرسمي المعتمد</p>
+                  <p className="font-semibold text-foreground mb-0.5">اسم الكلية</p>
+                  <p className="text-xs leading-relaxed">يجب استخدام الاسم الرسمي المعتمد في السجلات الأكاديمية للجامعة.</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Hash className="h-4 w-4 text-primary" />
+                <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                  <Hash className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">رمز الكلية</p>
-                  <p>رمز فريد مختصر للكلية</p>
+                  <p className="font-semibold text-foreground mb-0.5">الترميز الأكاديمي</p>
+                  <p className="text-xs leading-relaxed">رمز إنجليزي قصير (مثل CS) يستخدم في جداول المحاضرات وأرقام الجلوس.</p>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Help Card */}
-          <div className="bg-muted/30 rounded-3xl border border-border/50 p-5">
-            <h3 className="font-bold text-primary mb-2">💡 نصيحة</h3>
-            <p className="text-sm text-muted-foreground">
-              تأكد من استخدام رمز فريد لكل كلية لتسهيل عملية البحث والتصنيف
-            </p>
           </div>
         </div>
       </div>

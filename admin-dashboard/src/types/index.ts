@@ -39,6 +39,7 @@ export interface ChangePasswordRequest {
 
 // ============ User ============
 export type UserRole = "student" | "doctor" | "admin";
+export type AdminRole = "super_admin" | "dean" | "student_affairs" | "head_of_department";
 
 export interface UserName {
   first: string;
@@ -57,6 +58,8 @@ export interface User {
   fullName?: string;
   email: string;
   role: UserRole;
+  adminRole?: AdminRole;
+  department?: Specialization | string;
   studentId?: string;
   phone?: string;
   academicInfo?: AcademicInfo;

@@ -28,25 +28,40 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/auth-context";
 
-const navMainItems = [
+import type { AdminRole } from "@/types";
+
+type NavItem = {
+  title: string;
+  url: string;
+  icon?: any;
+  isActive?: boolean;
+  allowedAdminRoles?: AdminRole[];
+  items?: Omit<NavItem, "icon" | "items">[];
+};
+
+const navMainItems: NavItem[] = [
   {
     title: "لوحة التحكم",
     url: "/",
     icon: LayoutDashboard,
     isActive: true,
+    allowedAdminRoles: ["super_admin", "dean", "student_affairs", "head_of_department"],
   },
   {
     title: "الكليات",
     url: "/specializations",
     icon: Building2,
+    allowedAdminRoles: ["super_admin"],
     items: [
       {
         title: "جميع الكليات",
         url: "/specializations",
+        allowedAdminRoles: ["super_admin"],
       },
       {
         title: "إضافة كلية",
         url: "/specializations/new",
+        allowedAdminRoles: ["super_admin"],
       },
     ],
   },
@@ -54,18 +69,22 @@ const navMainItems = [
     title: "القاعات",
     url: "/halls",
     icon: DoorOpen,
+    allowedAdminRoles: ["super_admin"],
     items: [
       {
         title: "جميع القاعات",
         url: "/halls",
+        allowedAdminRoles: ["super_admin"],
       },
       {
         title: "إضافة قاعة",
         url: "/halls/new",
+        allowedAdminRoles: ["super_admin"],
       },
       {
         title: "نقاط الوصول",
         url: "/halls/access-points",
+        allowedAdminRoles: ["super_admin"],
       },
     ],
   },
@@ -73,6 +92,7 @@ const navMainItems = [
     title: "الدكاترة",
     url: "/doctors",
     icon: UserCog,
+    allowedAdminRoles: ["super_admin", "head_of_department", "student_affairs"],
     items: [
       {
         title: "جميع الدكاترة",
@@ -88,6 +108,7 @@ const navMainItems = [
     title: "الطلاب",
     url: "/students",
     icon: GraduationCap,
+    allowedAdminRoles: ["super_admin", "student_affairs"],
     items: [
       {
         title: "جميع الطلاب",
@@ -111,6 +132,7 @@ const navMainItems = [
     title: "المواد الدراسية",
     url: "/courses",
     icon: BookOpen,
+    allowedAdminRoles: ["super_admin", "head_of_department", "student_affairs"],
     items: [
       {
         title: "جميع المواد",
@@ -126,6 +148,7 @@ const navMainItems = [
     title: "المحاضرات",
     url: "/lectures",
     icon: Calendar,
+    allowedAdminRoles: ["super_admin", "head_of_department", "student_affairs"],
     items: [
       {
         title: "جميع المحاضرات",
@@ -145,6 +168,7 @@ const navMainItems = [
     title: "الحضور والغياب",
     url: "/attendance",
     icon: ClipboardCheck,
+    allowedAdminRoles: ["super_admin", "dean", "student_affairs", "head_of_department"],
     items: [
       {
         title: "سجلات الحضور",
@@ -154,10 +178,10 @@ const navMainItems = [
         title: "🔴 مباشر",
         url: "/attendance/live",
       },
-      // {
-      //   title: "التقارير",
-      //   url: "/attendance/reports",
-      // },
+      {
+        title: "السجل السنوي",
+        url: "/attendance/annual",
+      },
       {
         title: "طلاب متعثرون",
         url: "/attendance/at-risk",
@@ -188,12 +212,32 @@ export function AdminSidebar({
     avatar: "",
   };
 
-  const navItems = navMainItems.map((item) => ({
-    ...item,
-    isActive:
-      location.pathname === item.url ||
-      item.items?.some((subItem) => location.pathname === subItem.url),
-  }));
+  const userAdminRole = user?.adminRole as AdminRole | undefined;
+
+  const navItems = navMainItems
+    .filter((item) => {
+      // If no roles specified, it's public for all admins (e.g. AI Chat)
+      if (!item.allowedAdminRoles) return true;
+      // If user doesn't have an adminRole (legacy) or has a role that isn't allowed, hide it
+      if (!userAdminRole || !item.allowedAdminRoles.includes(userAdminRole)) return false;
+      return true;
+    })
+    .map((item) => {
+      // Filter sub-items if they exist and have allowedAdminRoles
+      const filteredItems = item.items?.filter((subItem) => {
+        if (!subItem.allowedAdminRoles) return true;
+        if (!userAdminRole || !subItem.allowedAdminRoles.includes(userAdminRole)) return false;
+        return true;
+      });
+
+      return {
+        ...item,
+        items: filteredItems?.length ? filteredItems : undefined,
+        isActive:
+          location.pathname === item.url ||
+          filteredItems?.some((subItem) => location.pathname === subItem.url),
+      };
+    });
 
   return (
     <Sidebar
@@ -219,7 +263,7 @@ export function AdminSidebar({
                   <GraduationCap className="size-6" />
                 </div>
                 <div className="grid flex-1 text-right leading-tight group-data-[state=collapsed]:hidden">
-                  <span className="truncate font-bold text-lg text-foreground">
+                  <span className="truncate text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
                     حضور
                   </span>
                   <span className="truncate text-xs text-muted-foreground font-medium">

@@ -8,6 +8,7 @@ const {
   Lecture,
 } = require("../models");
 const { ROLES, ATTENDANCE_STATUS } = require("../config/constants");
+const { buildNameSearchQuery } = require("../utils/helpers");
 
 // Initialize OpenAI client for OpenRouter
 const openai = new OpenAI({
@@ -96,10 +97,7 @@ const toolImplementations = {
         if (!isNaN(numericLevel)) query["academicInfo.level"] = numericLevel;
       }
       if (name) {
-        query["$or"] = [
-          { "name.first": new RegExp(name, "i") },
-          { "name.last": new RegExp(name, "i") }
-        ];
+        Object.assign(query, buildNameSearchQuery(name));
       }
 
       if (user.role === ROLES.DOCTOR) {

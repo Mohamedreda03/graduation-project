@@ -290,12 +290,11 @@ export function CourseFormPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="1">الفرقه 1</SelectItem>
-                            <SelectItem value="2">الفرقه 2</SelectItem>
-                            <SelectItem value="3">الفرقه 3</SelectItem>
-                            <SelectItem value="4">الفرقه 4</SelectItem>
-                            <SelectItem value="5">الفرقه 5</SelectItem>
-                            <SelectItem value="6">الفرقه 6</SelectItem>
+                            <SelectItem value="1">إعدادي</SelectItem>
+                            <SelectItem value="2">الفرقة الأولى</SelectItem>
+                            <SelectItem value="3">الفرقة الثانية</SelectItem>
+                            <SelectItem value="4">الفرقة الثالثة</SelectItem>
+                            <SelectItem value="5">الفرقة الرابعة</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

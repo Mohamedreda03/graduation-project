@@ -15,6 +15,14 @@ import { DataTable } from "@/components/data-table";
 import { coursesService } from "@/services/courses.service";
 import type { Course, User } from "@/types";
 
+const levelLabels: Record<number | string, string> = {
+  "1": "إعدادي",
+  "2": "الفرقة الأولى",
+  "3": "الفرقة الثانية",
+  "4": "الفرقة الثالثة",
+  "5": "الفرقة الرابعة",
+};
+
 export function CourseDetailsPage() {
   const { id } = useParams<{ id: string }>();
 
@@ -61,11 +69,12 @@ export function CourseDetailsPage() {
         return typeof dept === "object" ? dept.name : dept;
       },
     },
-    {
       accessorKey: "academicInfo.level",
       header: "الفرقه",
-      cell: ({ row }) => row.original.academicInfo?.level ? `الفرقه ${row.original.academicInfo.level}` : "-",
-    },
+      cell: ({ row }) => {
+        const lvl = row.original.academicInfo?.level;
+        return lvl ? (levelLabels[lvl] || `الفرقة ${lvl}`) : "-";
+      },
     {
       id: "actions",
       header: "الإجراءات",
@@ -175,7 +184,9 @@ export function CourseDetailsPage() {
             <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{course.level}</div>
+            <div className="text-2xl font-bold">
+              {levelLabels[course.level] || course.level}
+            </div>
             <p className="text-xs text-muted-foreground">الفرقه الدراسية</p>
           </CardContent>
         </Card>

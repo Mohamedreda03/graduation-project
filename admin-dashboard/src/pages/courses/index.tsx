@@ -167,9 +167,20 @@ export function CoursesPage() {
     {
       accessorKey: "level",
       header: "الفرقه",
-      cell: ({ row }) => (
-        <Badge variant="outline">الفرقه {row.original.level}</Badge>
-      ),
+      cell: ({ row }) => {
+        const levelLabels: Record<number | string, string> = {
+          "1": "إعدادي",
+          "2": "الفرقة الأولى",
+          "3": "الفرقة الثانية",
+          "4": "الفرقة الثالثة",
+          "5": "الفرقة الرابعة",
+        };
+        return (
+          <Badge variant="outline">
+            {levelLabels[row.original.level] || `الفرقة ${row.original.level}`}
+          </Badge>
+        );
+      },
     },
     {
       accessorKey: "semester",
@@ -268,10 +279,11 @@ export function CoursesPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">جميع الفرق</SelectItem>
-            <SelectItem value="1">الفرقه 1</SelectItem>
-            <SelectItem value="2">الفرقه 2</SelectItem>
-            <SelectItem value="3">الفرقه 3</SelectItem>
-            <SelectItem value="4">الفرقه 4</SelectItem>
+            <SelectItem value="1">إعدادي</SelectItem>
+            <SelectItem value="2">الفرقة الأولى</SelectItem>
+            <SelectItem value="3">الفرقة الثانية</SelectItem>
+            <SelectItem value="4">الفرقة الثالثة</SelectItem>
+            <SelectItem value="5">الفرقة الرابعة</SelectItem>
           </SelectContent>
         </Select>
       </div>

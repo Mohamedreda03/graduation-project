@@ -28,7 +28,7 @@ const courseSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Level is required"],
       min: 1,
-      max: 6,
+      max: 5,
     },
     semester: {
       type: String,

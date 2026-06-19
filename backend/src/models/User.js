@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const { ROLES, DEVICE_REQUEST_STATUS } = require("../config/constants");
+const { ROLES, ADMIN_ROLES, DEVICE_REQUEST_STATUS } = require("../config/constants");
 
 const userSchema = new mongoose.Schema(
   {
@@ -47,6 +47,16 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(ROLES),
       default: ROLES.STUDENT,
     },
+    adminRole: {
+      type: String,
+      enum: Object.values(ADMIN_ROLES),
+      required: function() { return this.role === ROLES.ADMIN; }
+    },
+    // Department (For Head of Department Admin)
+    department: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Specialization",
+    },
 
     // Academic Info (for students)
     academicInfo: {
@@ -57,7 +67,7 @@ const userSchema = new mongoose.Schema(
       level: {
         type: Number,
         min: 1,
-        max: 6,
+        max: 5,
       },
       enrolledCourses: [
         {

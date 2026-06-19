@@ -32,6 +32,7 @@ import { LectureSchedulePage } from "@/pages/lectures/schedule";
 import { TodayLecturesPage } from "@/pages/lectures/today";
 import { AttendancePage } from "@/pages/attendance";
 import { LiveAttendancePage } from "@/pages/attendance/live";
+import { AnnualAttendancePage } from "@/pages/attendance/annual";
 import { AtRiskStudentsPage } from "@/pages/attendance/at-risk";
 import { AttendanceReportsPage } from "@/pages/attendance/reports";
 import { SettingsPage } from "@/pages/settings";
@@ -74,99 +75,63 @@ function App() {
                 >
                   <Route path="/" element={<DashboardPage />} />
 
-                  {/* Specializations */}
-                  <Route path="/specializations" element={<SpecializationsPage />} />
-                  <Route
-                    path="/specializations/new"
-                    element={<SpecializationFormPage />}
-                  />
-                  <Route
-                    path="/specializations/:id/edit"
-                    element={<SpecializationFormPage />}
-                  />
+                  {/* Super Admin Only Routes */}
+                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin"]} />}>
+                    {/* Specializations */}
+                    <Route path="/specializations" element={<SpecializationsPage />} />
+                    <Route path="/specializations/new" element={<SpecializationFormPage />} />
+                    <Route path="/specializations/:id/edit" element={<SpecializationFormPage />} />
 
-                  {/* Halls */}
-                  <Route path="/halls" element={<HallsPage />} />
-                  <Route path="/halls/new" element={<HallFormPage />} />
-                  <Route path="/halls/:id/edit" element={<HallFormPage />} />
-                  <Route
-                    path="/halls/access-points"
-                    element={<AccessPointsPage />}
-                  />
+                    {/* Halls */}
+                    <Route path="/halls" element={<HallsPage />} />
+                    <Route path="/halls/new" element={<HallFormPage />} />
+                    <Route path="/halls/:id/edit" element={<HallFormPage />} />
+                    <Route path="/halls/access-points" element={<AccessPointsPage />} />
 
-                  {/* Students */}
-                  <Route path="/students" element={<StudentsPage />} />
-                  <Route path="/students/new" element={<StudentFormPage />} />
-                  <Route
-                    path="/students/:id"
-                    element={<StudentDetailsPage />}
-                  />
-                  <Route
-                    path="/students/:id/edit"
-                    element={<StudentFormPage />}
-                  />
-                  <Route
-                    path="/students/import"
-                    element={<ImportStudentsPage />}
-                  />
-                  <Route
-                    path="/students/device-requests"
-                    element={<DeviceRequestsPage />}
-                  />
+                    {/* Settings */}
+                    <Route path="/settings" element={<SettingsPage />} />
+                  </Route>
 
-                  {/* Doctors */}
-                  <Route path="/doctors" element={<DoctorsPage />} />
-                  <Route path="/doctors/new" element={<DoctorFormPage />} />
-                  <Route
-                    path="/doctors/:id/edit"
-                    element={<DoctorFormPage />}
-                  />
+                  {/* Student Affairs & Super Admin */}
+                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "student_affairs"]} />}>
+                    {/* Students */}
+                    <Route path="/students" element={<StudentsPage />} />
+                    <Route path="/students/new" element={<StudentFormPage />} />
+                    <Route path="/students/:id" element={<StudentDetailsPage />} />
+                    <Route path="/students/:id/edit" element={<StudentFormPage />} />
+                    <Route path="/students/import" element={<ImportStudentsPage />} />
+                    <Route path="/students/device-requests" element={<DeviceRequestsPage />} />
+                  </Route>
 
-                  {/* Courses */}
-                  <Route path="/courses" element={<CoursesPage />} />
-                  <Route path="/courses/new" element={<CourseFormPage />} />
-                  <Route
-                    path="/courses/:id/edit"
-                    element={<CourseFormPage />}
-                  />
-                  <Route
-                    path="/courses/:id/students"
-                    element={<CourseStudentsPage />}
-                  />
+                  {/* Shared across Dept Head, Student Affairs, Super Admin */}
+                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "student_affairs", "head_of_department"]} />}>
+                    {/* Doctors */}
+                    <Route path="/doctors" element={<DoctorsPage />} />
+                    <Route path="/doctors/new" element={<DoctorFormPage />} />
+                    <Route path="/doctors/:id/edit" element={<DoctorFormPage />} />
 
-                  {/* Lectures */}
-                  <Route path="/lectures" element={<LecturesPage />} />
-                  <Route path="/lectures/new" element={<LectureFormPage />} />
-                  <Route
-                    path="/lectures/:id/edit"
-                    element={<LectureFormPage />}
-                  />
-                  <Route
-                    path="/lectures/schedule"
-                    element={<LectureSchedulePage />}
-                  />
-                  <Route
-                    path="/lectures/today"
-                    element={<TodayLecturesPage />}
-                  />
+                    {/* Courses */}
+                    <Route path="/courses" element={<CoursesPage />} />
+                    <Route path="/courses/new" element={<CourseFormPage />} />
+                    <Route path="/courses/:id/edit" element={<CourseFormPage />} />
+                    <Route path="/courses/:id/students" element={<CourseStudentsPage />} />
 
-                  {/* Attendance */}
-                  <Route path="/attendance" element={<AttendancePage />} />
-                  <Route
-                    path="/attendance/live"
-                    element={<LiveAttendancePage />}
-                  />
-                  <Route
-                    path="/attendance/at-risk"
-                    element={<AtRiskStudentsPage />}
-                  />
-                  <Route
-                    path="/attendance/reports"
-                    element={<AttendanceReportsPage />}
-                  />
+                    {/* Lectures */}
+                    <Route path="/lectures" element={<LecturesPage />} />
+                    <Route path="/lectures/new" element={<LectureFormPage />} />
+                    <Route path="/lectures/:id/edit" element={<LectureFormPage />} />
+                    <Route path="/lectures/schedule" element={<LectureSchedulePage />} />
+                    <Route path="/lectures/today" element={<TodayLecturesPage />} />
+                  </Route>
 
-                  {/* Settings */}
-                  <Route path="/settings" element={<SettingsPage />} />
+                  {/* Attendance & Reports - Shared across all Admins */}
+                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "dean", "student_affairs", "head_of_department"]} />}>
+                    <Route path="/attendance" element={<AttendancePage />} />
+                    <Route path="/attendance/live" element={<LiveAttendancePage />} />
+                    <Route path="/attendance/annual" element={<AnnualAttendancePage />} />
+                    <Route path="/attendance/at-risk" element={<AtRiskStudentsPage />} />
+                    <Route path="/attendance/reports" element={<AttendanceReportsPage />} />
+                  </Route>
 
                   {/* AI Chat */}
                   <Route path="/ai-chat" element={<AIChatPage />} />

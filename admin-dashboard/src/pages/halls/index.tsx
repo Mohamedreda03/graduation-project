@@ -61,7 +61,7 @@ export function HallsPage() {
       accessorKey: "capacity",
       header: "السعة",
       cell: ({ row }) =>
-        row.original.capacity ? `${row.original.capacity} طالب` : "غير محدد",
+        row.original.capacity ? <span className="tabular-nums">{row.original.capacity} طالب</span> : "غير محدد",
     },
     {
       accessorKey: "accessPoint",
@@ -74,7 +74,7 @@ export function HallsPage() {
           );
         }
         return (
-          <span className="font-medium">{ap.ssid || ap.apIdentifier}</span>
+          <span className="font-medium font-mono text-sm" dir="ltr">{ap.ssid || ap.apIdentifier}</span>
         );
       },
     },
@@ -89,7 +89,7 @@ export function HallsPage() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-9 w-9 p-0 rounded-full hover:bg-muted/50"
+                className="h-8 w-8 p-0"
               >
                 <span className="sr-only">فتح القائمة</span>
                 <MoreHorizontal className="h-4 w-4" />
@@ -109,7 +109,7 @@ export function HallsPage() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-destructive"
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                 onClick={() => setDeleteId(hall._id)}
               >
                 <Trash2 className="ml-2 h-4 w-4" />
@@ -125,19 +125,19 @@ export function HallsPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4 border-dashed">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-primary">
+          <h1 className="text-3xl font-bold text-foreground">
             القاعات
           </h1>
-          <p className="text-muted-foreground font-medium">
+          <p className="text-sm text-muted-foreground mt-1">
             إدارة قاعات الكلية ونقاط الوصول والتحكم في حالتها
           </p>
         </div>
-        <Button asChild className="rounded-xl h-11 px-6">
+        <Button asChild className="h-10 px-5">
           <Link to="/halls/new">
-            <Plus className="ml-2 h-5 w-5" />
-            إضافة قاعة جديدة
+            <Plus className="ml-2 h-4 w-4" />
+            إضافة قاعة
           </Link>
         </Button>
       </div>
@@ -148,16 +148,16 @@ export function HallsPage() {
         data={data ?? []}
         isLoading={isLoading}
         searchKey="name"
-        searchPlaceholder="البحث بالاسم..."
+        searchPlaceholder="البحث باسم القاعة..."
       />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف هذه القاعة نهائياً. لا يمكن التراجع عن هذا الإجراء.
+              سيتم حذف هذه القاعة نهائياً. لا يمكن التراجع عن هذا الإجراء وسيتم مسح كافة البيانات المرتبطة بنقاط الوصول.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -166,7 +166,7 @@ export function HallsPage() {
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              حذف
+              تأكيد الحذف
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

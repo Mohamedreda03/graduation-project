@@ -8,7 +8,7 @@ const createStudent = {
     password: Joi.string().required().min(6).max(50),
     studentId: Joi.string().required().trim(),
     specialization: Joi.string().hex().length(24).required(),
-    level: Joi.number().min(1).max(6).required(),
+    level: Joi.number().min(1).max(5).required(),
     phone: Joi.string()
       .pattern(/^01[0125][0-9]{8}$/)
       .message("Invalid Egyptian phone number"),
@@ -25,7 +25,7 @@ const bulkCreateStudents = {
           email: Joi.string().required().email().lowercase().trim(),
           studentId: Joi.string().required().trim(),
           specialization: Joi.string().hex().length(24).required(),
-          level: Joi.number().min(1).max(6).required(),
+          level: Joi.number().min(1).max(5).required(),
         }),
       )
       .min(1)
@@ -47,7 +47,7 @@ const updateStudent = {
       .pattern(/^01[0125][0-9]{8}$/)
       .message("Invalid Egyptian phone number"),
     specialization: Joi.string().hex().length(24),
-    level: Joi.number().min(1).max(6),
+    level: Joi.number().min(1).max(5),
     isActive: Joi.boolean(),
   }),
 };

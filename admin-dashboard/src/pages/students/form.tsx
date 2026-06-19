@@ -54,7 +54,7 @@ const formSchema = z.object({
     .or(z.literal("")),
   studentId: z.string().min(1, "الرقم الأكاديمي مطلوب"),
   specialization: z.string().min(1, "التخصص مطلوب"),
-  level: z.number().min(1).max(6),
+  level: z.number().min(1).max(5),
   phone: z.string().optional(),
   macAddress: z.string().optional(),
 });
@@ -156,64 +156,62 @@ export function StudentFormPage() {
   if (isEditing && studentLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="w-full">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-muted/30 p-8 mb-8 border border-border/50">
-        <div className="relative flex items-center gap-4">
-          <div className="p-3 bg-primary/10 rounded-2xl">
-            {isEditing ? (
-              <User className="h-8 w-8 text-primary" />
-            ) : (
-              <UserPlus className="h-8 w-8 text-primary" />
-            )}
-          </div>
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-foreground">
-              {isEditing ? "تعديل بيانات الطالب" : "إضافة طالب جديد"}
-            </h1>
-            <p className="text-muted-foreground">
-              {isEditing
-                ? "تعديل تفاصيل سجل الطالب"
-                : "أدخل المعلومات الأساسية لتعريف طالب جديد في النظام"}
-            </p>
-          </div>
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-dashed pb-4">
+        <div className="p-2 bg-primary/10 rounded-md">
+          {isEditing ? (
+            <User className="h-6 w-6 text-primary" />
+          ) : (
+            <UserPlus className="h-6 w-6 text-primary" />
+          )}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isEditing ? "تعديل بيانات الطالب" : "تسجيل طالب جديد"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {isEditing
+              ? "تحديث السجل الأكاديمي والبيانات الشخصية للطالب"
+              : "إدخال البيانات الأساسية لإنشاء ملف أكاديمي جديد"}
+          </p>
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Main Form */}
-        <div className="lg:col-span-2 bg-card/50 dark:bg-card/20 rounded-3xl border border-border/50 shadow-sm overflow-hidden">
-          <div className="p-5 sm:p-6 border-b border-border/50 bg-muted/30">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              البيانات الشخصية
+        <div className="xl:col-span-2 bg-card rounded-lg border shadow-sm">
+          <div className="p-4 border-b bg-muted/30">
+            <h2 className="text-base font-bold flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              البيانات الشخصية والأكاديمية
             </h2>
           </div>
-          <div className="p-5 sm:p-6">
+          <div className="p-5">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <FormField
                     control={form.control}
                     name="firstName"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-primary" />
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <User className="h-3.5 w-3.5 text-primary" />
                           الاسم الأول
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="أحمد" {...field} />
+                          <Input placeholder="أحمد" className="h-10" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -224,13 +222,13 @@ export function StudentFormPage() {
                     control={form.control}
                     name="lastName"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-primary" />
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <User className="h-3.5 w-3.5 text-primary" />
                           الاسم الأخير
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="محمد" {...field} />
+                          <Input placeholder="محمد" className="h-10" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -241,13 +239,13 @@ export function StudentFormPage() {
                     control={form.control}
                     name="studentId"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Hash className="h-4 w-4 text-primary" />
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Hash className="h-3.5 w-3.5 text-primary" />
                           الرقم الأكاديمي
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="2021001" {...field} dir="ltr" />
+                          <Input placeholder="2021001" className="h-10 font-mono text-left tabular-nums" {...field} dir="ltr" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -258,15 +256,16 @@ export function StudentFormPage() {
                     control={form.control}
                     name="email"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-primary" />
-                          البريد الإلكتروني
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Mail className="h-3.5 w-3.5 text-primary" />
+                          البريد الإلكتروني الجامعي
                         </FormLabel>
                         <FormControl>
                           <Input
                             type="email"
-                            placeholder="student@example.com"
+                            placeholder="student@university.edu"
+                            className="h-10 font-mono text-left"
                             {...field}
                             dir="ltr"
                           />
@@ -280,9 +279,9 @@ export function StudentFormPage() {
                     control={form.control}
                     name="password"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Lock className="h-4 w-4 text-primary" />
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Lock className="h-3.5 w-3.5 text-primary" />
                           {isEditing
                             ? "كلمة مرور جديدة (اختياري)"
                             : "كلمة المرور"}
@@ -291,13 +290,14 @@ export function StudentFormPage() {
                           <Input
                             type="password"
                             placeholder="******"
+                            className="h-10 font-mono text-left"
                             {...field}
                             dir="ltr"
                           />
                         </FormControl>
                         {isEditing && (
                           <FormDescription className="text-xs">
-                            اترك الحقل فارغاً إذا كنت لا تريد تغيير كلمة المرور
+                            اترك الحقل فارغاً للإبقاء على كلمة المرور الحالية
                           </FormDescription>
                         )}
                         <FormMessage />
@@ -307,12 +307,34 @@ export function StudentFormPage() {
 
                   <FormField
                     control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Phone className="h-3.5 w-3.5 text-primary" />
+                          رقم الهاتف (اختياري)
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="01xxxxxxxxx"
+                            className="h-10 font-mono text-left tabular-nums"
+                            {...field}
+                            dir="ltr"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="specialization"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <GraduationCap className="h-4 w-4 text-primary" />
-                          التخصص
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <GraduationCap className="h-3.5 w-3.5 text-primary" />
+                          التخصص / القسم
                         </FormLabel>
                         <Select
                           key={`dept-${field.value}-${specializationsData?.length ?? 0}`}
@@ -321,7 +343,7 @@ export function StudentFormPage() {
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="h-10">
                               <SelectValue placeholder="اختر التخصص" />
                             </SelectTrigger>
                           </FormControl>
@@ -344,10 +366,10 @@ export function StudentFormPage() {
                     control={form.control}
                     name="level"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Layers className="h-4 w-4 text-primary" />
-                          الفرقه
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Layers className="h-3.5 w-3.5 text-primary" />
+                          الفرقة الدراسية
                         </FormLabel>
                         <Select
                           key={`level-${field.value}`}
@@ -356,42 +378,18 @@ export function StudentFormPage() {
                           value={field.value?.toString()}
                         >
                           <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="اختر الفرقه" />
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="اختر الفرقة" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="1">الفرقه 1</SelectItem>
-                            <SelectItem value="2">الفرقه 2</SelectItem>
-                            <SelectItem value="3">الفرقه 3</SelectItem>
-                            <SelectItem value="4">الفرقه 4</SelectItem>
-                            <SelectItem value="5">الفرقه 5</SelectItem>
-                            <SelectItem value="6">الفرقه 6</SelectItem>
+                            <SelectItem value="1">إعدادي</SelectItem>
+                            <SelectItem value="2">الفرقة الأولى</SelectItem>
+                            <SelectItem value="3">الفرقة الثانية</SelectItem>
+                            <SelectItem value="4">الفرقة الثالثة</SelectItem>
+                            <SelectItem value="5">الفرقة الرابعة</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-
-
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-primary" />
-                          رقم الهاتف (اختياري)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="01xxxxxxxxx"
-                            {...field}
-                            dir="ltr"
-                          />
-                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -401,20 +399,21 @@ export function StudentFormPage() {
                     control={form.control}
                     name="macAddress"
                     render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Hash className="h-4 w-4 text-primary" />
-                          عنوان الـ MAC (الجهاز)
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Hash className="h-3.5 w-3.5 text-primary" />
+                          عنوان الـ MAC للجهاز (اختياري)
                         </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="XX:XX:XX:XX:XX:XX"
+                            className="h-10 font-mono text-left"
                             {...field}
                             dir="ltr"
                           />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          اترك الحقل فارغاً لإلغاء ربط الجهاز الحالي
+                          يُستخدم للتحقق من حضور الطالب عبر جهازه المسجل. اترك الحقل فارغاً لإلغاء ربط أي جهاز.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -422,27 +421,26 @@ export function StudentFormPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-4 pt-6 border-t border-border/50">
+                <div className="flex items-center gap-3 pt-6 border-t border-dashed">
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="rounded-xl h-12 px-8 font-bold gap-2"
+                    className="h-10 px-6 gap-2"
                   >
                     {isLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Save className="h-5 w-5" />
+                      <Save className="h-4 w-4" />
                     )}
-                    {isEditing ? "حفظ التغييرات" : "إضافة الطالب"}
+                    {isEditing ? "حفظ التغييرات" : "إضافة السجل"}
                   </Button>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     onClick={() => navigate("/students")}
-                    className="rounded-xl h-12 px-6 font-medium hover:bg-destructive/10 hover:text-destructive gap-2"
+                    className="h-10 px-4"
                   >
-                    <ArrowRight className="h-4 w-4" />
-                    إلغاء
+                    إلغاء الأمر
                   </Button>
                 </div>
               </form>
@@ -451,52 +449,43 @@ export function StudentFormPage() {
         </div>
 
         {/* Sidebar Tips */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Student Info Preview */}
-          <div className="bg-card/50 dark:bg-card/20 rounded-3xl border border-border/50 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-border/50 bg-muted/30">
-              <h3 className="font-bold">معلومات مفيدة</h3>
+          <div className="bg-card rounded-lg border shadow-sm">
+            <div className="p-4 border-b bg-muted/30">
+              <h3 className="font-bold text-sm">متطلبات النظام</h3>
             </div>
-            <div className="p-5 space-y-4 text-sm text-muted-foreground">
+            <div className="p-4 space-y-4 text-sm text-muted-foreground">
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Hash className="h-4 w-4 text-primary" />
+                <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                  <Hash className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">الرقم الأكاديمي</p>
-                  <p>رقم تعريفي فريد للطالب</p>
+                  <p className="font-semibold text-foreground mb-0.5">الرقم الأكاديمي</p>
+                  <p className="text-xs leading-relaxed">رقم تعريفي فريد يستخدم في كافة التعاملات الجامعية.</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Mail className="h-4 w-4 text-primary" />
+                <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                  <Mail className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">
+                  <p className="font-semibold text-foreground mb-0.5">
                     البريد الإلكتروني
                   </p>
-                  <p>يُستخدم لتسجيل الدخول</p>
+                  <p className="text-xs leading-relaxed">البريد الجامعي المعتمد لتسجيل الدخول.</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <GraduationCap className="h-4 w-4 text-primary" />
+                <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                  <GraduationCap className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">التخصص والفرقه</p>
-                  <p>لربط الطالب بالمقررات</p>
+                  <p className="font-semibold text-foreground mb-0.5">الفرقة والتخصص</p>
+                  <p className="text-xs leading-relaxed">تُستخدم لربط الطالب آلياً بالمقررات الدراسية المناسبة.</p>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Help Card */}
-          <div className="bg-muted/30 rounded-3xl border border-border/50 p-5">
-            <h3 className="font-bold text-primary mb-2">💡 نصيحة</h3>
-            <p className="text-sm text-muted-foreground">
-              تأكد من صحة البريد الإلكتروني حيث سيستخدمه الطالب لتسجيل الدخول
-              للتطبيق
-            </p>
           </div>
         </div>
       </div>

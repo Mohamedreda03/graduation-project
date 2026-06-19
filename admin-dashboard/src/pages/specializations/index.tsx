@@ -51,7 +51,7 @@ export function SpecializationsPage() {
       header: "تاريخ الإنشاء",
       cell: ({ row }) => {
         const date = new Date(row.original.createdAt);
-        return date.toLocaleDateString("ar-EG");
+        return <span className="tabular-nums">{date.toLocaleDateString("ar-EG")}</span>;
       },
     },
     {
@@ -65,7 +65,7 @@ export function SpecializationsPage() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-9 w-9 p-0 rounded-full hover:bg-muted/50"
+                className="h-8 w-8 p-0"
               >
                 <span className="sr-only">فتح القائمة</span>
                 <MoreHorizontal className="h-4 w-4" />
@@ -79,7 +79,7 @@ export function SpecializationsPage() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-destructive"
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                 onClick={() => setDeleteId(specialization._id)}
               >
                 <Trash2 className="ml-2 h-4 w-4" />
@@ -95,19 +95,19 @@ export function SpecializationsPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4 border-dashed">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-primary">
+          <h1 className="text-3xl font-bold text-foreground">
             الكليات
           </h1>
-          <p className="text-muted-foreground font-medium">
-            إدارة الكليات وأقسامها والعمليات عليها
+          <p className="text-sm text-muted-foreground mt-1">
+            إدارة الكليات والأقسام الأكاديمية
           </p>
         </div>
-        <Button asChild className="rounded-xl h-11 px-6">
+        <Button asChild className="h-10 px-5">
           <Link to="/specializations/new">
-            <Plus className="ml-2 h-5 w-5" />
-            إضافة كلية جديدة
+            <Plus className="ml-2 h-4 w-4" />
+            إضافة كلية
           </Link>
         </Button>
       </div>
@@ -118,16 +118,16 @@ export function SpecializationsPage() {
         data={data ?? []}
         isLoading={isLoading}
         searchKey="name"
-        searchPlaceholder="البحث بالاسم..."
+        searchPlaceholder="البحث باسم الكلية..."
       />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف هذه الكلية نهائياً. لا يمكن التراجع عن هذا الإجراء.
+              هل أنت متأكد من رغبتك في حذف هذا السجل الأكاديمي؟ لا يمكن التراجع عن هذا الإجراء وسيتم مسح كافة البيانات المرتبطة.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -136,7 +136,7 @@ export function SpecializationsPage() {
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              حذف
+              تأكيد الحذف
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

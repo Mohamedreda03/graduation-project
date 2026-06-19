@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
@@ -113,326 +114,285 @@ export function HallFormPage() {
   if (isEditing && hallLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="w-full">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-muted/30 p-8 mb-8 border border-border/50">
-        <div className="relative">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-primary/20 rounded-2xl">
-              {isEditing ? (
-                <DoorOpen className="h-8 w-8 text-primary" />
-              ) : (
-                <Plus className="h-8 w-8 text-primary" />
-              )}
-            </div>
-            <div>
-              <h1 className="text-3xl font-black text-foreground">
-                {isEditing ? "تعديل القاعة" : "إضافة قاعة جديدة"}
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                {isEditing
-                  ? "تعديل بيانات القاعة الحالية"
-                  : "أدخل المعلومات الأساسية لتعريف قاعة جديدة في الكلية"}
-              </p>
-            </div>
-          </div>
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-dashed pb-4">
+        <div className="p-2 bg-primary/10 rounded-md">
+          {isEditing ? (
+            <DoorOpen className="h-6 w-6 text-primary" />
+          ) : (
+            <Plus className="h-6 w-6 text-primary" />
+          )}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isEditing ? "تعديل القاعة" : "إضافة قاعة جديدة"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {isEditing
+              ? "تحديث بيانات وسعة القاعة الحالية"
+              : "تسجيل قاعة جديدة في قاعدة بيانات الكلية"}
+          </p>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Form Section */}
-        <div className="lg:col-span-2">
-          <div className="bg-card/50 dark:bg-card/20 p-8 rounded-3xl border border-border/50 shadow-sm">
+        <div className="xl:col-span-2">
+          <div className="bg-card rounded-lg border shadow-sm">
             {/* Section Header */}
-            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-border/50">
-              <Building className="h-6 w-6 text-primary" />
-              <h2 className="text-xl font-bold">معلومات القاعة</h2>
+            <div className="flex items-center gap-2 p-4 border-b bg-muted/30">
+              <Building className="h-4 w-4 text-primary" />
+              <h2 className="text-base font-bold">البيانات الأساسية للقاعة</h2>
             </div>
 
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-8"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <DoorOpen className="h-4 w-4 text-muted-foreground" />
-                          اسم القاعة
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="قاعة 101" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="building"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Building className="h-4 w-4 text-muted-foreground" />
-                          المبنى
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="مبنى أ" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="capacity"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          سعة القاعة (اختياري)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={1}
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value
-                                  ? Number(e.target.value)
-                                  : undefined,
-                              )
-                            }
-                          />
-                        </FormControl>
-                        <FormDescription className="text-xs">
-                          عدد الطلاب الأقصى
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Access Point Fields */}
-                <div className="border-t border-border/50 pt-8 mt-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <Wifi className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-bold">
-                      نقطة الوصول (Access Point) - اختياري
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-5">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField
                       control={form.control}
-                      name="apSsid"
+                      name="name"
                       render={({ field }) => (
-                        <FormItem className="space-y-3">
-                          <FormLabel className="flex items-center gap-2">
-                            <Wifi className="h-4 w-4 text-muted-foreground" />
-                            اسم الشبكة (SSID)
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-sm">
+                            <DoorOpen className="h-3.5 w-3.5 text-primary" />
+                            اسم القاعة
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="قاعة 101" className="h-10" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="building"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-sm">
+                            <Building className="h-3.5 w-3.5 text-primary" />
+                            المبنى
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="مبنى أ" className="h-10" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="capacity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-sm">
+                            <Users className="h-3.5 w-3.5 text-primary" />
+                            السعة الاستيعابية
                           </FormLabel>
                           <FormControl>
                             <Input
-                              dir="ltr"
-                              placeholder="Network_Name"
+                              type="number"
+                              min={1}
+                              className="h-10 tabular-nums"
                               {...field}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value
+                                    ? Number(e.target.value)
+                                    : undefined,
+                                )
+                              }
                             />
                           </FormControl>
                           <FormDescription className="text-xs">
-                            اسم شبكة الواي فاي المرتبطة بالقاعة
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="apIpRange"
-                      render={({ field }) => (
-                        <FormItem className="space-y-3">
-                          <FormLabel className="flex items-center gap-2">
-                            <Network className="h-4 w-4 text-muted-foreground" />
-                            نطاق IP
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              dir="ltr"
-                              placeholder="192.168.137"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription className="text-xs">
-                            نطاق عناوين IP للشبكة
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="apIdentifier"
-                      render={({ field }) => (
-                        <FormItem className="space-y-3">
-                          <FormLabel className="flex items-center gap-2">
-                            <Network className="h-4 w-4 text-muted-foreground" />
-                            معرف نقطة الوصول
-                          </FormLabel>
-                          <FormControl>
-                            <Input dir="ltr" placeholder="AP-001" {...field} />
-                          </FormControl>
-                          <FormDescription className="text-xs">
-                            معرف فريد لنقطة الوصول
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="apApiKey"
-                      render={({ field }) => (
-                        <FormItem className="space-y-3">
-                          <FormLabel className="flex items-center gap-2">
-                            <Key className="h-4 w-4 text-muted-foreground" />
-                            مفتاح API
-                          </FormLabel>
-                          <FormControl>
-                            <Input dir="ltr" placeholder="secret_key_123" type="text" {...field} />
-                          </FormControl>
-                          <FormDescription className="text-xs">
-                            المفتاح السري للاتصال بنقطة الوصول
+                            الحد الأقصى لعدد الطلاب
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
-                </div>
 
-                <div className="flex gap-4 pt-6 border-t border-border/50">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="rounded-xl px-8 gap-2"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    {isEditing ? "حفظ التغييرات" : "إضافة قاعة"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    className="rounded-xl px-8 gap-2"
-                    onClick={() => navigate("/halls")}
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                    إلغاء
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                  {/* Access Point Fields */}
+                  <div className="border-t border-dashed pt-6 mt-6">
+                    <div className="flex items-center gap-2 mb-5">
+                      <Wifi className="h-4 w-4 text-primary" />
+                      <h3 className="text-base font-bold">
+                        إعدادات نقطة الوصول (Access Point)
+                      </h3>
+                      <Badge variant="outline" className="text-xs font-normal mr-2">اختياري</Badge>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <FormField
+                        control={form.control}
+                        name="apSsid"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2 text-sm">
+                              <Wifi className="h-3.5 w-3.5 text-primary" />
+                              اسم الشبكة (SSID)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                dir="ltr"
+                                placeholder="Network_Name"
+                                className="h-10 font-mono text-left"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="apIpRange"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2 text-sm">
+                              <Network className="h-3.5 w-3.5 text-primary" />
+                              نطاق IP
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                dir="ltr"
+                                placeholder="192.168.137"
+                                className="h-10 font-mono text-left tabular-nums"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="apIdentifier"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2 text-sm">
+                              <Network className="h-3.5 w-3.5 text-primary" />
+                              معرف نقطة الوصول
+                            </FormLabel>
+                            <FormControl>
+                              <Input dir="ltr" placeholder="AP-001" className="h-10 font-mono text-left" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="apApiKey"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2 text-sm">
+                              <Key className="h-3.5 w-3.5 text-primary" />
+                              مفتاح API
+                            </FormLabel>
+                            <FormControl>
+                              <Input dir="ltr" placeholder="secret_key_123" type="text" className="h-10 font-mono text-left" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-6 border-t border-dashed">
+                    <Button
+                      type="submit"
+                      className="h-10 px-6 gap-2"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      {isEditing ? "حفظ التغييرات" : "تأكيد الإضافة"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-10 px-4"
+                      onClick={() => navigate("/halls")}
+                    >
+                      إلغاء الأمر
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Info Card */}
-          <div className="bg-card/50 dark:bg-card/20 p-6 rounded-3xl border border-border/50">
-            <div className="flex items-center gap-3 mb-4">
-              <Info className="h-5 w-5 text-primary" />
-              <h3 className="font-bold">معلومات مهمة</h3>
+          <div className="bg-card rounded-lg border shadow-sm">
+            <div className="flex items-center gap-2 p-4 border-b bg-muted/30">
+              <Info className="h-4 w-4 text-primary" />
+              <h3 className="font-bold text-sm">متطلبات الإدخال</h3>
             </div>
-            <div className="space-y-4 text-sm text-muted-foreground">
+            <div className="p-4 space-y-4 text-sm text-muted-foreground">
               <div className="flex items-start gap-3">
-                <DoorOpen className="h-4 w-4 mt-0.5 text-primary/60" />
+                <DoorOpen className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                 <div>
-                  <p className="font-medium text-foreground">اسم القاعة</p>
-                  <p>اسم مميز لتحديد القاعة بسهولة</p>
+                  <p className="font-semibold text-foreground mb-0.5">اسم القاعة</p>
+                  <p className="text-xs leading-relaxed">يجب أن يكون الاسم مميزاً لتجنب التعارض في الجداول.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Building className="h-4 w-4 mt-0.5 text-primary/60" />
+                <Network className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                 <div>
-                  <p className="font-medium text-foreground">المبنى والطابق</p>
-                  <p>لتسهيل الوصول للقاعة</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Network className="h-4 w-4 mt-0.5 text-primary/60" />
-                <div>
-                  <p className="font-medium text-foreground">عنوان MAC</p>
-                  <p>يستخدم للتحقق من موقع الطالب</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Wifi className="h-4 w-4 mt-0.5 text-primary/60" />
-                <div>
-                  <p className="font-medium text-foreground">اسم الشبكة</p>
-                  <p>شبكة الواي فاي الخاصة بالقاعة</p>
+                  <p className="font-semibold text-foreground mb-0.5">بيانات الشبكة</p>
+                  <p className="text-xs leading-relaxed">تُستخدم لمصادقة حضور الطلاب برمجياً عبر أجهزتهم.</p>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Tip Card */}
-          <div className="bg-muted/30 p-6 rounded-3xl border border-border/50">
-            <div className="flex items-center gap-3 mb-3">
-              <Lightbulb className="h-5 w-5 text-amber-500" />
-              <h3 className="font-bold text-amber-700 dark:text-amber-400">
-                نصيحة
-              </h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              تأكد من إدخال عنوان MAC الصحيح لنقطة الوصول. هذا العنوان ضروري
-              للتحقق من أن الطالب موجود فعلياً داخل القاعة عند تسجيل الحضور.
-            </p>
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-card/50 dark:bg-card/20 p-6 rounded-3xl border border-border/50">
-            <div className="flex items-center gap-3 mb-4">
-              <FileText className="h-5 w-5 text-primary" />
-              <h3 className="font-bold">روابط مفيدة</h3>
+          <div className="bg-card rounded-lg border shadow-sm">
+            <div className="flex items-center gap-2 p-4 border-b bg-muted/30">
+              <FileText className="h-4 w-4 text-primary" />
+              <h3 className="font-bold text-sm">إدارة القاعات</h3>
             </div>
-            <div className="space-y-2">
+            <div className="p-2 space-y-1">
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 rounded-xl"
+                className="w-full justify-start gap-2 h-9 text-sm"
                 onClick={() => navigate("/halls")}
               >
                 <DoorOpen className="h-4 w-4" />
-                عرض جميع القاعات
+                عرض السجل الكامل
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 rounded-xl"
+                className="w-full justify-start gap-2 h-9 text-sm"
                 onClick={() => navigate("/halls/access-points")}
               >
                 <Wifi className="h-4 w-4" />
-                إدارة نقاط الوصول
+                مراجعة نقاط الوصول
               </Button>
             </div>
           </div>

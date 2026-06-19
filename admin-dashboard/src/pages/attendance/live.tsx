@@ -24,6 +24,14 @@ import {
 import type { AttendanceRecord, Lecture } from "@/types";
 import { formatTime12h } from "@/lib/utils";
 
+const levelLabels: Record<number | string, string> = {
+  "1": "إعدادي",
+  "2": "الفرقة الأولى",
+  "3": "الفرقة الثانية",
+  "4": "الفرقة الثالثة",
+  "5": "الفرقة الرابعة",
+};
+
 export function LiveAttendancePage() {
   const [tick, setTick] = useState(0);
   const [lastUpdate, setLastUpdate] = useState(new Date());
@@ -204,12 +212,11 @@ export function LiveAttendancePage() {
             </SelectTrigger>
             <SelectContent dir="rtl">
               <SelectItem value="all">جميع الفرق</SelectItem>
-              <SelectItem value="1">الفرقة الأولى</SelectItem>
-              <SelectItem value="2">الفرقة الثانية</SelectItem>
-              <SelectItem value="3">الفرقة الثالثة</SelectItem>
-              <SelectItem value="4">الفرقة الرابعة</SelectItem>
-              <SelectItem value="5">الفرقة الخامسة</SelectItem>
-              <SelectItem value="6">الفرقة السادسة</SelectItem>
+              <SelectItem value="1">إعدادي</SelectItem>
+              <SelectItem value="2">الفرقة الأولى</SelectItem>
+              <SelectItem value="3">الفرقة الثانية</SelectItem>
+              <SelectItem value="4">الفرقة الثالثة</SelectItem>
+              <SelectItem value="5">الفرقة الرابعة</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -338,7 +345,7 @@ export function LiveAttendancePage() {
                   {lecture.level && (
                     <>
                       <span>•</span>
-                      <span>الفرقة: {lecture.level}</span>
+                      <span>الفرقة: {levelLabels[lecture.level] || lecture.level}</span>
                     </>
                   )}
                   {lecture.specialization && (

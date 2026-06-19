@@ -23,7 +23,7 @@ const specializationSchema = new mongoose.Schema(
     sectionsCount: {
       type: Map,
       of: Number,
-      default: { "1": 2, "2": 2, "3": 2, "4": 2, "5": 2, "6": 2 }
+      default: { "1": 6, "2": 3, "3": 3, "4": 3, "5": 3 }
     }
   },
   {

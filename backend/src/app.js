@@ -18,6 +18,8 @@ app.use(
     origin: [
       "http://localhost:5173", // Admin dashboard dev
       "http://localhost:5174", // Doctor dashboard dev
+      "http://localhost:5175", // Doctor/Admin dev alt
+      "http://localhost:5176", // Doctor/Admin dev alt
       "http://localhost:4173", // Admin dashboard preview
       "http://localhost:4174", // Doctor dashboard preview
       "http://localhost:3000", // React alternative
@@ -89,7 +91,7 @@ app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
     message: "Welcome to Smart Attendance System 🔥",
-    serverIp: "54.224.164.102",
+    serverIp: "16.170.167.3",
     docs: "/api-docs",
   });
 });
