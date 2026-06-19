@@ -50,7 +50,10 @@ const userSchema = new mongoose.Schema(
     adminRole: {
       type: String,
       enum: Object.values(ADMIN_ROLES),
-      required: function() { return this.role === ROLES.ADMIN; }
+      required: function() { return this.role === ROLES.ADMIN; },
+      default: function() {
+        return this.role === ROLES.ADMIN ? ADMIN_ROLES.SUPER_ADMIN : undefined;
+      }
     },
     // Department (For Head of Department Admin)
     department: {
