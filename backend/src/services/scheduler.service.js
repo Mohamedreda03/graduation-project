@@ -30,16 +30,18 @@ async function finalizeAttendanceRecords() {
       ? autoFinalizeSetting.value
       : 30;
 
-    // Find in-progress records that should be finalized
-    const records = await AttendanceRecord.find({
+    // Find in-progress records that should be finalized using cursor to prevent memory overload
+    const cursor = AttendanceRecord.find({
       status: ATTENDANCE_STATUS.IN_PROGRESS,
       isFinalized: false,
-    }).populate("lecture");
+    })
+      .populate("lecture")
+      .cursor();
 
     const now = new Date();
     let finalized = 0;
 
-    for (const record of records) {
+    for await (const record of cursor) {
       if (!record.lecture) continue;
 
       // Calculate when the lecture ended
@@ -112,13 +114,15 @@ async function markAbsentStudents() {
     // Get today's day of week (0 = Sunday, 1 = Monday, etc.)
     const dayOfWeek = now.getDay();
 
-    // Find all lectures that should have ended by now
-    const lectures = await Lecture.find({
+    // Find all lectures that should have ended by now using cursor
+    const cursor = Lecture.find({
       dayOfWeek,
       isActive: true,
-    }).populate("course");
+    })
+      .populate("course")
+      .cursor();
 
-    for (const lecture of lectures) {
+    for await (const lecture of cursor) {
       const lectureEnd = getLectureEndTime(today, lecture.endTime);
 
       // Only process if lecture has ended
@@ -244,14 +248,14 @@ async function autoCompleteLectures() {
       ? autoFinalizeSetting.value
       : 30;
 
-    const lectures = await Lecture.find({
+    const cursor = Lecture.find({
       status: "in-progress",
       isActive: true,
-    });
+    }).cursor();
 
     let completedCount = 0;
 
-    for (const lecture of lectures) {
+    for await (const lecture of cursor) {
       const lectureEnd = getLectureEndTime(
         getMostRecentDayOfWeekDate(lecture.dayOfWeek),
         lecture.endTime
