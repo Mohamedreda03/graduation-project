@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "seed": "node src/seeders/seed.js",
     "seed:admin": "node src/seeders/seed-admin.js",
+    "seed:rbac": "node src/seeders/seed-rbac.js",
     "db:wipe": "node src/seeders/wipe.js",
     "db:reset": "node src/seeders/reset.js",
     "test": "jest --detectOpenHandles",
