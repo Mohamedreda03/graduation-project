@@ -48,6 +48,8 @@ const prepareUserData = (user) => ({
   studentId: user.studentId,
   name: user.fullName,
   role: user.role,
+  adminRole: user.adminRole,
+  department: user.department,
   academicInfo: user.academicInfo,
   device: user.device,
   isActive: user.isActive,
@@ -436,6 +438,8 @@ exports.login = catchAsync(async (req, res, next) => {
     studentId: user.studentId,
     name: user.fullName, // استخدام الـ virtual fullName بدلاً من object
     role: user.role,
+    adminRole: user.adminRole,
+    department: user.department,
     academicInfo: user.academicInfo,
     device: user.device,
     isActive: user.isActive,

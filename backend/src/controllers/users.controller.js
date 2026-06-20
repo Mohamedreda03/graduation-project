@@ -17,6 +17,8 @@ exports.getMe = catchAsync(async (req, res, next) => {
     email: user.email,
     name: user.fullName, // استخدام fullName virtual
     role: user.role,
+    adminRole: user.adminRole,
+    department: user.department,
     studentId: user.studentId,
     phone: user.phone,
     isActive: user.isActive,
