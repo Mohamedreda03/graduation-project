@@ -11,14 +11,14 @@ const { ROLES } = require("../config/constants");
  */
 const getAccessTokenCookieOptions = () => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: false, // set to false to allow HTTP access during testing
   sameSite: "lax",
   maxAge: 15 * 60 * 1000,
 });
 
 const getRefreshTokenCookieOptions = () => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: false, // set to false to allow HTTP access during testing
   sameSite: "lax",
   maxAge: 7 * 24 * 60 * 60 * 1000,
 });
