@@ -21,6 +21,7 @@ export function useStudents(params?: {
   level?: number;
   page?: number;
   limit?: number;
+  search?: string;
 }) {
   return useQuery({
     queryKey: studentKeys.list(params ?? {}),

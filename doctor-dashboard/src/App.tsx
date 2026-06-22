@@ -12,12 +12,10 @@ import { LoginPage } from "@/pages/login";
 import { DashboardPage } from "@/pages/dashboard";
 import AIChatPage from "@/pages/ai-chat";
 import { MySchedulePage } from "@/pages/my-schedule";
-import { TodaySchedulePage } from "@/pages/my-schedule/today";
 import { MyCoursesPage } from "@/pages/courses";
 import { CourseDetailsPage } from "@/pages/courses/details";
 import { AttendancePage } from "@/pages/attendance";
 import { AttendanceReportsPage } from "@/pages/attendance/reports";
-import { AtRiskStudentsPage } from "@/pages/attendance/at-risk";
 import { LiveAttendancePage } from "@/pages/attendance/live";
 
 const queryClient = new QueryClient({
@@ -57,9 +55,7 @@ function App() {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/ai-chat" element={<AIChatPage />} />
 
-                {/* My Schedule */}
                 <Route path="/my-schedule" element={<MySchedulePage />} />
-                <Route path="/my-schedule/today" element={<TodaySchedulePage />} />
 
                 {/* Courses */}
                 <Route path="/courses" element={<MyCoursesPage />} />
@@ -69,7 +65,6 @@ function App() {
                 <Route path="/attendance" element={<AttendancePage />} />
                 <Route path="/attendance/live" element={<LiveAttendancePage />} />
                 <Route path="/attendance/live/:hallId" element={<LiveAttendancePage />} />
-                <Route path="/attendance/at-risk" element={<AtRiskStudentsPage />} />
                 <Route path="/attendance/reports" element={<AttendanceReportsPage />} />
               </Route>
 

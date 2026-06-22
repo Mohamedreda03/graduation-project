@@ -73,6 +73,12 @@ const lectureSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    actualStartTime: {
+      type: Date,
+    },
+    actualEndTime: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

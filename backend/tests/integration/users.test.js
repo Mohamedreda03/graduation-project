@@ -9,6 +9,8 @@ describe('Users API Integration Tests', () => {
   let adminToken;
   let adminUser;
   let otherUser;
+  let staffUser;
+  let staffToken;
 
   beforeEach(async () => {
     adminUser = await User.create({
@@ -27,7 +29,20 @@ describe('Users API Integration Tests', () => {
       isActive: true
     });
 
+    staffUser = await User.create({
+      email: 'staff@test.com',
+      password: 'password123',
+      name: { first: 'Staff', last: 'User' },
+      role: ROLES.ADMIN,
+      adminRole: 'student_affairs',
+      isActive: true
+    });
+
     adminToken = jwt.sign({ id: adminUser._id }, config.jwt.secret, {
+      expiresIn: config.jwt.expiresIn,
+    });
+
+    staffToken = jwt.sign({ id: staffUser._id }, config.jwt.secret, {
       expiresIn: config.jwt.expiresIn,
     });
   });
@@ -56,8 +71,8 @@ describe('Users API Integration Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.data).toHaveLength(2);
-      expect(res.body.pagination.total).toBe(2);
+      expect(res.body.data).toHaveLength(3);
+      expect(res.body.pagination.total).toBe(3);
     });
 
     it('should filter users by role', async () => {
@@ -91,6 +106,41 @@ describe('Users API Integration Tests', () => {
       const userInDb = await User.findOne({ email: newUser.email });
       expect(userInDb).toBeDefined();
     });
+
+    it('should not allow non-super-admin to create an admin user', async () => {
+      const newAdmin = {
+        email: 'newadmin@test.com',
+        password: 'password123',
+        name: { first: 'New', last: 'Admin' },
+        role: ROLES.ADMIN,
+        adminRole: 'dean'
+      };
+
+      const res = await request(app)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${staffToken}`)
+        .send(newAdmin);
+
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('should allow super-admin to create an admin user', async () => {
+      const newAdmin = {
+        email: 'newadmin@test.com',
+        password: 'password123',
+        name: { first: 'New', last: 'Admin' },
+        role: ROLES.ADMIN,
+        adminRole: 'dean'
+      };
+
+      const res = await request(app)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(newAdmin);
+
+      expect(res.statusCode).toBe(201);
+      expect(res.body.data.adminRole).toBe('dean');
+    });
   });
 
   describe('PUT /api/users/:id', () => {
@@ -105,6 +155,36 @@ describe('Users API Integration Tests', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.data.name.first).toBe('Updated');
     });
+
+    it('should not allow non-super-admin to modify an admin user', async () => {
+      const updateData = { name: { first: 'Updated', last: 'AdminName' } };
+
+      const res = await request(app)
+        .put(`/api/users/${adminUser._id}`)
+        .set('Authorization', `Bearer ${staffToken}`)
+        .send(updateData);
+
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('should allow super-admin to modify an admin user and hash password if provided', async () => {
+      const updateData = { 
+        name: { first: 'Updated', last: 'AdminName' },
+        password: 'newpassword123'
+      };
+
+      const res = await request(app)
+        .put(`/api/users/${staffUser._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(updateData);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.data.name.first).toBe('Updated');
+
+      const updatedUser = await User.findById(staffUser._id).select('+password');
+      const isMatch = await updatedUser.comparePassword('newpassword123');
+      expect(isMatch).toBe(true);
+    });
   });
 
   describe('DELETE /api/users/:id', () => {
@@ -116,6 +196,25 @@ describe('Users API Integration Tests', () => {
       expect(res.statusCode).toBe(200);
       
       const deactivatedUser = await User.findById(otherUser._id);
+      expect(deactivatedUser.isActive).toBe(false);
+    });
+
+    it('should not allow non-super-admin to deactivate an admin user', async () => {
+      const res = await request(app)
+        .delete(`/api/users/${adminUser._id}`)
+        .set('Authorization', `Bearer ${staffToken}`);
+
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('should allow super-admin to deactivate an admin user', async () => {
+      const res = await request(app)
+        .delete(`/api/users/${staffUser._id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.statusCode).toBe(200);
+      
+      const deactivatedUser = await User.findById(staffUser._id);
       expect(deactivatedUser.isActive).toBe(false);
     });
   });

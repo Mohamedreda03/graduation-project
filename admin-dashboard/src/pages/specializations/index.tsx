@@ -4,6 +4,7 @@ import { MoreHorizontal, Plus, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,13 +46,35 @@ export function SpecializationsPage() {
       accessorKey: "code",
       header: "الرمز",
     },
+    {
+      accessorKey: "faculty",
+      header: "الأقسام التابعة",
+      cell: ({ row }) => {
+        const facultyStr = row.original.faculty || "";
+        const depts = facultyStr ? facultyStr.split(/[،,]/).map(t => t.trim()).filter(Boolean) : [];
+        
+        return (
+          <div className="flex flex-wrap gap-1 max-w-[400px]">
+            {depts.length === 0 ? (
+              <span className="text-xs text-muted-foreground">—</span>
+            ) : (
+              depts.map((dept, index) => (
+                <Badge key={index} variant="secondary" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-bold py-0 px-2 rounded">
+                  {dept}
+                </Badge>
+              ))
+            )}
+          </div>
+        );
+      },
+    },
 
     {
       accessorKey: "createdAt",
       header: "تاريخ الإنشاء",
       cell: ({ row }) => {
         const date = new Date(row.original.createdAt);
-        return <span className="tabular-nums">{date.toLocaleDateString("ar-EG")}</span>;
+        return <span className="tabular-nums">{date.toLocaleDateString("en-US")}</span>;
       },
     },
     {

@@ -205,7 +205,7 @@ export function StudentDetailsPage() {
                   {student.device?.registeredAt && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t border-border/50">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>تاريخ تسجيل الجهاز: {new Date(student.device.registeredAt).toLocaleDateString("ar-EG")}</span>
+                      <span>تاريخ تسجيل الجهاز: {new Date(student.device.registeredAt).toLocaleDateString("en-US")}</span>
                     </div>
                   )}
                 </div>
@@ -381,7 +381,7 @@ export function StudentDetailsPage() {
                         };
 
                         const dateObj = record.date ? new Date(record.date) : null;
-                        const dateStr = dateObj ? dateObj.toLocaleDateString("ar-EG") : "-";
+                        const dateStr = dateObj ? dateObj.toLocaleDateString("en-US") : "-";
 
                         // Get lecture details
                         const daysArabic = [

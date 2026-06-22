@@ -30,7 +30,7 @@ async function finalizeAttendanceRecords() {
     });
     const minPresencePercentage = minPresenceSetting
       ? minPresenceSetting.value
-      : 85;
+      : 50;
 
     const autoFinalizeSetting = await Setting.findOne({
       key: "AUTO_FINALIZE_AFTER_MINUTES",

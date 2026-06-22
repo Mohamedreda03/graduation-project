@@ -58,9 +58,16 @@ export const lecturesService = {
     return response.data.data;
   },
 
-  getWeekSchedule: async (courseId?: string, hallId?: string) => {
+  getWeekSchedule: async (filters?: {
+    course?: string;
+    hall?: string;
+    specialization?: string;
+    faculty?: string;
+    level?: number;
+    section?: string;
+  }) => {
     const response = await api.get("/lectures/week-schedule", {
-      params: { course: courseId, hall: hallId },
+      params: filters,
     });
     return response.data.data;
   },

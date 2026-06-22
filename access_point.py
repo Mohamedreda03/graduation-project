@@ -19,7 +19,7 @@ from datetime import datetime
 
 # ================== CONFIGURATION ==================
 # Change this to your hall's identifier (must exist in database)
-AP_IDENTIFIER = "AP-101-01"
+AP_IDENTIFIER = "AP-101"
 
 # Network settings
 SUBNET = "192.168.137."      # Hotspot IP Range (Windows default)

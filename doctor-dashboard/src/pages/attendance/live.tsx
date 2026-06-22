@@ -1,124 +1,196 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  Radio,
   Users,
-  Wifi,
   Clock,
-  ChevronRight,
-  ChevronLeft,
-  MoreHorizontal,
+  RefreshCw,
+  Wifi,
+  Search,
+  Building,
+  Activity,
+  Play,
+  Square,
+  AlertTriangle,
   CheckCircle,
   XCircle,
-  Clock as ClockIcon,
-  AlertTriangle,
-  RefreshCw,
-  LogOut,
-  Search,
-  Grid,
-  List,
-  AlertCircle,
-  Radio,
-  UserCheck,
-  UserX,
-  Hourglass,
-  MapPin,
-  Laptop,
-  Play,
-  CheckCircle2,
-  Calendar,
+  HelpCircle,
+  FileSpreadsheet,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { attendanceService } from "@/services/attendance.service";
-import { hallsService } from "@/services/halls.service";
-import {
-  useUpdateAttendanceStatus,
-  useEndLecture,
-  useStartLecture,
-  useLectures,
-  useTodayLectures,
-} from "@/hooks";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { formatTime12h } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
-import { motion, AnimatePresence } from "motion/react";
+import {
+  useTodayLectures,
+  useStartLecture,
+  useEndLecture,
+  useAttendanceByLecture,
+  useUpdateAttendanceStatus,
+  useMarkExcused,
+  useUpdateMatrixCell,
+} from "@/hooks";
 import { toast } from "sonner";
 import type { Lecture } from "@/types";
-import { formatTime12h } from "@/lib/utils";
 
-interface LiveAttendance {
-  activeSessions: number;
-  sessions: Array<{
-    student: {
-      _id: string;
-      name: { first: string; last: string } | string;
-      studentId: string;
-    };
-    connectedAt: string;
-    macAddress: string;
-  }>;
-  inProgressRecords: number;
-  records: Array<{
-    student: {
-      _id: string;
-      name: { first: string; last: string } | string;
-      studentId: string;
-    };
-    checkIn: string;
-    totalTime: number;
-    status: string;
-    _id?: string;
-  }>;
+const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const levelLabels: Record<number | string, string> = {
+  "1": "إعدادي",
+  "2": "الفرقة الأولى",
+  "3": "الفرقة الثانية",
+  "4": "الفرقة الثالثة",
+  "5": "الفرقة الرابعة",
+};
+
+const studentStatusMap: Record<string, { label: string; dot: string; text: string }> = {
+  present: { label: "حاضر", dot: "bg-emerald-500", text: "text-emerald-600" },
+  late: { label: "متأخر", dot: "bg-amber-500", text: "text-amber-600" },
+  absent: { label: "غائب", dot: "bg-red-500", text: "text-red-600" },
+  excused: { label: "عذر", dot: "bg-blue-500", text: "text-blue-600" },
+  "in-progress": { label: "نشط", dot: "bg-emerald-500 motion-safe:animate-pulse", text: "text-emerald-600" },
+};
+
+function StatusDot({ status }: { status: string }) {
+  const dotColor = studentStatusMap[status]?.dot || "bg-muted-foreground";
+  return (
+    <span className={`inline-block h-2 w-2 rounded-full ${dotColor} shrink-0`} />
+  );
+}
+
+interface StudentRowProps {
+  student: any;
+  record: any;
+  entryTimeStr: string;
+  exitTimeStr: string;
+  currentStatus: string;
+  onPresence: () => void;
+  onExcuse: () => void;
+}
+
+const StudentCardRow = memo(function StudentCardRow({
+  student, record, entryTimeStr, exitTimeStr, currentStatus, onPresence, onExcuse,
+}: StudentRowProps) {
+  const statusInfo = studentStatusMap[currentStatus] || studentStatusMap.absent;
+  const isAbsent = currentStatus === "absent";
+
+  return (
+    <div className="border border-border/50 rounded-md p-3 bg-card space-y-2 text-right">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col min-w-0">
+          <span className="font-semibold text-sm text-foreground truncate">{student.name}</span>
+          <span className="font-mono text-[11px] text-muted-foreground">{student.studentId}</span>
+        </div>
+        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold shrink-0 ${statusInfo.text}`}>
+          <StatusDot status={currentStatus} />
+          {statusInfo.label}
+        </span>
+      </div>
+      <div className="grid grid-cols-4 gap-1 text-xs">
+        <div className="flex flex-col">
+          <span className="text-muted-foreground font-medium">الدخول</span>
+          <span className="font-mono font-semibold text-foreground" dir="ltr">{entryTimeStr}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-muted-foreground font-medium">الخروج</span>
+          <span className="font-mono font-semibold text-foreground" dir="ltr">{exitTimeStr}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-muted-foreground font-medium">المدة</span>
+          <span className="font-semibold text-foreground">{isAbsent ? "—" : `${record?.totalPresenceTime || 0} د`}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-muted-foreground font-medium">النسبة</span>
+          <span className="font-mono font-semibold text-foreground tabular-nums">{record?.presencePercentage || 0}%</span>
+        </div>
+      </div>
+      {isAbsent && (
+        <div className="flex items-center gap-2 pt-1">
+          <Button variant="outline" size="sm" className="flex-1 text-xs min-h-[44px] text-emerald-700 hover:bg-emerald-50 font-semibold rounded-md border-emerald-200 cursor-pointer" onClick={onPresence}>تحضير</Button>
+          <Button variant="outline" size="sm" className="flex-1 text-xs min-h-[44px] text-blue-700 hover:bg-blue-50 font-semibold rounded-md border-blue-200 cursor-pointer" onClick={onExcuse}>عذر</Button>
+        </div>
+      )}
+    </div>
+  );
+});
+
+const StudentTableRow = memo(function StudentTableRow({
+  student, record, entryTimeStr, exitTimeStr, currentStatus, onPresence, onExcuse,
+}: StudentRowProps) {
+  const statusInfo = studentStatusMap[currentStatus] || studentStatusMap.absent;
+  const isAbsent = currentStatus === "absent";
+
+  return (
+    <tr className="hover:bg-muted/10 border-b border-border/50 transition-colors">
+      <td className="py-2 px-2 text-right">
+        <div className="flex flex-col">
+          <span className="font-semibold text-xs text-foreground">{student.name}</span>
+          <span className="font-mono text-[11px] text-muted-foreground">{student.studentId}</span>
+        </div>
+      </td>
+      <td className="py-2 px-2 text-center">
+        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${statusInfo.text}`}>
+          <StatusDot status={currentStatus} />
+          {statusInfo.label}
+        </span>
+      </td>
+      <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground">{entryTimeStr}</td>
+      <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground">{exitTimeStr}</td>
+      <td className="py-2 px-2 text-center text-xs text-muted-foreground font-medium">
+        {isAbsent ? "—" : `${record?.totalPresenceTime || 0} د`}
+      </td>
+      <td className="py-2 px-2 text-center">
+        <span className="text-xs font-mono font-semibold text-foreground tabular-nums">{record?.presencePercentage || 0}%</span>
+      </td>
+      <td className="py-2 px-2 text-center">
+        {isAbsent ? (
+          <div className="flex items-center justify-center gap-1">
+            <Button variant="outline" size="sm" className="text-[11px] h-7 px-2 text-emerald-700 hover:bg-emerald-50 font-semibold rounded-md border-emerald-200 cursor-pointer" onClick={onPresence}>تحضير</Button>
+            <Button variant="outline" size="sm" className="text-[11px] h-7 px-2 text-blue-700 hover:bg-blue-50 font-semibold rounded-md border-blue-200 cursor-pointer" onClick={onExcuse}>عذر</Button>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </td>
+    </tr>
+  );
+});
+
+function formatTime(date?: string | Date | null): string {
+  if (!date) return "—";
+  return new Date(date).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 export function LiveAttendancePage() {
-  const { hallId } = useParams<{ hallId: string }>();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
-  const updateStatusMutation = useUpdateAttendanceStatus();
-  const endLectureMutation = useEndLecture();
-  const startLectureMutation = useStartLecture();
+  const [lastUpdate, setLastUpdate] = useState(new Date());
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedLectureId, setSelectedLectureId] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectedLectureId, setSelectedLectureId] = useState<string | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [auditSearchQuery, setAuditSearchQuery] = useState<string>("");
 
-  // Clock tick every second
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const todayStr = getLocalDateString();
 
-  // Fetch today's lectures
+  // Queries
   const { data: todayLectures, isLoading: lecturesLoading, refetch: refetchToday } = useTodayLectures();
 
   // Helper to check if lecture belongs to current doctor
@@ -138,871 +210,648 @@ export function LiveAttendancePage() {
     return false;
   };
 
-  const myLectures = todayLectures?.filter(isMyLecture) || [];
+  const myLectures = useMemo(() => {
+    return todayLectures?.filter(isMyLecture) || [];
+  }, [todayLectures, user?._id]);
 
-  // Auto-select active or upcoming lecture on load
+  const selectedLecture = useMemo(() => {
+    return myLectures.find((l) => l._id === selectedLectureId) || null;
+  }, [myLectures, selectedLectureId]);
+
+  const { data: attendanceRecords, isLoading: attendanceLoading, refetch: refetchAttendance } = useAttendanceByLecture(
+    selectedLectureId || ""
+  );
+
+  const startMutation = useStartLecture();
+  const endMutation = useEndLecture();
+  const updateStatusMutation = useUpdateAttendanceStatus();
+  const excuseMutation = useMarkExcused();
+  const updateMatrixCellMutation = useUpdateMatrixCell();
+
+  // Trigger refetch every 5 seconds for active lecture
   useEffect(() => {
-    if (myLectures.length > 0 && !selectedLectureId) {
-      // 1. If hallId in URL, match lecture with this hall
-      if (hallId) {
-        const matchingLecture = myLectures.find((l) => {
-          const lHallId = typeof l.hall === "object" ? l.hall._id : l.hall;
-          return lHallId === hallId;
-        });
-        if (matchingLecture) {
-          setSelectedLectureId(matchingLecture._id);
-          return;
+    if (!isSheetOpen || !selectedLectureId || selectedLecture?.status !== "in-progress") return;
+    const interval = setInterval(() => {
+      refetchAttendance();
+      setLastUpdate(new Date());
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isSheetOpen, selectedLectureId, selectedLecture?.status, refetchAttendance]);
+
+  useEffect(() => {
+    if (todayLectures) {
+      setLastUpdate(new Date());
+    }
+  }, [todayLectures]);
+
+  // Enrolled students calculation
+  const enrolledStudents = useMemo(() => {
+    if (!selectedLecture) return [];
+    return [...(selectedLecture.presentStudents || []), ...(selectedLecture.absentStudents || [])]
+      .map((student: any) => {
+        const fullName = typeof student.name === "object"
+          ? `${student.name.first} ${student.name.last}`
+          : student.name || "طالب غير معروف";
+        return {
+          _id: student._id || student,
+          name: fullName,
+          studentId: student.studentId || "—",
+        };
+      })
+      .sort((a: any, b: any) => (a.studentId || "").localeCompare(b.studentId || ""));
+  }, [selectedLecture]);
+
+  const recordsByStudentId = useMemo(() => {
+    const map = new Map<string, any>();
+    if (!attendanceRecords) return map;
+    for (const r of attendanceRecords) {
+      const sid = r.student?._id?.toString() || r.student?.toString();
+      if (sid) map.set(sid, r);
+    }
+    return map;
+  }, [attendanceRecords]);
+
+  // Statistics for the selected lecture
+  const auditStats = useMemo(() => {
+    if (!attendanceRecords) return { total: 0, present: 0, late: 0, absent: 0, excused: 0, rate: 0 };
+    let present = 0, late = 0, excused = 0, inProgress = 0;
+    for (const r of attendanceRecords) {
+      if (r.status === "present") present++;
+      else if (r.status === "late") late++;
+      else if (r.status === "excused") excused++;
+      else if (r.status === "in-progress") inProgress++;
+    }
+    const total = enrolledStudents.length;
+    const absent = Math.max(0, total - present - late - excused - inProgress);
+    const rate = total > 0 ? Math.round(((present + late + inProgress) / total) * 100) : 0;
+    return { total, present, late, absent, excused, rate };
+  }, [attendanceRecords, enrolledStudents.length]);
+
+  const timeBoundaries = useMemo(() => {
+    if (!attendanceRecords || attendanceRecords.length === 0) {
+      return { actualStart: "—", actualEnd: "—", doctorStart: "—", doctorEnd: "—" };
+    }
+    let earliest: Date | null = null;
+    let latest: Date | null = null;
+
+    for (const record of attendanceRecords) {
+      if (record.sessions) {
+        for (const session of record.sessions) {
+          if (session.checkIn) {
+            const d = new Date(session.checkIn);
+            if (!earliest || d.getTime() < earliest.getTime()) earliest = d;
+          }
+          if (session.checkOut) {
+            const d = new Date(session.checkOut);
+            if (!latest || d.getTime() > latest.getTime()) latest = d;
+          }
         }
       }
-
-      // 2. Else match an active lecture
-      const active = myLectures.find((l) => l.status === "in-progress");
-      if (active) {
-        setSelectedLectureId(active._id);
-        return;
-      }
-
-      // 3. Else match first scheduled lecture
-      const scheduled = myLectures.find((l) => l.status === "scheduled");
-      if (scheduled) {
-        setSelectedLectureId(scheduled._id);
-        return;
-      }
-
-      // 4. Fallback to first
-      setSelectedLectureId(myLectures[0]._id);
     }
-  }, [myLectures, hallId, selectedLectureId]);
 
-  const selectedLecture = myLectures.find((l) => l._id === selectedLectureId);
+    const actualStart = earliest ? formatTime(earliest) : "—";
+    let actualEnd = "—";
+    if (latest) {
+      actualEnd = formatTime(latest);
+    } else if (selectedLecture?.status === "in-progress") {
+      actualEnd = "جارية حالياً";
+    }
 
-  const currentHallId = selectedLecture
-    ? typeof selectedLecture.hall === "object"
-      ? selectedLecture.hall._id
-      : selectedLecture.hall
-    : undefined;
+    const docStart = attendanceRecords.find((r: any) => r.lectureStartTime)?.lectureStartTime || selectedLecture?.actualStartTime;
+    const docEnd = attendanceRecords.find((r: any) => r.lectureEndTime)?.lectureEndTime || selectedLecture?.actualEndTime;
 
-  // Fetch hall details
-  const { data: hall } = useQuery({
-    queryKey: ["hall", currentHallId],
-    queryFn: () => hallsService.getById(currentHallId!),
-    enabled: !!currentHallId,
-  });
+    let doctorStart = "—";
+    if (docStart) {
+      doctorStart = formatTime(docStart);
+    } else if (selectedLecture?.status === "in-progress") {
+      doctorStart = earliest ? formatTime(earliest) : "لم يسجل";
+    }
 
-  // Fetch live attendance data (refresh every 5 seconds if active)
-  const { data: liveData, isLoading: liveLoading, refetch: refetchLive } = useQuery<LiveAttendance>({
-    queryKey: ["live-attendance", currentHallId],
-    queryFn: () => attendanceService.getLiveAttendance(currentHallId!),
-    refetchInterval: 5000,
-    enabled: !!currentHallId && selectedLecture?.status === "in-progress",
-  });
+    let doctorEnd = "—";
+    if (docEnd) {
+      doctorEnd = formatTime(docEnd);
+    } else if (selectedLecture?.status === "in-progress") {
+      doctorEnd = "جارية حالياً";
+    }
 
-  const isLoading = lecturesLoading || (selectedLecture?.status === "in-progress" && liveLoading);
+    return { actualStart, actualEnd, doctorStart, doctorEnd };
+  }, [attendanceRecords, selectedLecture]);
 
-  const handleUpdateStatus = async (
-    recordId: string,
-    studentName: string,
-    status: "present" | "absent" | "late" | "excused"
-  ) => {
+  const filteredStudents = useMemo(() => {
+    if (!auditSearchQuery.trim()) return enrolledStudents;
+    const q = auditSearchQuery.toLowerCase().trim();
+    return enrolledStudents.filter((s: any) => {
+      const name = s.name ? s.name.toLowerCase() : "";
+      const id = s.studentId ? s.studentId.toLowerCase() : "";
+      return name.includes(q) || id.includes(q);
+    });
+  }, [enrolledStudents, auditSearchQuery]);
+
+  const studentRows = useMemo(() => {
+    return filteredStudents.map((student: any) => {
+      const rec = recordsByStudentId.get(student._id?.toString()) || null;
+      const firstSession = rec?.sessions?.[0];
+      const lastSession = rec?.sessions?.[rec?.sessions?.length - 1];
+      const entryTimeStr = firstSession?.checkIn
+        ? formatTime(firstSession.checkIn)
+        : "—";
+      const exitTimeStr = lastSession?.checkOut
+        ? formatTime(lastSession.checkOut)
+        : rec?.status === "in-progress" ? "جاري" : "—";
+      const currentStatus = rec ? rec.status : "absent";
+
+      return { student, record: rec, entryTimeStr, exitTimeStr, currentStatus };
+    });
+  }, [filteredStudents, recordsByStudentId]);
+
+  const handleManualPresence = useCallback(async (student: any, record: any) => {
+    if (!student) return;
     try {
-      await updateStatusMutation.mutateAsync({ id: recordId, status });
-      const statusLabels = {
-        present: "حاضر",
-        absent: "غائب",
-        late: "متأخر",
-        excused: "معذور",
-      };
-      toast.success(`تم تغيير حالة الطالب ${studentName} إلى ${statusLabels[status]}`);
-      refetchLive();
+      if (record && record._id) {
+        await updateStatusMutation.mutateAsync({
+          id: record._id,
+          status: "present",
+          reason: "تسجيل حضور يدوي من لوحة تحكم الأستاذ",
+        });
+      } else if (selectedLecture) {
+        await updateMatrixCellMutation.mutateAsync({
+          studentId: student._id,
+          courseId: typeof selectedLecture.course === "object" ? selectedLecture.course._id : selectedLecture.course,
+          date: todayStr,
+          status: "present",
+          reason: "تسجيل حضور يدوي من لوحة تحكم الأستاذ",
+        });
+        queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      }
+      refetchAttendance();
     } catch (err) {
-      toast.error("فشل تغيير حالة الطالب");
+      toast.error("فشل تعديل حالة الطالب");
     }
-  };
+  }, [updateStatusMutation, updateMatrixCellMutation, selectedLecture, todayStr, queryClient, refetchAttendance]);
 
-  const handleStartLecture = async (lectureId: string, hId: string) => {
+  const handleManualExcuse = useCallback(async (student: any, record: any) => {
+    if (!student) return;
     try {
-      await startLectureMutation.mutateAsync(lectureId);
-      toast.success("تم بدء المحاضرة بنجاح وبدء رصد الحضور");
+      if (record && record._id) {
+        await excuseMutation.mutateAsync({
+          id: record._id,
+          reason: "عذر طبي أو إذن معتمد من أستاذ المادة",
+        });
+      } else if (selectedLecture) {
+        await updateMatrixCellMutation.mutateAsync({
+          studentId: student._id,
+          courseId: typeof selectedLecture.course === "object" ? selectedLecture.course._id : selectedLecture.course,
+          date: todayStr,
+          status: "excused",
+          reason: "عذر طبي أو إذن معتمد من أستاذ المادة",
+        });
+        queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      }
+      refetchAttendance();
+    } catch (err) {
+      toast.error("فشل تسجيل عذر الطالب");
+    }
+  }, [excuseMutation, updateMatrixCellMutation, selectedLecture, todayStr, queryClient, refetchAttendance]);
+
+  const handleStartLecture = async (lectureId: string) => {
+    try {
+      await startMutation.mutateAsync(lectureId);
+      toast.success("تم بدء المحاضرة بنجاح وبدء بث البلوتوث لرصد الحضور");
       refetchToday();
-      navigate(`/attendance/live/${hId}`);
     } catch (err: any) {
       toast.error(err.message || "حدث خطأ أثناء بدء المحاضرة");
     }
   };
 
-  const handleEndLecture = async () => {
-    if (!selectedLecture) return;
+  const handleEndLecture = async (lectureId: string) => {
     try {
-      await endLectureMutation.mutateAsync(selectedLecture._id);
+      await endMutation.mutateAsync(lectureId);
       toast.success("تم إنهاء المحاضرة وحفظ الغيابات بنجاح");
       refetchToday();
-    } catch (err) {
-      toast.error("حدث خطأ أثناء إنهاء المحاضرة");
+      if (selectedLectureId === lectureId) {
+        refetchAttendance();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "حدث خطأ أثناء إنهاء المحاضرة");
     }
   };
 
-  const handleSelectLecture = (lectureId: string) => {
-    setSelectedLectureId(lectureId);
-    const lec = myLectures.find((l) => l._id === lectureId);
-    if (lec) {
-      const hId = typeof lec.hall === "object" ? lec.hall._id : lec.hall;
-      navigate(`/attendance/live/${hId}`);
-    }
-  };
+  const handleRefreshAll = useCallback(() => {
+    refetchToday();
+  }, [refetchToday]);
 
-  const getStudentName = (student: any) => {
-    if (student && typeof student.name === "object") {
-      return `${student.name.first} ${student.name.last}`;
-    }
-    return student?.name || "طالب غير معروف";
-  };
-
-  const getRandomBgColor = (studentId: string) => {
-    const colors = [
-      "bg-red-500/10 text-red-500 border-red-500/20",
-      "bg-blue-500/10 text-blue-500 border-blue-500/20",
-      "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-      "bg-amber-500/10 text-amber-500 border-amber-500/20",
-      "bg-purple-500/10 text-purple-500 border-purple-500/20",
-      "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-    ];
-    const index = studentId ? studentId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length : 0;
-    return colors[index];
-  };
-
-  const getDisplayTime = (record: any) => {
-    let baseTime = record.totalTime || 0;
-    if (record.status === "in-progress" && record.checkIn) {
-      const checkInTime = new Date(record.checkIn).getTime();
-      const nowTime = currentTime.getTime();
-      const elapsedMins = Math.floor((nowTime - checkInTime) / (1000 * 60));
-      return baseTime + Math.max(0, elapsedMins);
-    }
-    return baseTime;
-  };
-
-  const timeStr = currentTime.toLocaleTimeString("ar-EG", {
+  const timeStr = lastUpdate.toLocaleTimeString("ar-EG", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
     hour12: true,
   });
 
-  // Filter records
-  const filteredRecords = liveData?.records?.filter((r) => {
-    const name = getStudentName(r.student).toLowerCase();
-    const sId = (r.student.studentId || "").toLowerCase();
-    const query = searchTerm.toLowerCase();
-    return name.includes(query) || sId.includes(query);
-  }) || [];
+  // Filters search query for lectures
+  const filteredLectures = useMemo(() => {
+    return myLectures.filter((lecture: any) => {
+      if (searchTerm) {
+        const s = searchTerm.toLowerCase();
+        const courseName = typeof lecture.course === "object" ? lecture.course.name.toLowerCase() : "";
+        const courseCode = typeof lecture.course === "object" ? lecture.course.code.toLowerCase() : "";
+        const hallName = typeof lecture.hall === "object" ? lecture.hall.name.toLowerCase() : "";
+        if (!courseName.includes(s) && !courseCode.includes(s) && !hallName.includes(s)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [myLectures, searchTerm]);
 
-  // Filter sessions
-  const filteredSessions = liveData?.sessions?.filter((s) => {
-    const name = getStudentName(s.student).toLowerCase();
-    const sId = (s.student?.studentId || "").toLowerCase();
-    const query = searchTerm.toLowerCase();
-    return name.includes(query) || sId.includes(query);
-  }) || [];
-
-  // Stats
-  const totalEnrolled = selectedLecture?.course && typeof selectedLecture.course !== "string"
-    ? selectedLecture.course.students?.length || 0
-    : 0;
-  const presentCount = liveData?.records?.filter(
-    (r) => r.status === "in-progress" || r.status === "present" || r.status === "late" || r.status === "excused"
-  ).length || 0;
-  const attendanceRate = totalEnrolled > 0 ? Math.round((presentCount / totalEnrolled) * 100) : 0;
+  // Statistics calculation for my dashboard
+  const kpiStats = useMemo(() => {
+    const total = myLectures.length;
+    const active = myLectures.filter((l) => l.status === "in-progress").length;
+    const completed = myLectures.filter((l) => l.status === "completed").length;
+    return { total, active, completed };
+  }, [myLectures]);
 
   return (
-    <div className="space-y-8 text-right" dir="rtl">
-      {/* Breadcrumbs & Live Pulse */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-sm">
-          <Link to="/my-schedule/today" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
-            محاضرات اليوم
-          </Link>
-          <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-          <span className="font-bold text-foreground">الحساب والمتابعة الفورية</span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-xl border border-border/50">
-            <Clock className="h-4 w-4 text-primary" />
-            <span dir="ltr" className="font-mono font-bold">{timeStr}</span>
+    <div className="space-y-4 sm:space-y-5 text-right" dir="rtl">
+      {/* Header */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-primary/10 rounded-md border border-primary/20 shrink-0">
+            <Radio className="h-4 w-4 text-primary motion-safe:animate-pulse" />
           </div>
-
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            رصد الحضور المباشر
+          <div className="min-w-0 text-right">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground font-[family-name:var(--font-heading)] truncate">
+              غرفة الحضور المباشر للأستاذ
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              بدء المحاضرات وتتبع إشارات الاتصال والحضور والغياب للطلاب لحظة بلحظة
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* Main Selector & Header */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-card p-6 rounded-3xl border shadow-sm">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
-            <Radio className="h-7 w-7 text-primary animate-pulse" />
-            متابعة الحضور المباشر اليوم
-          </h1>
-          <p className="text-muted-foreground text-sm font-medium mt-1">
-            اختر إحدى محاضراتك اليوم للبدء، المتابعة اللحظية، أو إنهاء رصد الحضور.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 min-w-[320px] w-full xl:w-auto">
-          <Select value={selectedLectureId} onValueChange={handleSelectLecture}>
-            <SelectTrigger className="w-full xl:w-[380px] rounded-xl border-muted bg-background h-11 text-right font-bold text-sm">
-              <SelectValue placeholder="اختر المحاضرة" />
-            </SelectTrigger>
-            <SelectContent dir="rtl" className="max-w-[420px]">
-              {myLectures.map((lec) => {
-                const cName = typeof lec.course === "object" ? lec.course.name : "مقرر";
-                const cCode = typeof lec.course === "object" ? lec.course.code : "";
-                const hName = typeof lec.hall === "object" ? lec.hall.name : "قاعة";
-                const statusTag =
-                  lec.status === "in-progress"
-                    ? "🟢 جارية الآن"
-                    : lec.status === "completed"
-                    ? "✅ مكتملة"
-                    : "⏱️ مجدولة";
-                
-                return (
-                  <SelectItem key={lec._id} value={lec._id} className="text-right py-2.5 font-bold text-sm">
-                    {cCode} - {cName} • {hName} ({statusTag})
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/60 px-3 py-1.5 rounded-md border border-border min-h-[36px]">
+            <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="font-medium text-foreground">توقيت النظام:</span>
+            <span dir="ltr" className="font-mono font-semibold text-primary tabular-nums">{timeStr}</span>
+          </div>
           <Button
-            onClick={() => {
-              refetchToday();
-              if (currentHallId && selectedLecture?.status === "in-progress") {
-                refetchLive();
-              }
-            }}
             variant="outline"
-            className="rounded-xl h-11 px-4 hover:bg-muted/50 shrink-0"
+            size="sm"
+            onClick={handleRefreshAll}
+            disabled={lecturesLoading}
+            className="gap-1.5 rounded-md min-h-[36px]"
           >
-            <RefreshCw className={`h-4 w-4 text-primary ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${lecturesLoading ? "animate-spin" : ""}`} />
+            <span>تحديث</span>
           </Button>
         </div>
       </div>
 
-      {myLectures.length === 0 && !lecturesLoading && (
-        <Card className="border-dashed border-2 rounded-3xl bg-muted/10">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-            <Calendar className="h-16 w-16 text-muted-foreground opacity-30 animate-pulse" />
-            <h3 className="text-xl font-bold text-foreground">لا توجد محاضرات مجدولة لك اليوم</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              لم نجد أي محاضرات مخصصة لك في جدول اليوم. يمكنك الاسترخاء أو مراجعة جدولك الأسبوعي الكامل.
-            </p>
-            <Button asChild className="rounded-xl h-10 px-6 font-bold" variant="outline">
-              <Link to="/my-schedule">عرض الجدول الأسبوعي</Link>
-            </Button>
+      {/* KPI Stats Grid */}
+      <div className="grid gap-2 sm:gap-3 grid-cols-3">
+        <Card className="rounded-md shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
+          <CardContent className="p-3 sm:p-4 flex items-center justify-between gap-2">
+            <div className="space-y-0.5 min-w-0 text-right">
+              <p className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">محاضرات اليوم</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">{kpiStats.total}</p>
+            </div>
+            <div className="p-2 bg-primary/10 text-primary rounded-md shrink-0 hidden sm:block">
+              <Building className="h-4 w-4" />
+            </div>
           </CardContent>
         </Card>
-      )}
 
-      {selectedLecture && (
-        <div className="space-y-8">
-          {/* CASE 1: SCHEDULED (Waiting to Start) */}
-          {selectedLecture.status === "scheduled" && (
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card className="border-dashed border-2 rounded-3xl bg-blue-500/5 border-blue-500/20 p-8 text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl -z-10" />
-                <div className="flex flex-col items-center justify-center max-w-2xl mx-auto space-y-6">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center animate-bounce">
-                    <Clock className="h-8 w-8" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold text-blue-500 uppercase tracking-wider bg-blue-500/10 px-3 py-1 rounded-full">
-                      محاضرة مجدولة اليوم
-                    </span>
-                    <h2 className="text-2xl font-black text-foreground">
-                      {typeof selectedLecture.course === "object" ? selectedLecture.course.name : "مقرر غير معروف"}
-                    </h2>
-                    <p className="text-sm text-muted-foreground font-mono font-bold">
-                      {typeof selectedLecture.course === "object" ? selectedLecture.course.code : ""}
-                    </p>
-                  </div>
+        <Card className="rounded-md shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
+          <CardContent className="p-3 sm:p-4 flex items-center justify-between gap-2">
+            <div className="space-y-0.5 min-w-0 text-right">
+              <p className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">محاضرات جارية</p>
+              <p className="text-xl sm:text-2xl font-bold text-emerald-600 tabular-nums">{kpiStats.active}</p>
+            </div>
+            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-md shrink-0 hidden sm:block">
+              <Wifi className="h-4 w-4" />
+            </div>
+          </CardContent>
+        </Card>
 
-                  <div className="grid grid-cols-2 gap-4 w-full max-w-md pt-4">
-                    <div className="bg-background/80 border p-4 rounded-2xl text-center shadow-sm flex flex-col items-center justify-center gap-1">
-                      <MapPin className="h-5 w-5 text-blue-500" />
-                      <span className="text-xs text-muted-foreground">مكان الانعقاد</span>
-                      <span className="text-sm font-bold">{hall?.name || "قاعة"} {hall?.building && `• مبنى ${hall.building}`}</span>
-                    </div>
+        <Card className="rounded-md shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
+          <CardContent className="p-3 sm:p-4 flex items-center justify-between gap-2">
+            <div className="space-y-0.5 min-w-0 text-right">
+              <p className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">محاضرات منتهية</p>
+              <p className="text-xl sm:text-2xl font-bold text-muted-foreground tabular-nums">{kpiStats.completed}</p>
+            </div>
+            <div className="p-2 bg-muted text-muted-foreground rounded-md shrink-0 hidden sm:block">
+              <Activity className="h-4 w-4" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-                    <div className="bg-background/80 border p-4 rounded-2xl text-center shadow-sm flex flex-col items-center justify-center gap-1">
-                      <Clock className="h-5 w-5 text-blue-500" />
-                      <span className="text-xs text-muted-foreground">التوقيت المجدول</span>
-                      <span className="text-sm font-bold flex items-center gap-1" dir="ltr">
-                        <span dir="rtl">{formatTime12h(selectedLecture.startTime)}</span>
-                        <span>-</span>
-                        <span dir="rtl">{formatTime12h(selectedLecture.endTime)}</span>
-                      </span>
-                    </div>
-                  </div>
+      {/* Quick Search */}
+      <Card className="rounded-md shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
+        <CardContent className="p-3">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="البحث باسم المادة أو كود المادة أو القاعة..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pr-9 rounded-md border bg-background text-right w-full min-h-[36px]"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-                  <div className="pt-6 w-full max-w-sm">
-                    <Button
-                      onClick={() => handleStartLecture(selectedLecture._id, currentHallId!)}
-                      disabled={startLectureMutation.isPending}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-2xl h-14 font-black shadow-lg shadow-blue-600/20 text-base gap-3 transition-all duration-300 hover:scale-[1.02]"
-                    >
-                      <Play className="h-5 w-5 fill-current shrink-0" />
-                      بدء تسجيل حضور الطلاب الآن
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-3 font-medium">
-                      عند الضغط على البدء، سيتم تفعيل البث، والتقاط الطلاب المتصلين بنقطة الوصول تلقائياً.
-                    </p>
+      {/* Lectures List Section */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold font-[family-name:var(--font-heading)] flex items-center gap-2 text-foreground">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+          محاضرات اليوم المتاحة للرصد ({filteredLectures.length})
+        </h3>
+
+        {filteredLectures.length === 0 && (
+          <Card className="border-dashed rounded-md">
+            <CardContent className="p-6 sm:p-8 text-center">
+              <FileSpreadsheet className="h-8 w-8 text-muted-foreground mx-auto mb-3 opacity-40" />
+              <h4 className="text-sm font-bold text-foreground mb-1">لا توجد محاضرات اليوم</h4>
+              <p className="text-xs text-muted-foreground">
+                لم يتم إدراج محاضرات في جدولك لهذا اليوم، أو لا يوجد نتائج مطابقة للبحث.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+          {filteredLectures.map((lecture: Lecture) => {
+            const courseName = typeof lecture.course === "object" ? lecture.course.name : "غير معروف";
+            const courseCode = typeof lecture.course === "object" ? lecture.course.code : "";
+            const hallName = typeof lecture.hall === "object" ? lecture.hall.name : "غير معروف";
+            const isLectureActive = lecture.status === "in-progress";
+            const isCompleted = lecture.status === "completed";
+            const isScheduled = lecture.status === "scheduled";
+
+            return (
+              <Card
+                key={lecture._id}
+                className={`overflow-hidden rounded-md shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] border transition-shadow ${
+                  isLectureActive ? "border-emerald-500/30" : "border-border"
+                }`}
+              >
+                <div className="bg-muted/40 px-3 sm:px-4 py-2 border-b border-border flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
+                    <Clock className="h-3 w-3 shrink-0" />
+                    <span dir="ltr">{formatTime12h(lecture.startTime)}</span>
+                    <span>{"\u2190"}</span>
+                    <span dir="ltr">{formatTime12h(lecture.endTime)}</span>
                   </div>
+                  {isLectureActive && (
+                    <Badge className="bg-destructive text-destructive-foreground rounded-sm text-[10px] px-1.5 py-0 h-5 font-semibold shrink-0">بث مباشر</Badge>
+                  )}
+                  {isCompleted && (
+                    <Badge className="bg-muted text-muted-foreground rounded-sm text-[10px] px-1.5 py-0 h-5 font-semibold shrink-0">انتهت</Badge>
+                  )}
+                  {isScheduled && (
+                    <Badge className="bg-blue-50 text-blue-700 border-blue-200/50 rounded-sm text-[10px] px-1.5 py-0 h-5 font-semibold shrink-0">مجدولة</Badge>
+                  )}
                 </div>
-              </Card>
-            </motion.div>
-          )}
 
-          {/* CASE 2: COMPLETED (Finished) */}
-          {selectedLecture.status === "completed" && (
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card className="border-dashed border-2 rounded-3xl bg-emerald-500/5 border-emerald-500/20 p-8 text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -z-10" />
-                <div className="flex flex-col items-center justify-center max-w-2xl mx-auto space-y-6">
-                  <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
-                    <CheckCircle2 className="h-8 w-8" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold text-emerald-500 uppercase tracking-wider bg-emerald-500/10 px-3 py-1 rounded-full">
-                      محاضرة مكتملة ومحفوظة
-                    </span>
-                    <h2 className="text-2xl font-black text-foreground">
-                      {typeof selectedLecture.course === "object" ? selectedLecture.course.name : "مقرر غير معروف"}
-                    </h2>
-                    <p className="text-sm text-muted-foreground font-mono font-bold">
-                      {typeof selectedLecture.course === "object" ? selectedLecture.course.code : ""}
-                    </p>
-                  </div>
-
-                  <div className="bg-background/80 border p-6 rounded-2xl text-center shadow-sm w-full max-w-md space-y-4">
-                    <h4 className="text-sm font-bold text-foreground">ملخص الحضور والغياب النهائي</h4>
-                    <p className="text-xs text-muted-foreground">
-                      تم إغلاق رصد الحضور وتسجيل البيانات النهائية بنجاح في قاعدة البيانات.
-                    </p>
-                    <div className="border-t pt-4 flex items-center justify-around">
-                      <div className="text-center">
-                        <span className="block text-xs text-muted-foreground">مكان القاعة</span>
-                        <span className="text-sm font-bold">{hall?.name || "قاعة"}</span>
-                      </div>
-                      <div className="w-[1px] h-8 bg-border" />
-                      <div className="text-center">
-                        <span className="block text-xs text-muted-foreground">التوقيت</span>
-                        <span className="text-sm font-bold flex items-center gap-1" dir="ltr">
-                          <span dir="rtl">{formatTime12h(selectedLecture.startTime)}</span>
-                          <span>-</span>
-                          <span dir="rtl">{formatTime12h(selectedLecture.endTime)}</span>
-                        </span>
-                      </div>
+                <CardHeader className="pb-2 px-3 sm:px-4 pt-3 text-foreground text-right">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 text-right">
+                      <CardTitle className="text-sm font-bold font-[family-name:var(--font-heading)]">{courseName}</CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {courseCode} &middot; {(lecture.level !== undefined && levelLabels[lecture.level]) || lecture.level || "غير محدد"}
+                      </CardDescription>
                     </div>
-                  </div>
-
-                  <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
-                    <Button asChild className="rounded-xl h-11 px-6 font-bold" variant="default">
-                      <Link to={`/attendance?course=${typeof selectedLecture.course === "object" ? selectedLecture.course._id : selectedLecture.course}&date=${new Date().toLocaleDateString("en-CA")}`}>
-                        غياب هذه المحاضرة
-                      </Link>
-                    </Button>
-                    {/* <Button asChild className="rounded-xl h-11 px-6 font-bold" variant="outline">
-                      <Link to="/attendance/reports">عرض تقارير الحضور الشاملة</Link>
-                    </Button> */}
-                    <Button asChild className="rounded-xl h-11 px-6 font-bold" variant="secondary">
-                      <Link to="/my-schedule/today">العودة للجدول</Link>
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* CASE 3: IN PROGRESS (Real-Time Live Dashboard) */}
-          {selectedLecture.status === "in-progress" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-8"
-            >
-              {/* Lecture Metadata Banner */}
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 p-6 shadow-sm">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -z-10" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                  <div className="space-y-1">
-                    <span className="text-xs font-bold text-primary uppercase tracking-wider">المقرر الدراسي المفتوح الآن</span>
-                    <h2 className="text-xl font-black text-foreground">{typeof selectedLecture.course === "object" ? selectedLecture.course.name : "مقرر"}</h2>
-                    <p className="text-xs text-muted-foreground font-mono font-semibold">{typeof selectedLecture.course === "object" ? selectedLecture.course.code : ""}</p>
-                  </div>
-                  
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 text-primary/70 shrink-0" />
-                      <span>{hall?.name} {hall?.building && `• مبنى ${hall.building}`}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4 text-primary/70 shrink-0" />
-                      <span dir="ltr" className="font-mono flex items-center gap-1">
-                        <span dir="rtl">{formatTime12h(selectedLecture.startTime)}</span>
-                        <span>-</span>
-                        <span dir="rtl">{formatTime12h(selectedLecture.endTime)}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-start md:items-end justify-center gap-3">
-                    <Badge variant="outline" className="bg-background/80 border-primary/20 px-3 py-1 text-sm font-bold text-primary">
-                      {selectedLecture.type === "lecture"
-                        ? "محاضرة نظرية"
-                        : selectedLecture.type === "section"
-                          ? "تمارين عملية"
-                          : "معمل تطبيقي"}
+                    <Badge variant="outline" className="border-border bg-background text-foreground font-semibold px-2 py-0.5 text-xs shrink-0">
+                      {hallName}
                     </Badge>
-
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="rounded-xl h-10 px-5 gap-2 font-bold shadow-md shadow-destructive/10 text-xs">
-                          <LogOut className="h-4 w-4" />
-                          إنهاء وحفظ الغيابات
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="text-right" dir="rtl">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-xl font-bold">هل أنت متأكد من إنهاء المحاضرة؟</AlertDialogTitle>
-                          <AlertDialogDescription className="text-muted-foreground">
-                            سيقوم هذا الإجراء بإغلاق جلسة الحضور فورياً، واعتماد حضور الطلاب المتواجدين حالياً، وتثبيت غياب الطلاب الذين لم يتصلوا بالشبكة. لا يمكن التراجع عن هذا الإجراء.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="flex-row-reverse gap-3">
-                          <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleEndLecture} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
-                            إنهاء المحاضرة
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats Cards */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="rounded-2xl border border-border bg-card/60 dark:bg-card/20 overflow-hidden relative group hover:shadow-md transition-all duration-300">
-                  <div className="absolute top-0 right-0 h-1.5 w-full bg-blue-500" />
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">الاتصالات النشطة بالشبكة</span>
-                    <Laptop className="h-4 w-4 text-blue-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-black text-blue-500">{liveData?.activeSessions || 0}</div>
-                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                      <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                      أجهزة متصلة بالـ Access Point
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-2xl border border-border bg-card/60 dark:bg-card/20 overflow-hidden relative group hover:shadow-md transition-all duration-300">
-                  <div className="absolute top-0 right-0 h-1.5 w-full bg-emerald-500" />
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">سجلات حضور الطلاب</span>
-                    <UserCheck className="h-4 w-4 text-emerald-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-black text-emerald-500">{presentCount}</div>
-                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                      من أصل <span className="font-bold text-foreground">{totalEnrolled}</span> طلاب مسجلين بالمقرر
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-2xl border border-border bg-card/60 dark:bg-card/20 overflow-hidden relative group hover:shadow-md transition-all duration-300">
-                  <div className="absolute top-0 right-0 h-1.5 w-full bg-rose-500" />
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">الطلاب المتخلفون</span>
-                    <UserX className="h-4 w-4 text-rose-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-black text-rose-500">
-                      {Math.max(0, totalEnrolled - presentCount)}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1.5">طالب لم يسجل دخوله بعد</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-2xl border border-border bg-card/60 dark:bg-card/20 overflow-hidden relative group hover:shadow-md transition-all duration-300">
-                  <div className="absolute top-0 right-0 h-1.5 w-full bg-primary" />
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">نسبة الحضور الفورية</span>
-                    <Radio className="h-4 w-4 text-primary" />
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-3xl font-black text-primary">{attendanceRate}%</span>
-                    </div>
-                    <Progress value={attendanceRate} className="h-1.5" />
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Main Dynamic Panel */}
-              <Card className="rounded-3xl border border-border shadow-sm overflow-hidden">
-                <CardHeader className="p-6 bg-muted/20 border-b border-border">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <CardTitle className="text-lg font-bold flex items-center gap-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      متابعة الحضور والاتصال بالقاعة
-                    </CardTitle>
-
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {/* Search Bar */}
-                      <div className="relative">
-                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="ابحث بالاسم أو الرقم الأكاديمي..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pr-9 w-64 rounded-xl border-border bg-background focus-visible:ring-primary/20 text-right"
-                        />
-                      </div>
-
-                      {/* View Toggles */}
-                      <div className="flex items-center gap-1 bg-background border rounded-xl p-1 shrink-0">
-                        <Button
-                          variant={viewMode === "grid" ? "secondary" : "ghost"}
-                          size="icon"
-                          className="h-8 w-8 rounded-lg"
-                          onClick={() => setViewMode("grid")}
-                        >
-                          <Grid className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant={viewMode === "list" ? "secondary" : "ghost"}
-                          size="icon"
-                          className="h-8 w-8 rounded-lg"
-                          onClick={() => setViewMode("list")}
-                        >
-                          <List className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
                   </div>
                 </CardHeader>
 
-                <CardContent className="p-6">
-                  <Tabs defaultValue="attendance" className="space-y-6" dir="rtl">
-                    <TabsList className="bg-muted/50 p-1 rounded-xl h-11">
-                      <TabsTrigger value="attendance" className="rounded-lg h-9 font-bold gap-2">
-                        <UserCheck className="h-4 w-4" />
-                        الطلاب الحاضرون ({filteredRecords.length})
-                      </TabsTrigger>
-                      <TabsTrigger value="wifi-sessions" className="rounded-lg h-9 font-bold gap-2">
-                        <Wifi className="h-4 w-4" />
-                        الأجهزة المتصلة بالواي فاي ({filteredSessions.length})
-                      </TabsTrigger>
-                    </TabsList>
-
-                    {/* TAB: Enrolled & Checked-in Students */}
-                    <TabsContent value="attendance" className="outline-none">
-                      {filteredRecords.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground space-y-3">
-                          <UserX className="h-12 w-12 mx-auto opacity-30" />
-                          <h4 className="font-bold">لا يوجد طلاب متصلون بالمقرر حالياً</h4>
-                          <p className="text-xs max-w-xs mx-auto">
-                            لم يتم رصد تسجيل دخول الطلاب بعد، أو لم يتطابق البحث مع أي اسم.
-                          </p>
-                        </div>
-                      ) : viewMode === "grid" ? (
-                        /* Grid Layout for Students */
-                        <motion.div
-                          layout
-                          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                <CardContent className="space-y-3 px-3 sm:px-4 pb-3 sm:pb-4 pt-0 text-right">
+                  <div className="flex items-center gap-2 pt-2">
+                    {isScheduled && (
+                      <Button
+                        size="sm"
+                        className="w-full font-bold cursor-pointer rounded-md min-h-[36px] bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => handleStartLecture(lecture._id)}
+                      >
+                        <Play className="h-3.5 w-3.5 ml-1.5" />
+                        بدء المحاضرة
+                      </Button>
+                    )}
+                    {isLectureActive && (
+                      <div className="flex flex-col gap-2 w-full">
+                        <Button
+                          size="sm"
+                          className="w-full font-bold cursor-pointer rounded-md min-h-[36px]"
+                          onClick={() => {
+                            setSelectedLectureId(lecture._id);
+                            setIsSheetOpen(true);
+                          }}
                         >
-                          <AnimatePresence mode="popLayout">
-                            {filteredRecords.map((record) => {
-                              const name = getStudentName(record.student);
-                              const initial = name.charAt(0);
-
-                              const statusTheme = {
-                                present: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600",
-                                absent: "bg-rose-500/10 border-rose-500/20 text-rose-600",
-                                late: "bg-amber-500/10 border-amber-500/20 text-amber-600",
-                                excused: "bg-blue-500/10 border-blue-500/20 text-blue-600",
-                                "in-progress": "bg-emerald-500/10 border-emerald-500/30 text-emerald-505 animate-pulse font-bold",
-                              }[record.status] || "bg-muted text-muted-foreground";
-
-                              const statusText = {
-                                present: "حاضر",
-                                absent: "غائب",
-                                late: "متأخر",
-                                excused: "معذور",
-                                "in-progress": "متصل الآن",
-                              }[record.status] || record.status;
-
-                              return (
-                                <motion.div
-                                  key={record._id}
-                                  layoutId={record._id}
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.95 }}
-                                  transition={{ duration: 0.2 }}
-                                  className="group relative p-5 rounded-2xl border border-border/50 bg-card/45 hover:bg-card hover:border-primary/20 hover:shadow-md transition-all duration-300 flex flex-col justify-between h-44"
-                                >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                      {/* Avatar Initials */}
-                                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-base border shrink-0 ${getRandomBgColor(record.student.studentId)}`}>
-                                        {initial}
-                                      </div>
-
-                                      <div className="space-y-0.5 max-w-[150px] text-right">
-                                        <h4 className="font-bold text-foreground text-sm truncate group-hover:text-primary transition-colors">
-                                          {name}
-                                        </h4>
-                                        <p className="text-xs text-muted-foreground font-mono font-medium truncate">
-                                          {record.student.studentId}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    {/* Actions Dropdown */}
-                                    {record._id && (
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="text-right">
-                                          <DropdownMenuItem onClick={() => handleUpdateStatus(record._id!, name, "present")}>
-                                            <CheckCircle className="ml-2 h-4 w-4 text-emerald-600" />
-                                            تعديل كحاضر
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleUpdateStatus(record._id!, name, "absent")}>
-                                            <XCircle className="ml-2 h-4 w-4 text-rose-600" />
-                                            تعديل كغائب
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleUpdateStatus(record._id!, name, "late")}>
-                                            <ClockIcon className="ml-2 h-4 w-4 text-amber-600" />
-                                            تعديل كمتأخر
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleUpdateStatus(record._id!, name, "excused")}>
-                                            <AlertTriangle className="ml-2 h-4 w-4 text-blue-600" />
-                                            تعديل كمعذور
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    )}
-                                  </div>
-
-                                  <div className="space-y-3 pt-3 border-t border-border/40 mt-auto">
-                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                      <span className="flex items-center gap-1">
-                                        <ClockIcon className="h-3.5 w-3.5 text-primary/70" />
-                                        <span dir="ltr">
-                                          {new Date(record.checkIn).toLocaleTimeString("ar-EG", {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                            hour12: true,
-                                          })}
-                                        </span>
-                                      </span>
-                                      <span className="flex items-center gap-1 font-semibold text-foreground">
-                                        <Hourglass className="h-3.5 w-3.5 text-primary/70" />
-                                        <span>{getDisplayTime(record)} دقيقة</span>
-                                      </span>
-                                    </div>
-
-                                    {/* Status Badge */}
-                                    <Badge className={`w-full justify-center rounded-lg border py-1 font-bold ${statusTheme}`}>
-                                      {statusText}
-                                    </Badge>
-                                  </div>
-                                </motion.div>
-                              );
-                            })}
-                          </AnimatePresence>
-                        </motion.div>
-                      ) : (
-                        /* List Layout for Students */
-                        <div className="border rounded-2xl overflow-hidden divide-y">
-                          {filteredRecords.map((record) => {
-                            const name = getStudentName(record.student);
-
-                            const statusTheme = {
-                              present: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600",
-                              absent: "bg-rose-500/10 border-rose-500/20 text-rose-600",
-                              late: "bg-amber-500/10 border-amber-500/20 text-amber-600",
-                              excused: "bg-blue-500/10 border-blue-500/20 text-blue-600",
-                              "in-progress": "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 animate-pulse font-bold",
-                            }[record.status] || "bg-muted text-muted-foreground";
-
-                            const statusText = {
-                              present: "حاضر",
-                              absent: "غائب",
-                              late: "متأخر",
-                              excused: "معذور",
-                              "in-progress": "متصل الآن",
-                            }[record.status] || record.status;
-
-                            return (
-                              <div
-                                key={record._id}
-                                className="flex items-center justify-between p-4 hover:bg-muted/10 transition-colors"
-                              >
-                                <div className="flex items-center gap-4">
-                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm border shrink-0 ${getRandomBgColor(record.student.studentId)}`}>
-                                    {name.charAt(0)}
-                                  </div>
-                                  <div className="text-right">
-                                    <h4 className="font-bold text-foreground text-sm">{name}</h4>
-                                    <p className="text-xs text-muted-foreground font-mono mt-0.5">{record.student.studentId}</p>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-4">
-                                  <span className="text-xs text-muted-foreground font-mono bg-muted/40 px-2 py-1 rounded-lg">
-                                    دخول: {new Date(record.checkIn).toLocaleTimeString("ar-EG", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    })}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground font-medium bg-muted/40 px-2 py-1 rounded-lg">
-                                    مدة: {getDisplayTime(record)} دقيقة
-                                  </span>
-                                  <Badge className={`rounded-lg font-bold border py-1 px-3 ${statusTheme}`}>
-                                    {statusText}
-                                  </Badge>
-
-                                  {record._id && (
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0">
-                                          <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="text-right">
-                                        <DropdownMenuItem onClick={() => handleUpdateStatus(record._id!, name, "present")}>
-                                          <CheckCircle className="ml-2 h-4 w-4 text-emerald-600" />
-                                          تعديل كحاضر
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleUpdateStatus(record._id!, name, "absent")}>
-                                          <XCircle className="ml-2 h-4 w-4 text-rose-600" />
-                                          تعديل كغائب
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleUpdateStatus(record._id!, name, "late")}>
-                                          <ClockIcon className="ml-2 h-4 w-4 text-amber-600" />
-                                          تعديل كمتأخر
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleUpdateStatus(record._id!, name, "excused")}>
-                                          <AlertTriangle className="ml-2 h-4 w-4 text-blue-600" />
-                                          تعديل كمعذور
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* TAB: Connected Hotspot Devices (WiFi sessions) */}
-                    <TabsContent value="wifi-sessions" className="outline-none">
-                      {filteredSessions.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground space-y-3">
-                          <Wifi className="h-12 w-12 mx-auto opacity-30" />
-                          <h4 className="font-bold">لا توجد أجهزة متصلة بالشبكة</h4>
-                          <p className="text-xs max-w-xs mx-auto">
-                            لا تظهر أي أجهزة نشطة متصلة بنقطة الوصول بالقاعة حالياً.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="border rounded-2xl overflow-hidden divide-y">
-                          <div className="bg-muted/30 px-4 py-3 flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                            <span>الجهاز / الطالب</span>
-                            <div className="flex items-center gap-12 font-sans">
-                              <span className="w-32 text-center">عنوان الـ MAC</span>
-                              <span className="w-24 text-center">وقت الاتصال</span>
-                            </div>
-                          </div>
-
-                          {filteredSessions.map((session) => {
-                            const name = getStudentName(session.student);
-                            const hasAttendance = liveData?.records?.some(r => r.student._id === session.student?._id);
-
-                            return (
-                              <div
-                                key={session.macAddress}
-                                className="flex items-center justify-between p-4 hover:bg-muted/5 transition-colors"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
-                                    <Laptop className="h-4 w-4" />
-                                  </div>
-                                  <div className="text-right">
-                                    <h4 className="font-bold text-sm flex items-center gap-2">
-                                      {name}
-                                      {hasAttendance ? (
-                                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] rounded-lg">
-                                          سجل حضور
-                                        </Badge>
-                                      ) : (
-                                        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] rounded-lg">
-                                          متصل بالشبكة فقط
-                                        </Badge>
-                                      )}
-                                    </h4>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{session.student?.studentId || "زائر غير معروف"}</p>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-12 font-mono text-xs">
-                                  <span className="text-muted-foreground font-semibold bg-muted px-2.5 py-1 rounded-lg w-32 text-center">{session.macAddress}</span>
-                                  <span className="text-muted-foreground font-medium bg-muted px-2.5 py-1 rounded-lg w-24 text-center">
-                                    {new Date(session.connectedAt).toLocaleTimeString("ar-EG", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    })}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </TabsContent>
-                  </Tabs>
+                          <Wifi className="h-3.5 w-3.5 ml-1.5 animate-pulse text-emerald-400" />
+                          فتح لوحة التحكم والتحضير
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="w-full font-bold cursor-pointer rounded-md min-h-[36px]"
+                          onClick={() => handleEndLecture(lecture._id)}
+                        >
+                          <Square className="h-3.5 w-3.5 ml-1.5" />
+                          إنهاء المحاضرة وحفظ الغياب
+                        </Button>
+                      </div>
+                    )}
+                    {isCompleted && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full font-bold cursor-pointer rounded-md min-h-[36px]"
+                        onClick={() => {
+                          setSelectedLectureId(lecture._id);
+                          setIsSheetOpen(true);
+                        }}
+                      >
+                        <Search className="h-3.5 w-3.5 ml-1.5" />
+                        مراجعة كشف الحضور النهائي
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
-            </motion.div>
-          )}
+            );
+          })}
         </div>
-      )}
+      </div>
+
+      {/* Control Sheet Drawer */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="left" className="w-full sm:max-w-[720px] p-4 sm:p-5 text-right overflow-y-auto" dir="rtl">
+          {selectedLecture && (
+            <>
+              <SheetHeader className="pb-4 border-b">
+                <div className="flex items-center justify-between">
+                  <SheetTitle className="text-base sm:text-lg font-bold font-[family-name:var(--font-heading)] flex items-center gap-2 text-foreground">
+                    {selectedLecture.status === "in-progress" ? (
+                      <span className="relative flex h-2.5 w-2.5 shrink-0">
+                        <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                      </span>
+                    ) : (
+                      <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground shrink-0" />
+                    )}
+                    {selectedLecture.status === "in-progress" ? "مراقبة وإشراف الحضور اللحظي" : "سجل الحضور النهائي للمحاضرة"}
+                  </SheetTitle>
+                </div>
+                <SheetDescription className="text-sm text-muted-foreground mt-1.5">
+                  <strong className="text-foreground">
+                    {typeof selectedLecture.course === "object" ? selectedLecture.course.name : "المادة"}
+                  </strong>
+                  &middot; {typeof selectedLecture.hall === "object" ? selectedLecture.hall.name : "القاعة"}
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="space-y-4 mt-4 sm:mt-5">
+                {/* Time stats */}
+                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 bg-muted/30 p-3 rounded-md border border-border text-right">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-muted-foreground font-medium">التوقيت المجدول للمحاضرة</span>
+                    <span className="text-xs font-mono font-semibold mt-0.5 text-foreground text-right block" dir="ltr">
+                      {selectedLecture.startTime} - {selectedLecture.endTime}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-muted-foreground font-medium">بداية البث الفعلي للمحاضرة</span>
+                    <span className="text-xs font-mono font-semibold mt-0.5 text-primary text-right block" dir="ltr">
+                      {timeBoundaries.doctorStart} - {timeBoundaries.doctorEnd}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-muted-foreground font-medium">أول اتصال مسجل من طالب</span>
+                    <span className={`text-xs font-mono font-semibold mt-0.5 text-right block ${timeBoundaries.actualStart !== "—" ? "text-emerald-600" : "text-muted-foreground"}`} dir="ltr">
+                      {timeBoundaries.actualStart}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-muted-foreground font-medium">آخر مغادرة مسجلة</span>
+                    <span className={`text-xs font-mono font-semibold mt-0.5 text-right block ${timeBoundaries.actualEnd !== "—" && timeBoundaries.actualEnd !== "جارية حالياً" ? "text-primary" : timeBoundaries.actualEnd === "جارية حالياً" ? "text-emerald-600" : "text-muted-foreground"}`} dir="ltr">
+                      {timeBoundaries.actualEnd}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Statistics Mini Cards */}
+                <div className="grid gap-1.5 sm:gap-2 grid-cols-3 sm:grid-cols-6">
+                  <div className="bg-muted/30 border border-border p-2 rounded-md text-center">
+                    <span className="text-[11px] text-muted-foreground font-medium block">إجمالي الطلاب</span>
+                    <span className="text-base font-bold text-foreground tabular-nums mt-0.5 block">{auditStats.total}</span>
+                  </div>
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 p-2 rounded-md text-center">
+                    <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium block">حاضر</span>
+                    <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5 block">{auditStats.present}</span>
+                  </div>
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 p-2 rounded-md text-center">
+                    <span className="text-[11px] text-amber-700 dark:text-amber-400 font-medium block">متأخر</span>
+                    <span className="text-base font-bold text-amber-700 dark:text-amber-400 tabular-nums mt-0.5 block">{auditStats.late}</span>
+                  </div>
+                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 p-2 rounded-md text-center">
+                    <span className="text-[11px] text-red-700 dark:text-red-400 font-medium block">غائب</span>
+                    <span className="text-base font-bold text-red-700 dark:text-red-400 tabular-nums mt-0.5 block">{auditStats.absent}</span>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30 p-2 rounded-md text-center">
+                    <span className="text-[11px] text-blue-700 dark:text-blue-400 font-medium block">بعذر</span>
+                    <span className="text-base font-bold text-blue-700 dark:text-blue-400 tabular-nums mt-0.5 block">{auditStats.excused}</span>
+                  </div>
+                  <div className="bg-primary/10 border border-primary/20 p-2 rounded-md text-center">
+                    <span className="text-[11px] text-primary font-medium block">النسبة</span>
+                    <span className="text-base font-bold text-primary tabular-nums mt-0.5 block">{auditStats.rate}%</span>
+                  </div>
+                </div>
+
+                {/* Student Records */}
+                <div className="space-y-2 text-right">
+                  <div className="flex justify-between items-center gap-2">
+                    <h3 className="text-xs font-bold text-foreground">قائمة حضور وغياب الطلاب</h3>
+                    <div className="relative w-full max-w-[200px]">
+                      <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="ابحث باسم الطالب أو رقم القيد..."
+                        value={auditSearchQuery}
+                        onChange={(e) => setAuditSearchQuery(e.target.value)}
+                        className="pr-8 rounded-md border bg-background text-right font-medium text-xs min-h-[36px] w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {attendanceLoading ? (
+                    <div className="text-center py-8 text-sm text-muted-foreground">
+                      جاري التحميل ورصد سجل الحضور...
+                    </div>
+                  ) : studentRows.length === 0 ? (
+                    <div className="text-center py-8 text-sm text-muted-foreground">
+                      لا توجد سجلات مطابقة للبحث
+                    </div>
+                  ) : (
+                    <>
+                      {/* Desktop: Table view */}
+                      <div className="hidden sm:block w-full overflow-auto rounded-md border border-border bg-card max-h-[400px]" dir="rtl">
+                        <table className="w-full border-collapse text-right text-xs">
+                          <thead className="bg-muted/40 sticky top-0 z-10 border-b border-border">
+                            <tr>
+                              <th className="text-right font-bold p-2 text-xs text-muted-foreground">الطالب</th>
+                              <th className="text-center font-bold p-2 text-xs text-muted-foreground">الحالة</th>
+                              <th className="text-center font-bold p-2 text-xs text-muted-foreground">الدخول</th>
+                              <th className="text-center font-bold p-2 text-xs text-muted-foreground">الخروج</th>
+                              <th className="text-center font-bold p-2 text-xs text-muted-foreground">المدة</th>
+                              <th className="text-center font-bold p-2 text-xs text-muted-foreground">النسبة</th>
+                              <th className="text-center font-bold p-2 text-xs text-muted-foreground">الإجراء</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {studentRows.map((row) => (
+                              <StudentTableRow
+                                key={row.student._id}
+                                student={row.student}
+                                record={row.record}
+                                entryTimeStr={row.entryTimeStr}
+                                exitTimeStr={row.exitTimeStr}
+                                currentStatus={row.currentStatus}
+                                onPresence={() => handleManualPresence(row.student, row.record)}
+                                onExcuse={() => handleManualExcuse(row.student, row.record)}
+                              />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile: Card-list view */}
+                      <div className="sm:hidden space-y-2 max-h-[400px] overflow-y-auto">
+                        {studentRows.map((row) => (
+                          <StudentCardRow
+                            key={row.student._id}
+                            student={row.student}
+                            record={row.record}
+                            entryTimeStr={row.entryTimeStr}
+                            exitTimeStr={row.exitTimeStr}
+                            currentStatus={row.currentStatus}
+                            onPresence={() => handleManualPresence(row.student, row.record)}
+                            onExcuse={() => handleManualExcuse(row.student, row.record)}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

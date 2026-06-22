@@ -10,8 +10,10 @@ const bcrypt = require("bcryptjs");
 const config = require("../config/env");
 const {
   ROLES,
+  ADMIN_ROLES,
   ATTENDANCE_STATUS,
   WORKING_DAYS,
+  CONNECTION_EVENTS,
 } = require("../config/constants");
 
 // Models
@@ -22,6 +24,8 @@ const Course = require("../models/Course");
 const Lecture = require("../models/Lecture");
 const AttendanceRecord = require("../models/AttendanceRecord");
 const Setting = require("../models/Setting");
+const ConnectionLog = require("../models/ConnectionLog");
+const StudentSession = require("../models/StudentSession");
 
 // ========== SEED DATA ==========
 
@@ -29,7 +33,7 @@ const Setting = require("../models/Setting");
 const defaultSettings = [
   {
     key: "MIN_PRESENCE_PERCENTAGE",
-    value: 85,
+    value: 50,
     description:
       "Minimum presence percentage required for attendance to be marked as present",
   },
@@ -186,14 +190,33 @@ const halls = [
   },
 ];
 
-// Admin
-const admin = {
-  name: { first: "أحمد", last: "المدير" },
-  email: "admin@smartattendance.edu",
-  password: "admin123456",
-  role: ROLES.ADMIN,
-  isActive: true,
-};
+// Admins
+const admins = [
+  {
+    name: { first: "أحمد", last: "المدير (مدير النظام)" },
+    email: "admin@smartattendance.edu",
+    password: "admin123456",
+    role: ROLES.ADMIN,
+    adminRole: ADMIN_ROLES.SUPER_ADMIN,
+    isActive: true,
+  },
+  {
+    name: { first: "أ.د. سليمان", last: "العميد" },
+    email: "dean@smartattendance.edu",
+    password: "admin123456",
+    role: ROLES.ADMIN,
+    adminRole: ADMIN_ROLES.DEAN,
+    isActive: true,
+  },
+  {
+    name: { first: "أمل", last: "شؤون الطلاب" },
+    email: "student.affairs@smartattendance.edu",
+    password: "admin123456",
+    role: ROLES.ADMIN,
+    adminRole: ADMIN_ROLES.STUDENT_AFFAIRS,
+    isActive: true,
+  },
+];
 
 // Doctors (10 doctors)
 const doctorNames = [
@@ -341,6 +364,11 @@ function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function randomHex() {
+  const chars = "0123456789ABCDEF";
+  return chars[Math.floor(Math.random() * 16)] + chars[Math.floor(Math.random() * 16)];
+}
+
 function generateStudentId(index) {
   const year = randomInt(2020, 2024);
   const num = String(index).padStart(4, "0");
@@ -359,6 +387,8 @@ async function clearDatabase() {
     User.deleteMany({}),
     Specialization.deleteMany({}),
     Setting.deleteMany({}),
+    ConnectionLog.deleteMany({}),
+    StudentSession.deleteMany({}),
   ]);
   console.log("✅ Database cleared");
 }
@@ -383,10 +413,30 @@ async function seedHalls() {
   return created;
 }
 
-async function seedAdmin() {
-  console.log("👨‍💼 Seeding admin...");
-  await User.create(admin);
-  console.log(`✅ Admin created: ${admin.email} / ${admin.password}`);
+async function seedAdmins(deptList) {
+  console.log("👨‍💼 Seeding admins...");
+  const createdAdmins = [];
+  
+  for (const adminData of admins) {
+    const adminUser = await User.create(adminData);
+    createdAdmins.push(adminUser);
+  }
+
+  for (const dept of deptList) {
+    const hod = await User.create({
+      name: { first: `رئيس قسم`, last: dept.name },
+      email: `hod.${dept.code.toLowerCase()}@smartattendance.edu`,
+      password: "admin123456",
+      role: ROLES.ADMIN,
+      adminRole: ADMIN_ROLES.HEAD_OF_DEPT,
+      department: dept._id,
+      isActive: true,
+    });
+    createdAdmins.push(hod);
+  }
+
+  console.log(`✅ Created ${createdAdmins.length} admins (Super Admin, Dean, Student Affairs, and HODs)`);
+  return createdAdmins;
 }
 
 async function seedDoctors(deptList) {
@@ -480,8 +530,8 @@ async function seedStudents(deptList) {
 
   let studentIndex = 1000;
   for (const dept of deptList) {
-    // 50 students per specialization, total 200. Since we manually inserted 3, let's distribute the remaining 197
-    const deptStudentsCount = dept.code === "CS" ? 47 : 50;
+    // 125 students per specialization, total 500. Since we manually inserted 3, let's distribute the remaining 497
+    const deptStudentsCount = dept.code === "CS" ? 122 : 125;
     for (let i = 0; i < deptStudentsCount; i++) {
       const firstName = randomElement(arabicFirstNames);
       const lastName = randomElement(arabicLastNames);
@@ -497,6 +547,12 @@ async function seedStudents(deptList) {
         academicInfo: {
           specialization: dept._id,
           level: level,
+        },
+        device: {
+          macAddress: `00:1A:2B:3C:${randomHex()}:${randomHex()}`,
+          isVerified: true,
+          deviceId: `device-${studentIndex}-id`,
+          deviceName: `${firstName}'s Phone`,
         },
         isActive: true,
       };
@@ -668,23 +724,59 @@ async function seedLectures(courses, hallList) {
   await Lecture.insertMany(lectures);
   console.log(`✅ Created ${lectures.length} lectures`);
 
-  return await Lecture.find({});
+  return await Lecture.find({}).populate("hall");
 }
 
 async function seedAttendanceRecords(lectures, students) {
-  console.log("📊 Seeding attendance records (this may take a while)...");
+  console.log("📊 Seeding attendance records and connection logs (this may take a while)...");
   const records = [];
+  const connectionLogs = [];
+  const studentSessions = [];
 
   const studentFull = students.find(s => s.email === "student_full@student.edu");
   const studentMedium = students.find(s => s.email === "student_medium@student.edu");
   const studentEmpty = students.find(s => s.email === "student_empty@student.edu");
 
+  // Map students by ID for fast lookup
+  const studentMap = new Map();
+  for (const s of students) {
+    studentMap.set(s._id.toString(), s);
+  }
+
   // Generate attendance for 2 weeks in past and 2 weeks in future
   const today = new Date();
+  const todayNormalized = new Date(today);
+  todayNormalized.setHours(0, 0, 0, 0); // Normalize to midnight
+  const todayDay = todayNormalized.getDay();
+
   const startDate = new Date(today);
   startDate.setDate(today.getDate() - 14);
   const endDate = new Date(today);
   endDate.setDate(today.getDate() + 14);
+
+  // Find lectures that occur on today's day of week
+  const todayLectures = lectures.filter(l => l.dayOfWeek === todayDay);
+  console.log(`Found ${todayLectures.length} lectures scheduled for today.`);
+
+  // Let's mark the first 2 lectures of today as "in-progress" (live)
+  const liveLectures = todayLectures.slice(0, 2);
+  const liveLectureIds = new Set(liveLectures.map(l => l._id.toString()));
+
+  // For the live lectures, we need to update their status in the DB
+  for (const lecture of liveLectures) {
+    const [startHour, startMin] = lecture.startTime.split(":").map(Number);
+    const startOffset = randomInt(-3, 5);
+    const doctorStartTime = new Date(todayNormalized);
+    doctorStartTime.setHours(startHour, startMin + startOffset, 0, 0);
+
+    await Lecture.findByIdAndUpdate(lecture._id, {
+      status: "in-progress",
+      actualStartTime: doctorStartTime,
+    });
+    // Update the local object as well
+    lecture.status = "in-progress";
+    lecture.actualStartTime = doctorStartTime;
+  }
 
   for (const lecture of lectures) {
     // Get course to find enrolled students
@@ -696,6 +788,29 @@ async function seedAttendanceRecords(lectures, students) {
       if (d.getDay() !== lecture.dayOfWeek) continue;
 
       const lectureDate = new Date(d);
+      lectureDate.setHours(0, 0, 0, 0); // Normalize to midnight for accurate day filtering
+
+      const isToday = lectureDate.getTime() === todayNormalized.getTime();
+      const isLive = isToday && liveLectureIds.has(lecture._id.toString());
+
+      // Calculate Doctor's actual start and end times for this specific day's lecture
+      const [startHour, startMin] = lecture.startTime.split(":").map(Number);
+      const [endHour, endMin] = lecture.endTime.split(":").map(Number);
+
+      // Doctor starts lecture between -3 and +5 minutes from scheduled start
+      const startOffset = randomInt(-3, 5);
+      const doctorStartTime = isLive && lecture.actualStartTime ? lecture.actualStartTime : new Date(lectureDate);
+      if (!isLive || !lecture.actualStartTime) {
+        doctorStartTime.setHours(startHour, startMin + startOffset, 0, 0);
+      }
+
+      // Doctor ends lecture between -5 and +2 minutes from scheduled end
+      const endOffset = randomInt(-5, 2);
+      const doctorEndTime = new Date(lectureDate);
+      doctorEndTime.setHours(endHour, endMin + endOffset, 0, 0);
+
+      // Calculate actual lecture duration in minutes
+      const actualLectureDuration = Math.round((doctorEndTime - doctorStartTime) / 60000);
 
       // Generate attendance for each enrolled student
       for (const studentId of course.students) {
@@ -704,62 +819,173 @@ async function seedAttendanceRecords(lectures, students) {
           continue;
         }
 
-        // Random attendance status (80% present, 10% late, 10% absent)
-        const rand = Math.random();
-        let status, presencePercentage, totalPresenceTime;
+        const student = studentMap.get(studentId.toString());
+        if (!student) continue;
 
-        if (rand < 0.1) {
-          // Absent
-          status = ATTENDANCE_STATUS.ABSENT;
-          presencePercentage = 0;
-          totalPresenceTime = 0;
-        } else if (rand < 0.2) {
-          // Present but low attendance (came late or left early)
-          status = ATTENDANCE_STATUS.PRESENT;
-          presencePercentage = randomInt(50, 84);
-          totalPresenceTime = Math.floor((90 * presencePercentage) / 100);
+        if (isLive) {
+          // If this is a live lecture, seed in-progress records for present students
+          // 85% present rate, 15% absent
+          if (Math.random() < 0.15) {
+            continue; // Absent: no record for now
+          }
+
+          // Student checks in between -5 and 10 minutes from doctor start time
+          const checkInOffset = randomInt(-5, 10);
+          const checkIn = new Date(doctorStartTime.getTime() + checkInOffset * 60000);
+
+          const totalPresenceTime = randomInt(15, 35); // present for 15-35 minutes so far
+          const presencePercentage = Math.round((totalPresenceTime / 90) * 100);
+
+          const recordId = new mongoose.Types.ObjectId();
+          records.push({
+            _id: recordId,
+            student: studentId,
+            lecture: lecture._id,
+            course: course._id,
+            hall: lecture.hall._id || lecture.hall,
+            date: lectureDate,
+            sessions: [{ checkIn }],
+            totalPresenceTime,
+            lectureTime: 90,
+            presencePercentage,
+            status: ATTENDANCE_STATUS.IN_PROGRESS,
+            isFinalized: false,
+            lectureStartTime: doctorStartTime,
+          });
+
+          // Create active StudentSession
+          studentSessions.push({
+            student: studentId,
+            macAddress: student.device?.macAddress || "00:00:00:00:00:00",
+            currentHall: lecture.hall._id || lecture.hall,
+            currentLecture: lecture._id,
+            attendanceRecord: recordId,
+            connectedAt: checkIn,
+            isActive: true,
+          });
+
+          // Create a CONNECTED connection log
+          const ipPrefix = lecture.hall?.accessPoint?.ipRange || "192.168.1";
+          connectionLogs.push({
+            macAddress: student.device?.macAddress || "00:00:00:00:00:00",
+            ipAddress: `${ipPrefix}.${randomInt(2, 254)}`,
+            hall: lecture.hall._id || lecture.hall,
+            eventType: CONNECTION_EVENTS.CONNECTED,
+            timestamp: checkIn,
+            processed: true,
+            processingResult: "Check-in recorded for live lecture",
+            student: student._id,
+            attendanceRecord: recordId,
+          });
+
         } else {
-          // Present
-          status = ATTENDANCE_STATUS.PRESENT;
-          presencePercentage = randomInt(85, 100);
-          totalPresenceTime = Math.floor((90 * presencePercentage) / 100);
-        }
+          // Normal historical completed lectures logic
+          const rand = Math.random();
+          let status, presencePercentage, totalPresenceTime;
+          let sessions = [];
 
-        records.push({
-          student: studentId,
-          lecture: lecture._id,
-          course: course._id,
-          hall: lecture.hall,
-          date: lectureDate,
-          sessions:
-            status !== ATTENDANCE_STATUS.ABSENT
-              ? [
-                  {
-                    checkIn: new Date(
-                      new Date(lectureDate).setHours(
-                        parseInt(lecture.startTime.split(":")[0]),
-                        parseInt(lecture.startTime.split(":")[1]),
-                      ),
-                    ),
-                    checkOut:
-                      status === ATTENDANCE_STATUS.PRESENT
-                        ? new Date(
-                            new Date(lectureDate).setHours(
-                              parseInt(lecture.endTime.split(":")[0]),
-                              parseInt(lecture.endTime.split(":")[1]),
-                            ),
-                          )
-                        : null,
-                  },
-                ]
-              : [],
-          totalPresenceTime: totalPresenceTime,
-          lectureTime: 90,
-          presencePercentage: presencePercentage,
-          status: status,
-          isFinalized: true,
-          finalizedAt: lectureDate,
-        });
+          if (rand < 0.1) {
+            // Absent
+            status = ATTENDANCE_STATUS.ABSENT;
+            presencePercentage = 0;
+            totalPresenceTime = 0;
+          } else {
+            // Student is present
+            if (rand < 0.2) {
+              // Low attendance (e.g. 20% to 49%)
+              presencePercentage = randomInt(20, 49);
+            } else {
+              // Good attendance (e.g. 50% to 100%)
+              presencePercentage = randomInt(50, 100);
+            }
+
+            totalPresenceTime = Math.floor((actualLectureDuration * presencePercentage) / 100);
+            status = ATTENDANCE_STATUS.PRESENT;
+
+            // Generate student check-in/out times matching totalPresenceTime
+            let checkIn, checkOut;
+            if (presencePercentage >= 50) {
+              const checkInOffset = randomInt(-5, 5);
+              checkIn = new Date(doctorStartTime.getTime() + checkInOffset * 60000);
+              checkOut = new Date(checkIn.getTime() + totalPresenceTime * 60000);
+              
+              if (checkOut > new Date(doctorEndTime.getTime() + 5 * 60000)) {
+                checkOut = new Date(doctorEndTime.getTime() + randomInt(0, 5) * 60000);
+                totalPresenceTime = Math.round((checkOut - checkIn) / 60000);
+                presencePercentage = Math.min(100, Math.round((totalPresenceTime / actualLectureDuration) * 100));
+              }
+            } else {
+              const isLate = Math.random() < 0.5;
+              if (isLate) {
+                const lateMins = actualLectureDuration - totalPresenceTime;
+                checkIn = new Date(doctorStartTime.getTime() + lateMins * 60000);
+                checkOut = new Date(doctorEndTime.getTime() + randomInt(0, 3) * 60000);
+                totalPresenceTime = Math.round((checkOut - checkIn) / 60000);
+                presencePercentage = Math.min(100, Math.round((totalPresenceTime / actualLectureDuration) * 100));
+              } else {
+                checkIn = new Date(doctorStartTime.getTime() + randomInt(-2, 2) * 60000);
+                checkOut = new Date(checkIn.getTime() + totalPresenceTime * 60000);
+                totalPresenceTime = Math.round((checkOut - checkIn) / 60000);
+                presencePercentage = Math.min(100, Math.round((totalPresenceTime / actualLectureDuration) * 100));
+              }
+            }
+
+            sessions.push({ checkIn, checkOut });
+          }
+
+          const recordId = new mongoose.Types.ObjectId();
+
+          records.push({
+            _id: recordId,
+            student: studentId,
+            lecture: lecture._id,
+            course: course._id,
+            hall: lecture.hall._id || lecture.hall,
+            date: lectureDate,
+            sessions,
+            totalPresenceTime,
+            lectureTime: actualLectureDuration,
+            presencePercentage,
+            status,
+            isFinalized: true,
+            finalizedAt: lectureDate,
+            lectureStartTime: doctorStartTime,
+            lectureEndTime: doctorEndTime,
+          });
+
+          // Generate Connection Logs for the student connect/disconnect events
+          if (sessions.length > 0) {
+            const ipPrefix = lecture.hall?.accessPoint?.ipRange || "192.168.1";
+            for (const session of sessions) {
+              if (session.checkIn) {
+                connectionLogs.push({
+                  macAddress: student.device?.macAddress || "00:00:00:00:00:00",
+                  ipAddress: `${ipPrefix}.${randomInt(2, 254)}`,
+                  hall: lecture.hall._id || lecture.hall,
+                  eventType: CONNECTION_EVENTS.CONNECTED,
+                  timestamp: session.checkIn,
+                  processed: true,
+                  processingResult: "Check-in recorded for lecture",
+                  student: student._id,
+                  attendanceRecord: recordId,
+                });
+              }
+              if (session.checkOut) {
+                connectionLogs.push({
+                  macAddress: student.device?.macAddress || "00:00:00:00:00:00",
+                  ipAddress: `${ipPrefix}.${randomInt(2, 254)}`,
+                  hall: lecture.hall._id || lecture.hall,
+                  eventType: CONNECTION_EVENTS.DISCONNECTED,
+                  timestamp: session.checkOut,
+                  processed: true,
+                  processingResult: "Check-out recorded, marked as present",
+                  student: student._id,
+                  attendanceRecord: recordId,
+                });
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -770,11 +996,30 @@ async function seedAttendanceRecords(lectures, students) {
     const chunk = records.slice(i, i + chunkSize);
     await AttendanceRecord.insertMany(chunk);
     console.log(
-      `   Inserted ${Math.min(i + chunkSize, records.length)}/${records.length} records`,
+      `   Inserted ${Math.min(i + chunkSize, records.length)}/${records.length} attendance records`
     );
   }
 
+  // Batch insert connection logs in chunks
+  for (let i = 0; i < connectionLogs.length; i += chunkSize) {
+    const chunk = connectionLogs.slice(i, i + chunkSize);
+    await ConnectionLog.insertMany(chunk);
+    console.log(
+      `   Inserted ${Math.min(i + chunkSize, connectionLogs.length)}/${connectionLogs.length} connection logs`
+    );
+  }
+
+  // Batch insert student sessions
+  if (studentSessions.length > 0) {
+    for (let i = 0; i < studentSessions.length; i += chunkSize) {
+      const chunk = studentSessions.slice(i, i + chunkSize);
+      await StudentSession.insertMany(chunk);
+    }
+    console.log(`✅ Created ${studentSessions.length} active student sessions`);
+  }
+
   console.log(`✅ Created ${records.length} attendance records`);
+  console.log(`✅ Created ${connectionLogs.length} connection logs`);
 }
 
 // ========== MAIN SEEDER ==========
@@ -793,7 +1038,7 @@ async function seed() {
     await seedSettings();
     const deptList = await seedSpecializations();
     const hallList = await seedHalls();
-    await seedAdmin();
+    await seedAdmins(deptList);
     const doctors = await seedDoctors(deptList);
     const students = await seedStudents(deptList);
     const courses = await seedCourses(deptList, doctors);
@@ -808,14 +1053,18 @@ async function seed() {
     console.log(`   - Settings: ${defaultSettings.length}`);
     console.log(`   - Specializations: ${deptList.length}`);
     console.log(`   - Halls: ${hallList.length}`);
+    console.log(`   - Admins: ${admins.length + deptList.length}`);
     console.log(`   - Doctors: ${doctors.length}`);
     console.log(`   - Students: ${students.length}`);
     console.log(`   - Courses: ${courses.length}`);
     console.log(`   - Lectures: ${lectures.length * 2}`);
     console.log("\n🔐 Login Credentials:");
-    console.log("   Admin:   admin@smartattendance.edu / admin123456");
-    console.log("   Doctor:  doctor1@edu.eg / doctor123");
-    console.log("   Student (Full):   student_full@student.edu / student123");
+    console.log("   Super Admin:     admin@smartattendance.edu / admin123456");
+    console.log("   Dean:            dean@smartattendance.edu / admin123456");
+    console.log("   Student Affairs: student.affairs@smartattendance.edu / admin123456");
+    console.log("   CS HOD:          hod.cs@smartattendance.edu / admin123456");
+    console.log("   Doctor:          doctor1@edu.eg / doctor123");
+    console.log("   Student (Full):  student_full@student.edu / student123");
     console.log("   Student (Medium): student_medium@student.edu / student123");
     console.log("   Student (Empty):  student_empty@student.edu / student123");
     console.log("");

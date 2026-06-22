@@ -67,6 +67,10 @@ const userSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "Specialization",
       },
+      department: {
+        type: String,
+        trim: true,
+      },
       level: {
         type: Number,
         min: 1,

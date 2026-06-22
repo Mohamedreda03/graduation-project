@@ -157,17 +157,16 @@ export function LectureSchedulePage() {
   };
 
   // Filter States
-  const [selectedFaculty, setSelectedFaculty] = useState<string>("");
-  const [selectedSpecialization, setSelectedSpecialization] = useState<string>("");
+  const [selectedCollegeId, setSelectedCollegeId] = useState<string>("");
+  const [selectedDepartmentName, setSelectedDepartmentName] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState<string>("");
-  const [selectedWeekType, setSelectedWeekType] = useState<string>("all");
   const [sectionsCount, setSectionsCount] = useState<number>(2);
   const [inlineAddSlot, setInlineAddSlot] = useState<{ dayOfWeek: string; startTime: string; endTime: string; section: string; periodIdx: number } | null>(null);
 
   // Fetch schedule with selected filters
   const { data: scheduleData, isLoading: scheduleLoading, refetch } = useWeekSchedule({
-    faculty: selectedFaculty || undefined,
-    specialization: selectedSpecialization || undefined,
+    specialization: selectedCollegeId || undefined,
+    department: selectedDepartmentName || undefined,
     level: selectedLevel ? parseInt(selectedLevel) : undefined,
     section: undefined, // Fetched all, we split them on client row-by-row
   });
@@ -226,18 +225,13 @@ export function LectureSchedulePage() {
   const halls: Hall[] = hallsData || [];
 
   // Reset filter chains on change
-  const handleFacultyChange = (value: string) => {
-    setSelectedFaculty(value);
-    setSelectedSpecialization("");
+  const handleCollegeChange = (value: string) => {
+    setSelectedCollegeId(value);
+    setSelectedDepartmentName("");
   };
 
-  const handleSpecializationChange = (value: string) => {
-    setSelectedSpecialization(value);
-  };
-
-  // Filtered lists for inputs
-  const filteredSpecializations = specializations?.filter((d) => !selectedFaculty || d.faculty === selectedFaculty) || [];
-  const selectedSpecializationObj = specializations?.find((d) => d._id === selectedSpecialization);
+  const selectedSpecializationObj = specializations?.find((d) => d._id === selectedCollegeId);
+  const departmentsList = selectedSpecializationObj?.faculty ? selectedSpecializationObj.faculty.split(",").map((d: string) => d.trim()) : [];
 
   // Sync sectionsCount with DB when specialization/level change
   useEffect(() => {
@@ -251,7 +245,7 @@ export function LectureSchedulePage() {
     } else {
       setSectionsCount(selectedLevel === "1" ? 6 : 3); // default
     }
-  }, [selectedSpecialization, selectedLevel, selectedSpecializationObj]);
+  }, [selectedCollegeId, selectedLevel, selectedSpecializationObj]);
 
   const handleOpenSectionsDialog = () => {
     if (selectedSpecializationObj) {
@@ -494,11 +488,9 @@ export function LectureSchedulePage() {
 
   // Clear filters
   const clearFilters = () => {
-    setSelectedFaculty("");
-    setSelectedSpecialization("");
+    setSelectedCollegeId("");
+    setSelectedDepartmentName("");
     setSelectedLevel("");
-    setSelectedSpecialization("");
-    setSelectedWeekType("all");
   };
 
   const handlePrint = () => {
@@ -513,10 +505,7 @@ export function LectureSchedulePage() {
     if (!scheduleData) return null;
     let dayLectures = scheduleData[dayValue] || [];
 
-    // Filter by week type on the client side if not handled by API
-    if (selectedWeekType !== "all") {
-      dayLectures = dayLectures.filter((l: any) => l.weekPattern === "weekly" || l.weekPattern === selectedWeekType);
-    }
+
 
     const maxSectionInLectures = dayLectures
       .map((l: any) => parseInt(l.section))
@@ -529,7 +518,7 @@ export function LectureSchedulePage() {
     const filteredCourses = courses.filter((c: any) => {
       const specId = typeof c.specialization === "object" ? c.specialization?._id : c.specialization;
       return (
-        (!selectedSpecialization || specId === selectedSpecialization) &&
+        (!selectedCollegeId || specId === selectedCollegeId) &&
         (!selectedLevel || c.level === parseInt(selectedLevel))
       );
     });
@@ -822,39 +811,39 @@ export function LectureSchedulePage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Faculty filter */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {/* College filter */}
             <div className="space-y-1.5">
               <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
                 <Building className="h-3.5 w-3.5" /> الكلية
               </label>
-              <Select value={selectedFaculty} onValueChange={handleFacultyChange}>
-                <SelectTrigger className="rounded-xl">
+              <Select value={selectedCollegeId} onValueChange={handleCollegeChange}>
+                <SelectTrigger className="rounded-xl w-full">
                   <SelectValue placeholder="اختر الكلية" />
                 </SelectTrigger>
                 <SelectContent dir="rtl">
-                  {faculties?.map((fac) => (
-                    <SelectItem key={fac} value={fac}>
-                      {fac}
+                  {specializations?.map((spec) => (
+                    <SelectItem key={spec._id} value={spec._id}>
+                      {spec.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Specialization filter */}
+            {/* Department filter */}
             <div className="space-y-1.5">
               <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
                 <Layers className="h-3.5 w-3.5" /> التخصص
               </label>
-              <Select value={selectedSpecialization} onValueChange={handleSpecializationChange} disabled={!selectedFaculty}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder={selectedFaculty ? "اختر التخصص" : "اختر الكلية أولاً"} />
+              <Select value={selectedDepartmentName} onValueChange={setSelectedDepartmentName} disabled={!selectedCollegeId || departmentsList.length === 0}>
+                <SelectTrigger className="rounded-xl w-full">
+                  <SelectValue placeholder={departmentsList.length === 0 && selectedCollegeId ? "لا يوجد أقسام متاحة" : "اختر التخصص"} />
                 </SelectTrigger>
                 <SelectContent dir="rtl">
-                  {filteredSpecializations.map((dept) => (
-                    <SelectItem key={dept._id} value={dept._id}>
-                      {dept.name}
+                  {departmentsList.map((dept, idx) => (
+                    <SelectItem key={idx} value={dept}>
+                      {dept}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -867,7 +856,7 @@ export function LectureSchedulePage() {
                 <GraduationCap className="h-3.5 w-3.5" /> الفرقة الدراسية
               </label>
               <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                <SelectTrigger className="rounded-xl">
+                <SelectTrigger className="rounded-xl w-full">
                   <SelectValue placeholder="اختر الفرقة" />
                 </SelectTrigger>
                 <SelectContent dir="rtl">
@@ -879,28 +868,11 @@ export function LectureSchedulePage() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Week type filter */}
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" /> الأسبوع الدراسي
-              </label>
-              <Select value={selectedWeekType} onValueChange={setSelectedWeekType}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent dir="rtl">
-                  <SelectItem value="all">كل الأسابيع</SelectItem>
-                  <SelectItem value="odd">الأسابيع الفردية فقط</SelectItem>
-                  <SelectItem value="even">الأسابيع الزوجية فقط</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
             <div>
-              {selectedSpecialization && selectedLevel && (
+              {selectedCollegeId && selectedLevel && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -926,14 +898,20 @@ export function LectureSchedulePage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
+      ) : (!selectedCollegeId || !selectedDepartmentName || !selectedLevel) ? (
+        <div className="text-center py-20 flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-xl mt-4 border border-slate-200 dark:border-slate-800">
+          <CalendarClock className="h-16 w-16 text-slate-300 mb-4" />
+          <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200">يرجى تحديد كافة البيانات</h3>
+          <p className="text-slate-500 mt-2">اختر الكلية، التخصص، والفرقة الدراسية لعرض الجدول الخاص بهم</p>
+        </div>
       ) : (
         <Card className="shadow-none border-none rounded-none overflow-hidden print-full-width p-0 bg-transparent">
           {/* Official Printable Header */}
           <div className="hidden print:flex flex-row justify-between items-start border-b-2 border-slate-800 pb-4 p-6 bg-white text-black" dir="rtl">
             <div className="text-right space-y-1 text-[11px] font-bold">
               <div>وزارة التعليم العالي</div>
-              <div>{selectedFaculty || "المعهد العالي للهندسة ببلبيس"}</div>
-              {selectedSpecializationObj && <div>{selectedSpecializationObj.name}</div>}
+              <div>{selectedSpecializationObj?.name || "المعهد العالي للهندسة ببلبيس"}</div>
+              {selectedDepartmentName && <div>{selectedDepartmentName}</div>}
               <div>المنشأ بقرار وزاري رقم 1855</div>
             </div>
 

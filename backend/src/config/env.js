@@ -15,7 +15,7 @@ module.exports = {
   openRouterApiKey: process.env.OPENROUTER_API_KEY,
   geminiModel: process.env.GEMINI_MODEL || "gemini-1.5-flash",
   attendance: {
-    minPresencePercentage: parseInt(process.env.MIN_PRESENCE_PERCENTAGE) || 85,
+    minPresencePercentage: parseInt(process.env.MIN_PRESENCE_PERCENTAGE) || 50,
     lateThresholdMinutes: parseInt(process.env.LATE_THRESHOLD_MINUTES) || 10,
   },
 };

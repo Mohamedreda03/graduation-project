@@ -50,8 +50,10 @@ export const attendanceService = {
     return response.data.data;
   },
 
-  getByLecture: async (lectureId: string) => {
-    const response = await api.get(`/attendance/lecture/${lectureId}`);
+  getByLecture: async (lectureId: string, date?: string) => {
+    const response = await api.get(`/attendance/lecture/${lectureId}`, {
+      params: { date },
+    });
     return response.data.data;
   },
 
@@ -125,6 +127,36 @@ export const attendanceService = {
     const response = await api.get("/attendance/weekly-summary", {
       params: { startDate },
     });
+    return response.data.data;
+  },
+
+  // Get live monitoring data
+  getLiveMonitoring: async () => {
+    const response = await api.get("/attendance/live-monitoring");
+    return response.data.data;
+  },
+
+  // Get course matrix
+  getCourseMatrix: async (courseId: string) => {
+    const response = await api.get(`/attendance/course/${courseId}/matrix`);
+    return response.data.data;
+  },
+
+  // Get student matrix
+  getStudentMatrix: async (studentId: string) => {
+    const response = await api.get(`/attendance/student/${studentId}/matrix`);
+    return response.data.data;
+  },
+
+  // Update individual matrix cell
+  updateMatrixCell: async (data: {
+    studentId: string;
+    courseId: string;
+    date: string;
+    status: "present" | "absent" | "late" | "excused";
+    reason?: string;
+  }) => {
+    const response = await api.post("/attendance/matrix/update", data);
     return response.data.data;
   },
 };

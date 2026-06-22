@@ -16,7 +16,8 @@ interface CreateStudentRequest {
   studentId: string;
   phone?: string;
   academicInfo: {
-    specialization: string;
+    specialization?: string;
+    department?: string;
     level: number;
   };
   device?: {

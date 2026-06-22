@@ -221,7 +221,14 @@ exports.getMySchedule = catchAsync(async (req, res, next) => {
   if (user.role === ROLES.DOCTOR) {
     // Doctor's lectures
     lectures = await Lecture.find({ doctor: user._id, isActive: true })
-      .populate("course", "name code")
+      .populate({
+        path: "course",
+        select: "name code specialization level departments",
+        populate: {
+          path: "specialization",
+          select: "name code faculty",
+        },
+      })
       .populate("hall", "name building")
       .sort({ dayOfWeek: 1, startTime: 1 });
   } else if (user.role === ROLES.STUDENT) {
@@ -233,7 +240,14 @@ exports.getMySchedule = catchAsync(async (req, res, next) => {
       course: { $in: courseIds },
       isActive: true,
     })
-      .populate("course", "name code")
+      .populate({
+        path: "course",
+        select: "name code specialization level departments",
+        populate: {
+          path: "specialization",
+          select: "name code faculty",
+        },
+      })
       .populate("hall", "name building")
       .populate("doctor", "name")
       .sort({ dayOfWeek: 1, startTime: 1 });
@@ -298,21 +312,79 @@ exports.getLecturesByDate = catchAsync(async (req, res, next) => {
   }
 
   const targetDate = new Date(date);
+  if (isNaN(targetDate.getTime())) {
+    throw ApiError.badRequest("Invalid date format");
+  }
+
   const dayOfWeek = targetDate.getDay();
+  const targetDateNormalized = new Date(targetDate);
+  targetDateNormalized.setHours(0, 0, 0, 0);
 
   const lectures = await Lecture.find({
     dayOfWeek,
     isActive: true,
   })
-    .populate("course", "name code")
+    .populate("course", "name code students")
     .populate("hall", "name building")
     .populate("doctor", "name")
     .sort({ startTime: 1 });
 
+  // Get attendance records for this date to determine actual status
+  const records = await AttendanceRecord.find({
+    date: targetDateNormalized,
+  });
+
+  const lecturesWithStatus = lectures.map((lecture) => {
+    const lectureObj = lecture.toObject();
+    const lectureRecords = records.filter(
+      (r) => r.lecture.toString() === lecture._id.toString()
+    );
+
+    if (lectureRecords.length > 0) {
+      // If any attendance record is in-progress, the lecture is in-progress
+      const hasInProgress = lectureRecords.some(
+        (r) => r.status === "in-progress"
+      );
+      if (hasInProgress) {
+        lectureObj.status = "in-progress";
+      } else {
+        lectureObj.status = "completed";
+      }
+
+      // Gather actual doctor start & end times from student records
+      let earliestStart = null;
+      let latestEnd = null;
+
+      for (const record of lectureRecords) {
+        if (record.lectureStartTime) {
+          const st = new Date(record.lectureStartTime);
+          if (!earliestStart || st < earliestStart) {
+            earliestStart = st;
+          }
+        }
+        if (record.lectureEndTime) {
+          const et = new Date(record.lectureEndTime);
+          if (!latestEnd || et > latestEnd) {
+            latestEnd = et;
+          }
+        }
+      }
+
+      if (earliestStart) lectureObj.actualStartTime = earliestStart;
+      if (latestEnd) lectureObj.actualEndTime = latestEnd;
+    } else {
+      lectureObj.status = "scheduled";
+      lectureObj.actualStartTime = null;
+      lectureObj.actualEndTime = null;
+    }
+
+    return lectureObj;
+  });
+
   res.status(200).json({
     success: true,
-    count: lectures.length,
-    data: lectures,
+    count: lecturesWithStatus.length,
+    data: lecturesWithStatus,
   });
 });
 
@@ -321,7 +393,7 @@ exports.getLecturesByDate = catchAsync(async (req, res, next) => {
  * GET /api/lectures/week-schedule?course=xxx&hall=xxx
  */
 exports.getWeekSchedule = catchAsync(async (req, res, next) => {
-  const { course, hall, specialization, faculty, level, section } = req.query;
+  const { course, hall, specialization, faculty, department, level, section } = req.query;
 
   const query = { isActive: true };
   if (course) query.course = course;
@@ -337,7 +409,16 @@ exports.getWeekSchedule = catchAsync(async (req, res, next) => {
     const specializations = await Specialization.find(specQuery);
     const specIds = specializations.map((s) => s._id);
 
-    const courses = await Course.find({ specialization: { $in: specIds } });
+    let courseQuery = { specialization: { $in: specIds } };
+    if (department) {
+      courseQuery.$or = [
+        { departments: department },
+        { departments: { $size: 0 } },
+        { departments: { $exists: false } }
+      ];
+    }
+
+    const courses = await Course.find(courseQuery);
     const courseIds = courses.map((c) => c._id);
 
     if (query.course) {
@@ -451,7 +532,14 @@ exports.startLecture = catchAsync(async (req, res, next) => {
 
   lecture.status = "in-progress";
   lecture.isActive = true;
+  lecture.actualStartTime = new Date();
   await lecture.save();
+
+  // Set the start time on all existing attendance records for today
+  await AttendanceRecord.updateMany(
+    { lecture: lecture._id, date: getTodayDate() },
+    { $set: { lectureStartTime: lecture.actualStartTime } }
+  );
 
   // Find all students currently connected to this hall (active sessions)
   const activeSessions = await StudentSession.find({
@@ -484,6 +572,7 @@ exports.startLecture = catchAsync(async (req, res, next) => {
           date: getTodayDate(),
           status: ATTENDANCE_STATUS.IN_PROGRESS,
           sessions: [{ checkIn: now }],
+          lectureStartTime: lecture.actualStartTime,
         });
         console.log(`[Auto-Start] Attendance record created for student ${session.student} on lecture ${lecture._id}`);
       }
@@ -516,7 +605,14 @@ exports.endLecture = catchAsync(async (req, res, next) => {
   }
 
   lecture.status = "completed";
+  lecture.actualEndTime = new Date();
   await lecture.save();
+
+  // Set the end time on all attendance records for today (both finalized and in-progress/absent)
+  await AttendanceRecord.updateMany(
+    { lecture: lecture._id, date: getTodayDate() },
+    { $set: { lectureEndTime: lecture.actualEndTime } }
+  );
 
   // 1. Finalize all attendance records for this lecture that are still "in-progress"
   const records = await AttendanceRecord.find({
@@ -528,6 +624,7 @@ exports.endLecture = catchAsync(async (req, res, next) => {
 
   for (const record of records) {
     record.status = ATTENDANCE_STATUS.PRESENT;
+    record.lectureEndTime = lecture.actualEndTime;
 
     // Close any open sessions within the record
     if (record.sessions && record.sessions.length > 0) {

@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -12,10 +12,11 @@ import {
   Save,
   ArrowRight,
   Plus,
-  Trash2,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
@@ -47,7 +48,7 @@ const formSchema = z.object({
     .string()
     .min(2, "رمز الكلية يجب أن يكون حرفين على الأقل")
     .max(10, "رمز الكلية لا يجب أن يتجاوز 10 أحرف"),
-  faculty: z.string().min(2, "اسم الكلية مطلوب"),
+  faculty: z.string().min(2, "يرجى إضافة قسم واحد على الأقل"),
   description: z.string().optional(),
   sectionsCount: z.record(z.string(), z.number().min(1).max(8)).optional(),
 });
@@ -64,6 +65,9 @@ export function SpecializationFormPage() {
   );
   const createMutation = useCreateSpecialization();
   const updateMutation = useUpdateSpecialization();
+
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [inputValue, setInputValue] = useState("");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -85,6 +89,11 @@ export function SpecializationFormPage() {
 
   useEffect(() => {
     if (specialization) {
+      const depts = specialization.faculty
+        ? specialization.faculty.split(/[،,]/).map((t: string) => t.trim()).filter(Boolean)
+        : [];
+      setDepartments(depts);
+
       form.reset({
         name: specialization.name,
         code: specialization.code,
@@ -101,6 +110,29 @@ export function SpecializationFormPage() {
       });
     }
   }, [specialization, form]);
+
+  const addDepartment = (val: string) => {
+    const trimmed = val.trim();
+    if (trimmed && !departments.includes(trimmed)) {
+      const newDepts = [...departments, trimmed];
+      setDepartments(newDepts);
+      form.setValue("faculty", newDepts.join("، "), { shouldValidate: true });
+    }
+    setInputValue("");
+  };
+
+  const removeDepartment = (indexToRemove: number) => {
+    const newDepts = departments.filter((_, idx) => idx !== indexToRemove);
+    setDepartments(newDepts);
+    form.setValue("faculty", newDepts.join("، "), { shouldValidate: true });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === "," || e.key === "،") {
+      e.preventDefault();
+      addDepartment(inputValue);
+    }
+  };
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -200,18 +232,62 @@ export function SpecializationFormPage() {
                   control={form.control}
                   name="faculty"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2 text-sm">
-                        <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                        الأقسام التابعة
+                    <FormItem className="col-span-full">
+                      <FormLabel className="flex items-center gap-2 text-sm font-bold">
+                        <GraduationCap className="h-4 w-4 text-primary" />
+                        الأقسام العلمية التابعة
                       </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="مثال: قسم علوم الحاسب، قسم نظم المعلومات"
-                          className="h-10"
-                          {...field}
-                        />
-                      </FormControl>
+                      <FormDescription className="text-xs text-muted-foreground">
+                        اكتب اسم القسم واضغط زر (إدخال Enter) أو الفاصلة (،) أو الزر الجانبي للإضافة.
+                      </FormDescription>
+                      
+                      {/* Tags Container */}
+                      <div className="flex flex-wrap gap-2 p-3 bg-muted/20 border rounded-xl min-h-12 mt-2 items-center">
+                        {departments.length === 0 ? (
+                          <span className="text-xs text-muted-foreground font-medium">
+                            لا توجد أقسام مضافة بعد. يرجى إضافة قسم واحد على الأقل.
+                          </span>
+                        ) : (
+                          departments.map((dept, index) => (
+                            <Badge
+                              key={index}
+                              variant="secondary"
+                              className="pr-2 pl-1.5 py-1 flex items-center gap-1.5 bg-background border hover:bg-muted font-bold text-xs rounded-lg transition-all"
+                            >
+                              <span>{dept}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeDepartment(index)}
+                                className="hover:bg-destructive/10 p-0.5 rounded-full text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Input controls */}
+                      <div className="flex gap-2 mt-2">
+                        <FormControl>
+                          <Input
+                            placeholder="مثال: قسم هندسة الاتصالات"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="h-10 rounded-xl flex-1"
+                          />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => addDepartment(inputValue)}
+                          className="h-10 px-4 rounded-xl font-bold bg-primary/10 text-primary hover:bg-primary/20"
+                        >
+                          <Plus className="h-4 w-4 ml-1" />
+                          إضافة
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

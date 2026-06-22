@@ -1,4 +1,4 @@
-﻿export * from "./use-specializations";
+export * from "./use-specializations";
 export * from "./use-halls";
 export * from "./use-students";
 export * from "./use-doctors";
@@ -7,3 +7,6 @@ export * from "./use-lectures";
 export * from "./use-attendance";
 export * from "./use-settings";
 export * from "./use-dashboard";
+export * from "./use-connections";
+export * from "./use-users";
+

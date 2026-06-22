@@ -176,7 +176,7 @@ const STUDENT_NAMES = [
 const DEFAULT_SETTINGS = [
   {
     key: "MIN_PRESENCE_PERCENTAGE",
-    value: 85,
+    value: 50,
     description: "النسبة المئوية الدنيا للحضور",
   },
   {

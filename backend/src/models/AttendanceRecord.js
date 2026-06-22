@@ -82,6 +82,10 @@ const attendanceRecordSchema = new mongoose.Schema(
       ref: "User",
     },
     modifiedAt: Date,
+
+    // Doctor actual start/end times for historical tracking
+    lectureStartTime: Date,
+    lectureEndTime: Date,
   },
   {
     timestamps: true,
@@ -137,7 +141,7 @@ attendanceRecordSchema.methods.calculatePresence = function (lectureEndTime) {
 // Finalize attendance record
 attendanceRecordSchema.methods.finalize = function (
   lectureTime,
-  minPresencePercentage = 85,
+  minPresencePercentage = 50,
 ) {
   if (this.isFinalized) return this;
 

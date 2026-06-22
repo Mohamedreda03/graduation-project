@@ -1,356 +1,321 @@
-import { Link, useSearchParams } from "react-router-dom";
-import { ColumnDef } from "@tanstack/react-table";
-import {
-  MoreHorizontal,
-  Download,
-  CheckCircle,
-  XCircle,
-  Clock,
-  AlertTriangle,
-  Calendar as CalendarIcon,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { DataTable } from "@/components/data-table";
-import {
-  useAttendance,
+  useSpecializations,
   useCourses,
-  useUpdateAttendanceStatus,
-  useExportAttendanceReport,
+  useStudents,
+  useCourseMatrix,
+  useStudentMatrix,
+  useUpdateMatrixCell,
 } from "@/hooks";
-import type { AttendanceRecord } from "@/types";
 
-const statusMap: Record<
-  string,
-  {
-    label: string;
-    variant: "default" | "secondary" | "destructive" | "outline";
-    icon: React.ElementType;
-  }
-> = {
-  present: { label: "حاضر", variant: "default", icon: CheckCircle },
-  absent: { label: "غائب", variant: "destructive", icon: XCircle },
-  late: { label: "متأخر", variant: "outline", icon: Clock },
-  excused: { label: "عذر مقبول", variant: "secondary", icon: AlertTriangle },
-  "in-progress": { label: "جاري", variant: "outline", icon: Clock },
-};
+import { AttendancePageHeader } from "@/components/attendance/page-header";
+import { AttendanceFilters } from "@/components/attendance/attendance-filters";
+import { CourseMatrixTable } from "@/components/attendance/course-matrix-table";
+import { StudentMatrixTable } from "@/components/attendance/student-matrix-table";
+import {
+  SelectCourseEmptyState,
+  NoStudentsEmptyState,
+  LoadingEmptyState,
+  SelectStudentEmptyState,
+  StudentLoadingEmptyState,
+  NoStudentCoursesEmptyState,
+} from "@/components/attendance/empty-states";
 
 export function AttendancePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const courseFilter = searchParams.get("course") || "";
-  const statusFilter = searchParams.get("status") || "";
-  const dateFilter = searchParams.get("date") || "";
-  const searchQuery = searchParams.get("q") || "";
+  // Master View Mode: 'course' | 'student'
+  const [viewMode, setViewMode] = useState<"course" | "student">("course");
 
-  const setCourseFilter = (value: string) => {
-    setSearchParams((prev) => {
-      const newParams = new URLSearchParams(prev);
-      if (value && value !== "all") {
-        newParams.set("course", value);
-      } else {
-        newParams.delete("course");
-      }
-      return newParams;
-    });
-  };
+  // Course Matrix Filters State
+  const [selectedDept, setSelectedDept] = useState<string>("all");
+  const [selectedLevel, setSelectedLevel] = useState<string>("all");
+  const [selectedCourse, setSelectedCourse] = useState<string>("all");
+  const [selectedLectureDate, setSelectedLectureDate] = useState<string>("all");
 
-  const setStatusFilter = (value: string) => {
-    setSearchParams((prev) => {
-      const newParams = new URLSearchParams(prev);
-      if (value && value !== "all") {
-        newParams.set("status", value);
-      } else {
-        newParams.delete("status");
-      }
-      return newParams;
-    });
-  };
+  // Student Matrix Filters State
+  const [studentSearch, setStudentSearch] = useState("");
+  const [debouncedStudentSearch, setDebouncedStudentSearch] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
-  const setDateFilter = (value: string) => {
-    setSearchParams((prev) => {
-      const newParams = new URLSearchParams(prev);
-      if (value) {
-        newParams.set("date", value);
-      } else {
-        newParams.delete("date");
-      }
-      return newParams;
-    });
-  };
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedStudentSearch(studentSearch);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [studentSearch]);
 
-  const handeSearch = (value: string) => {
-    setSearchParams((prev) => {
-      const newParams = new URLSearchParams(prev);
-      if (value) {
-        newParams.set("q", value);
-      } else {
-        newParams.delete("q");
-      }
-      return newParams;
-    });
-  };
-
-  const { data, isLoading } = useAttendance({
-    course: courseFilter && courseFilter !== "all" ? courseFilter : undefined,
-    status: statusFilter && statusFilter !== "all" ? statusFilter : undefined,
-    startDate: dateFilter || undefined,
+  // Queries
+  const { data: specializations } = useSpecializations();
+  const { data: coursesData } = useCourses({ limit: 100 });
+  const { data: studentsData, isLoading: studentsLoading } = useStudents({
+    search: debouncedStudentSearch || undefined,
+    specialization: selectedDept !== "all" ? selectedDept : undefined,
+    level: selectedLevel !== "all" ? Number(selectedLevel) : undefined,
+    limit: 50,
   });
-  const { data: coursesData } = useCourses();
-  const updateStatusMutation = useUpdateAttendanceStatus();
-  const exportMutation = useExportAttendanceReport();
 
-  const handleStatusChange = (
-    id: string,
-    status: "present" | "absent" | "late" | "excused",
+  const { data: courseMatrix, isLoading: courseMatrixLoading } = useCourseMatrix(
+    viewMode === "course" && selectedCourse !== "all" ? selectedCourse : ""
+  );
+  const { data: studentMatrix, isLoading: studentMatrixLoading } = useStudentMatrix(
+    viewMode === "student" && selectedStudentId ? selectedStudentId : ""
+  );
+
+  const updateMatrixCellMutation = useUpdateMatrixCell();
+
+  // Filters calculations
+  const deptsList = specializations || [];
+  const allCourses = coursesData?.data || [];
+
+  const filteredCourses = allCourses.filter((course: any) => {
+    if (
+      selectedDept !== "all" &&
+      course.specialization?._id !== selectedDept &&
+      course.specialization !== selectedDept
+    ) {
+      return false;
+    }
+    if (selectedLevel !== "all" && String(course.level) !== selectedLevel) {
+      return false;
+    }
+    return true;
+  });
+
+  // Reset course selection if it is filtered out
+  useEffect(() => {
+    if (
+      selectedCourse !== "all" &&
+      !filteredCourses.some((c) => c._id === selectedCourse)
+    ) {
+      setSelectedCourse("all");
+    }
+  }, [selectedDept, selectedLevel, filteredCourses]);
+
+  // Reset lecture date selection when course changes
+  useEffect(() => {
+    setSelectedLectureDate("all");
+  }, [selectedCourse]);
+
+  // Reset selected student and search query when department or level filters change
+  useEffect(() => {
+    setSelectedStudentId(null);
+    setStudentSearch("");
+  }, [selectedDept, selectedLevel]);
+
+  // Auto-select first student if available and none selected
+  const studentsList = studentsData?.data || [];
+  useEffect(() => {
+    if (viewMode === "student" && studentsList.length > 0 && !selectedStudentId) {
+      setSelectedStudentId(studentsList[0]._id);
+    }
+  }, [studentsList, viewMode]);
+
+  // Cell status change action
+  const handleMatrixCellChange = async (
+    studentId: string,
+    courseId: string,
+    date: string,
+    newStatus: "present" | "absent" | "late" | "excused"
   ) => {
-    updateStatusMutation.mutate({ id, status });
+    await updateMatrixCellMutation.mutateAsync({
+      studentId,
+      courseId,
+      date,
+      status: newStatus,
+      reason: "تعديل مباشر من كشف الحضور الرقمي العام",
+    });
   };
 
-  const handleExport = (courseId: string, format: "csv" | "excel" | "pdf") => {
-    exportMutation.mutate({ courseId, format });
+  // Export Course Matrix to Excel
+  const handleExportCourseExcel = () => {
+    if (!courseMatrix || courseMatrix.students.length === 0) {
+      toast.error("لا توجد بيانات لتصديرها");
+      return;
+    }
+
+    const { dates, students: rows, course } = courseMatrix;
+    const data: any[] = [];
+    const statusDetails: Record<string, string> = {
+      present: "حاضر",
+      absent: "غائب",
+      late: "متأخر",
+      excused: "عذر",
+    };
+
+    const headers = [
+      "رقم الطالب",
+      "اسم الطالب",
+      ...dates.map((d: string) => d),
+      "إجمالي الحضور",
+      "إجمالي الغياب",
+      "نسبة الحضور",
+    ];
+    data.push(headers);
+
+    rows.forEach((student: any) => {
+      const studentRow = [
+        student.studentId,
+        student.name,
+        ...dates.map((d: string) => {
+          const status = student.attendance[d]?.status || "absent";
+          return statusDetails[status] || "غائب";
+        }),
+        student.stats.present,
+        student.stats.absent,
+        `${student.stats.rate}%`,
+      ];
+      data.push(studentRow);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "كشف حضور المادة");
+    XLSX.writeFile(workbook, `كشف_حضور_${course.code || "المادة"}.xlsx`);
+    toast.success("تم تصدير ملف الكشف بنجاح");
   };
 
-  const columns: ColumnDef<AttendanceRecord>[] = [
-    {
-      accessorKey: "student",
-      header: "الطالب",
-      cell: ({ row }) => {
-        const student = row.original.student;
-        if (typeof student === "object") {
-          const nameStr = typeof student.name === "object"
-            ? `${student.name.first} ${student.name.last}`
-            : student.name || "غير معروف";
-          return (
-            <Link to={`/students/${student._id}`} className="text-primary hover:underline font-semibold">
-              {nameStr}
-            </Link>
-          );
-        }
-        return "غير معروف";
-      },
-    },
-    {
-      accessorKey: "studentId",
-      header: "رقم الطالب",
-      cell: ({ row }) => {
-        const student = row.original.student;
-        return typeof student === "object" ? student.studentId : "غير معروف";
-      },
-    },
-    {
-      accessorKey: "course",
-      header: "المادة",
-      cell: ({ row }) => {
-        const course = row.original.course;
-        return typeof course === "object" ? course.name : "غير معروف";
-      },
-    },
-    {
-      accessorKey: "date",
-      header: "التاريخ",
-      cell: ({ row }) => {
-        if (row.original.date) {
-          return new Date(row.original.date).toLocaleDateString("ar-EG");
-        }
-        return "غير معروف";
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "الحالة",
-      cell: ({ row }) => {
-        const status = statusMap[row.original.status];
-        if (!status) return row.original.status;
-        const Icon = status.icon;
-        return (
-          <Badge variant={status.variant} className="gap-1">
-            <Icon className="h-3 w-3" />
-            {status.label}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "checkInTime",
-      header: "وقت الدخول",
-      cell: ({ row }) => {
-        const sessions = row.original.sessions;
-        if (sessions && sessions.length > 0 && sessions[0].checkIn) {
-          return new Date(sessions[0].checkIn).toLocaleTimeString("ar-EG", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
+  // Export Student Matrix to Excel
+  const handleExportStudentExcel = () => {
+    if (!studentMatrix || studentMatrix.courses.length === 0) {
+      toast.error("لا توجد بيانات لتصديرها");
+      return;
+    }
+
+    const { courses: rows, student } = studentMatrix;
+    const data: any[] = [];
+    const statusDetails: Record<string, string> = {
+      present: "حاضر",
+      absent: "غائب",
+      late: "متأخر",
+      excused: "عذر",
+    };
+
+    const maxLectures = Math.max(1, ...rows.map((r: any) => r.lectures.length));
+
+    const headers = [
+      "كود المادة",
+      "المادة الدراسية",
+      ...Array.from({ length: maxLectures }).map((_, i) => `محاضرة ${i + 1}`),
+      "حاضر",
+      "غائب",
+      "نسبة الحضور",
+    ];
+    data.push(headers);
+
+    rows.forEach((rowItem: any) => {
+      const rowData = [
+        rowItem.course.code,
+        rowItem.course.name,
+        ...Array.from({ length: maxLectures }).map((_, idx) => {
+          const lec = rowItem.lectures[idx];
+          if (!lec) return "—";
+          const dateObj = new Date(lec.date);
+          const formatted = dateObj.toLocaleDateString("en-US", {
+            month: "2-digit",
+            day: "2-digit",
           });
-        }
-        return "-";
-      },
-    },
-    {
-      accessorKey: "presencePercentage",
-      header: "نسبة الحضور",
-      cell: ({ row }) => {
-        return row.original.presencePercentage !== undefined
-          ? `${row.original.presencePercentage}%`
-          : "-";
-      },
-    },
-    {
-      id: "actions",
-      header: "الإجراءات",
-      cell: ({ row }) => {
-        const record = row.original;
+          return `${statusDetails[lec.status] || "غائب"} (${formatted})`;
+        }),
+        rowItem.stats.present,
+        rowItem.stats.absent,
+        `${rowItem.stats.rate}%`,
+      ];
+      data.push(rowData);
+    });
 
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">فتح القائمة</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => handleStatusChange(record._id, "present")}
-              >
-                <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
-                تحديد كحاضر
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleStatusChange(record._id, "absent")}
-              >
-                <XCircle className="ml-2 h-4 w-4 text-red-600" />
-                تحديد كغائب
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleStatusChange(record._id, "late")}
-              >
-                <Clock className="ml-2 h-4 w-4 text-yellow-600" />
-                تحديد كمتأخر
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleStatusChange(record._id, "excused")}
-              >
-                <AlertTriangle className="ml-2 h-4 w-4 text-blue-600" />
-                تحديد كعذر مقبول
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "غياب الطالب الشامل");
+    XLSX.writeFile(workbook, `كشف_غياب_الطالب_${student.studentId}.xlsx`);
+    toast.success("تم تصدير ملف الطالب بنجاح");
+  };
 
   return (
-    <div className="space-y-6 text-right">
+    <div className="space-y-4 text-right" dir="rtl">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">سجلات الحضور</h1>
-          <p className="text-muted-foreground">عرض وتعديل سجلات حضور الطلاب</p>
-        </div>
-        {courseFilter && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Download className="ml-2 h-4 w-4" />
-                تصدير تقرير
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                onClick={() => handleExport(courseFilter, "excel")}
-              >
-                تصدير Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleExport(courseFilter, "csv")}
-              >
-                تصدير CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleExport(courseFilter, "pdf")}
-              >
-                تصدير PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+      <AttendancePageHeader
+        viewMode={viewMode}
+        courseMatrix={courseMatrix}
+        studentMatrix={studentMatrix}
+        onExportCourse={handleExportCourseExcel}
+        onExportStudent={handleExportStudentExcel}
+      />
 
       {/* Filters */}
-      <div className="flex gap-4 flex-wrap bg-card p-4 rounded-xl border border-border/50 shadow-sm">
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium pr-1">المادة الدراسية</label>
-          <Select dir="rtl" value={courseFilter || "all"} onValueChange={setCourseFilter}>
-            <SelectTrigger className="w-full bg-background">
-              <SelectValue placeholder="اختر المادة" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل المواد</SelectItem>
-              {coursesData?.data?.map((course) => (
-                <SelectItem key={course._id} value={course._id}>
-                  {course.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium pr-1">تاريخ المحاضرة</label>
-          <div className="relative">
-            <Input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-[200px] bg-background pl-8"
-            />
-            <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium pr-1">حالة الحضور</label>
-          <Select dir="rtl" value={statusFilter || "all"} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full bg-background">
-              <SelectValue placeholder="كل الحالات" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الحالات</SelectItem>
-              <SelectItem value="present">حاضر</SelectItem>
-              <SelectItem value="absent">غائب</SelectItem>
-              <SelectItem value="late">متأخر</SelectItem>
-              <SelectItem value="excused">عذر مقبول</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Data Table */}
-      <DataTable
-        columns={columns}
-        data={data?.data ?? []}
-        isLoading={isLoading}
-        searchKey="student"
-        searchPlaceholder="بحث عن طالب بالاسم..."
-        defaultSearchValue={searchQuery}
-        onSearch={handeSearch}
+      <AttendanceFilters
+        viewMode={viewMode}
+        onViewModeChange={(mode) => {
+          setViewMode(mode);
+          setStudentSearch("");
+        }}
+        selectedDept={selectedDept}
+        onDeptChange={setSelectedDept}
+        selectedLevel={selectedLevel}
+        onLevelChange={setSelectedLevel}
+        selectedCourse={selectedCourse}
+        onCourseChange={setSelectedCourse}
+        studentSearch={studentSearch}
+        onStudentSearchChange={setStudentSearch}
+        deptsList={deptsList}
+        filteredCourses={filteredCourses}
+        studentsList={studentsList}
+        onSelectStudent={(studentId, studentName, studentIdNum) => {
+          setViewMode("student");
+          setSelectedStudentId(studentId);
+          setStudentSearch(studentIdNum); // Use ID number so they are easily found in the sidebar
+        }}
+        selectedLectureDate={selectedLectureDate}
+        onLectureDateChange={setSelectedLectureDate}
+        lectureDates={courseMatrix?.dates || []}
       />
+
+      {/* CASE 1: Course Matrix View */}
+      {viewMode === "course" && (
+        <>
+          {selectedCourse === "all" ? (
+            <SelectCourseEmptyState />
+          ) : courseMatrixLoading ? (
+            <LoadingEmptyState message="جاري تحميل كشف المناداة..." />
+          ) : courseMatrix && courseMatrix.students.length === 0 ? (
+            <NoStudentsEmptyState />
+          ) : courseMatrix ? (
+            <CourseMatrixTable
+              courseMatrix={courseMatrix}
+              studentSearch={studentSearch}
+              selectedCourse={selectedCourse}
+              onCellChange={handleMatrixCellChange}
+              onSwitchToStudent={(studentId, studentName) => {
+                setViewMode("student");
+                setSelectedStudentId(studentId);
+                setStudentSearch(studentName);
+              }}
+              selectedLectureDate={selectedLectureDate}
+            />
+          ) : null}
+        </>
+      )}
+
+      {/* CASE 2: Student Matrix View */}
+      {viewMode === "student" && (
+        <div className="w-full">
+          {!selectedStudentId ? (
+            <SelectStudentEmptyState />
+          ) : studentMatrixLoading ? (
+            <StudentLoadingEmptyState />
+          ) : studentMatrix && studentMatrix.courses.length === 0 ? (
+            <NoStudentCoursesEmptyState />
+          ) : studentMatrix ? (
+            <StudentMatrixTable
+              studentMatrix={studentMatrix}
+              selectedCourse={selectedCourse}
+              onCellChange={handleMatrixCellChange}
+            />
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

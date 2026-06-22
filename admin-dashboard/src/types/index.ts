@@ -48,6 +48,7 @@ export interface UserName {
 
 export interface AcademicInfo {
   specialization?: Specialization | string;
+  department?: string;
   level?: number;
   enrolledCourses?: string[];
 }
@@ -158,6 +159,7 @@ export interface Course {
   name: string;
   code: string;
   specialization: Specialization | string;
+  departments?: string[];
   doctor: Doctor | string;
   level: number;
   semester: string;
@@ -170,6 +172,7 @@ export interface CreateCourseRequest {
   name: string;
   code: string;
   specialization: string;
+  departments?: string[];
   doctor: string;
   level: number;
   semester: string;
@@ -200,6 +203,8 @@ export interface Lecture {
   specialization?: string;
   section?: string;
   isActive: boolean;
+  actualStartTime?: string;
+  actualEndTime?: string;
   createdAt: string;
 }
 
@@ -235,6 +240,8 @@ export interface AttendanceRecord {
   totalPresenceTime: number;
   presencePercentage: number;
   isFinalized: boolean;
+  lectureStartTime?: string;
+  lectureEndTime?: string;
   createdAt: string;
 }
 

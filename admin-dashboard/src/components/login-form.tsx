@@ -54,10 +54,10 @@ export function LoginForm({
                 <Wifi className="size-8" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              حضوري الذكي
+            <h1 className="text-lg sm:text-xl font-black tracking-tight text-foreground">
+              MAC-Based Automated Attendance System
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1.5">
               لوحة تحكم إدارة النظام
             </p>
           </div>
@@ -128,7 +128,7 @@ export function LoginForm({
         </CardContent>
       </Card>
       <p className="text-center text-[10px] text-muted-foreground/60 font-medium">
-        نظام إدارة الحضور والغياب الذكي © 2026
+        MAC-Based Automated Attendance System © 2026
       </p>
     </div>
   );

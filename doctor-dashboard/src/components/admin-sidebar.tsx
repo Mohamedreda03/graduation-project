@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Sparkles,
   GraduationCap,
+  Wifi,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -35,50 +36,21 @@ const navMainItems = [
     title: "محاضراتي",
     url: "/my-schedule",
     icon: Calendar,
-    items: [
-      {
-        title: "الجدول الأسبوعي",
-        url: "/my-schedule",
-      },
-      {
-        title: "محاضرات اليوم",
-        url: "/my-schedule/today",
-      },
-    ],
   },
   {
-    title: "المواد الدراسية",
+    title: "موادي",
     url: "/courses",
     icon: BookOpen,
-    items: [
-      {
-        title: "موادي",
-        url: "/courses",
-      },
-    ],
   },
   {
-    title: "الحضور والغياب",
+    title: "سجلات الحضور",
     url: "/attendance",
     icon: ClipboardCheck,
-    items: [
-      {
-        title: "سجلات الحضور",
-        url: "/attendance",
-      },
-      {
-        title: "🔴 الحضور المباشر",
-        url: "/attendance/live",
-      },
-      {
-        title: "طلاب معرضون للحرمان",
-        url: "/attendance/at-risk",
-      },
-      // {
-      //   title: "تقارير الحضور",
-      //   url: "/attendance/reports",
-      // },
-    ],
+  },
+  {
+    title: "الحضور المباشر",
+    url: "/attendance/live",
+    icon: Wifi,
   },
   {
     title: "المساعد الذكي",
@@ -108,9 +80,7 @@ export function DoctorSidebar({
   // Update isActive based on current path
   const navItems = navMainItems.map((item) => ({
     ...item,
-    isActive:
-      location.pathname === item.url ||
-      item.items?.some((subItem) => location.pathname === subItem.url),
+    isActive: location.pathname === item.url,
   }));
 
   return (

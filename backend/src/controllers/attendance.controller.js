@@ -206,7 +206,7 @@ exports.getLiveAttendance = catchAsync(async (req, res, next) => {
  * GET /api/attendance/at-risk
  */
 exports.getAtRiskStudents = catchAsync(async (req, res, next) => {
-  const { course: courseId, threshold = 75 } = req.query;
+  const { course: courseId, threshold = 50 } = req.query;
 
   const matchStage = { isFinalized: true };
   if (
@@ -688,3 +688,421 @@ exports.getMyLectureStatus = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+/**
+ * Get system-wide live monitoring data (active lectures, departments, connections)
+ * GET /api/attendance/live-monitoring
+ */
+exports.getLiveMonitoring = catchAsync(async (req, res, next) => {
+  const today = getTodayDate();
+
+  // 1. Get active lectures (status = in-progress)
+  const activeLectures = await Lecture.find({ status: "in-progress" })
+    .populate({
+      path: "course",
+      select: "name code students specialization level",
+      populate: { path: "specialization", select: "name" },
+    })
+    .populate("hall", "name")
+    .populate("doctor", "name");
+
+  // 2. Fetch active sessions to count total connected students
+  const activeSessionsCount = await StudentSession.countDocuments({
+    isActive: true,
+  });
+
+  // 3. System-wide summary stats
+  const totalActiveLectures = activeLectures.length;
+  const occupiedHallsCount = new Set(
+    activeLectures.map((l) => l.hall?._id?.toString()).filter(Boolean),
+  ).size;
+
+  let totalEnrolled = 0;
+  let totalPresent = 0;
+
+  // Department-wise stats aggregation map
+  const deptStatsMap = {};
+
+  const lecturesData = [];
+
+  for (const lecture of activeLectures) {
+    const course = lecture.course || {};
+    const enrolledIds = course.students || [];
+    const enrolledCount = enrolledIds.length;
+    totalEnrolled += enrolledCount;
+
+    // Get attendance records for this lecture today
+    const records = await AttendanceRecord.find({
+      lecture: lecture._id,
+      date: today,
+    }).populate("student", "studentId name");
+
+    const presentCount = records.filter(
+      (r) => r.status === "in-progress" || r.status === "present",
+    ).length;
+    totalPresent += presentCount;
+
+    // Aggregating department (specialization) statistics
+    const specialization = course.specialization;
+    if (specialization) {
+      const specId = specialization._id.toString();
+      if (!deptStatsMap[specId]) {
+        deptStatsMap[specId] = {
+          _id: specId,
+          name: specialization.name,
+          activeLectures: 0,
+          totalEnrolled: 0,
+          presentCount: 0,
+        };
+      }
+      deptStatsMap[specId].activeLectures += 1;
+      deptStatsMap[specId].totalEnrolled += enrolledCount;
+      deptStatsMap[specId].presentCount += presentCount;
+    }
+
+    // Build lists of present vs absent students
+    const presentStudents = records.map((r) => {
+      const student = r.student || {};
+      const nameStr = student.name
+        ? `${student.name.first || ""} ${student.name.last || ""}`.trim()
+        : "غير معروف";
+      return {
+        _id: student._id,
+        name: nameStr || "غير معروف",
+        studentId: student.studentId || "-",
+        status: r.status,
+        connectedAt: r.sessions && r.sessions.length > 0 ? r.sessions[r.sessions.length - 1].checkIn : null,
+        macAddress: r.deviceInfo?.macAddress || "-",
+      };
+    });
+
+    // Find absent students
+    const presentIdsSet = new Set(
+      records.map((r) => r.student?._id?.toString()).filter(Boolean),
+    );
+    const absentStudents = [];
+
+    const absentIds = enrolledIds.filter(
+      (id) => !presentIdsSet.has(id.toString()),
+    );
+    if (absentIds.length > 0) {
+      const absentUsers = await User.find({ _id: { $in: absentIds } }).select(
+        "studentId name",
+      );
+      absentUsers.forEach((u) => {
+        const nameStr = u.name
+          ? `${u.name.first || ""} ${u.name.last || ""}`.trim()
+          : "غير معروف";
+        absentStudents.push({
+          _id: u._id,
+          name: nameStr || "غير معروف",
+          studentId: u.studentId || "-",
+          status: "absent",
+        });
+      });
+    }
+
+    const courseName = course.name || "مادة غير معروفة";
+    const hallName = lecture.hall?.name || "قاعة غير معروفة";
+    const docName = lecture.doctor?.name
+      ? `${lecture.doctor.name.first || ""} ${lecture.doctor.name.last || ""}`.trim()
+      : "دكتور غير معروف";
+
+    lecturesData.push({
+      _id: lecture._id,
+      startTime: lecture.startTime,
+      endTime: lecture.endTime,
+      level: lecture.level || course.level,
+      course: {
+        _id: course._id,
+        name: courseName,
+        code: course.code || "-",
+        specialization: specialization ? specialization.name : null,
+      },
+      doctor: {
+        _id: lecture.doctor?._id,
+        name: docName,
+      },
+      hall: {
+        _id: lecture.hall?._id,
+        name: hallName,
+      },
+      stats: {
+        enrolled: enrolledCount,
+        present: presentCount,
+        absent: Math.max(0, enrolledCount - presentCount),
+        percentage:
+          enrolledCount > 0 ? Math.round((presentCount / enrolledCount) * 100) : 0,
+      },
+      presentStudents,
+      absentStudents,
+    });
+  }
+
+  // Convert dept stats map to array
+  const departmentStats = Object.values(deptStatsMap).map((dept) => ({
+    ...dept,
+    attendanceRate:
+      dept.totalEnrolled > 0
+        ? Math.round((dept.presentCount / dept.totalEnrolled) * 100)
+        : 0,
+  }));
+
+  res.status(200).json({
+    success: true,
+    data: {
+      stats: {
+        activeLecturesCount: totalActiveLectures,
+        connectedStudentsCount: activeSessionsCount,
+        occupiedHallsCount,
+        overallAttendanceRate:
+          totalEnrolled > 0
+            ? Math.round((totalPresent / totalEnrolled) * 100)
+            : 0,
+      },
+      departments: departmentStats,
+      lectures: lecturesData,
+    },
+  });
+});
+
+/**
+ * Get course attendance matrix (Digital Paper Sheet)
+ * GET /api/attendance/course/:courseId/matrix
+ */
+exports.getCourseMatrix = catchAsync(async (req, res, next) => {
+  const { courseId } = req.params;
+
+  // 1. Get course and check existence
+  const course = await Course.findById(courseId).populate("students", "studentId name");
+  if (!course) {
+    throw ApiError.notFound("Course not found");
+  }
+
+  // 2. Find unique dates
+  const uniqueDates = await AttendanceRecord.distinct("date", { course: courseId });
+  uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const dateStrings = uniqueDates.map((d) => d.toISOString().split("T")[0]);
+
+  // 3. Find all records for the course
+  const records = await AttendanceRecord.find({ course: courseId });
+
+  // Map records by student and date
+  const studentRecordsMap = {};
+  records.forEach((r) => {
+    const sId = r.student.toString();
+    const dStr = r.date.toISOString().split("T")[0];
+    if (!studentRecordsMap[sId]) {
+      studentRecordsMap[sId] = {};
+    }
+    studentRecordsMap[sId][dStr] = {
+      _id: r._id,
+      status: r.status,
+      presencePercentage: r.presencePercentage,
+    };
+  });
+
+  // 4. Build grid rows
+  const studentRows = [];
+
+  for (const student of course.students) {
+    const sId = student._id.toString();
+    const attendance = {};
+    let presentCount = 0;
+    let absentCount = 0;
+
+    dateStrings.forEach((dStr) => {
+      const rec = studentRecordsMap[sId]?.[dStr];
+      if (rec) {
+        attendance[dStr] = {
+          recordId: rec._id,
+          status: rec.status,
+          presencePercentage: rec.presencePercentage,
+        };
+        if (rec.status === "present" || rec.status === "late") {
+          presentCount++;
+        } else {
+          absentCount++;
+        }
+      } else {
+        attendance[dStr] = {
+          recordId: null,
+          status: "absent",
+          presencePercentage: 0,
+        };
+        absentCount++;
+      }
+    });
+
+    const totalLectures = dateStrings.length;
+    const rate = totalLectures > 0 ? Math.round((presentCount / totalLectures) * 100) : 0;
+    const fullName = student.name
+      ? `${student.name.first || ""} ${student.name.last || ""}`.trim()
+      : "طالب غير معروف";
+
+    studentRows.push({
+      _id: sId,
+      studentId: student.studentId,
+      name: fullName,
+      attendance,
+      stats: {
+        total: totalLectures,
+        present: presentCount,
+        absent: absentCount,
+        rate,
+      },
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      course: {
+        _id: course._id,
+        name: course.name,
+        code: course.code,
+      },
+      dates: dateStrings,
+      students: studentRows,
+    },
+  });
+});
+
+/**
+ * Get student attendance matrix (all courses vs lecture counts)
+ * GET /api/attendance/student/:studentId/matrix
+ */
+exports.getStudentMatrix = catchAsync(async (req, res, next) => {
+  const { studentId } = req.params;
+
+  const student = await User.findById(studentId);
+  if (!student) {
+    throw ApiError.notFound("Student not found");
+  }
+
+  const courses = await Course.find({ students: studentId });
+  const courseMatrixData = [];
+
+  for (const course of courses) {
+    const uniqueDates = await AttendanceRecord.distinct("date", { course: course._id });
+    uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const dateStrings = uniqueDates.map((d) => d.toISOString().split("T")[0]);
+
+    const records = await AttendanceRecord.find({
+      student: studentId,
+      course: course._id,
+    });
+
+    const recordsMap = {};
+    records.forEach((r) => {
+      const dStr = r.date.toISOString().split("T")[0];
+      recordsMap[dStr] = {
+        _id: r._id,
+        status: r.status,
+      };
+    });
+
+    const lectures = dateStrings.map((dStr, idx) => {
+      const rec = recordsMap[dStr];
+      return {
+        lectureNumber: idx + 1,
+        date: dStr,
+        recordId: rec ? rec._id : null,
+        status: rec ? rec.status : "absent",
+      };
+    });
+
+    const total = lectures.length;
+    const present = lectures.filter((l) => l.status === "present" || l.status === "late").length;
+    const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+
+    courseMatrixData.push({
+      course: {
+        _id: course._id,
+        name: course.name,
+        code: course.code,
+      },
+      lectures,
+      stats: {
+        total,
+        present,
+        absent: total - present,
+        rate,
+      },
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      student: {
+        _id: student._id,
+        studentId: student.studentId,
+        name: student.name ? `${student.name.first || ""} ${student.name.last || ""}`.trim() : "غير معروف",
+      },
+      courses: courseMatrixData,
+    },
+  });
+});
+
+/**
+ * Update individual matrix cell
+ * POST /api/attendance/matrix/update
+ */
+exports.updateMatrixCell = catchAsync(async (req, res, next) => {
+  const { studentId, courseId, date, status, reason } = req.body;
+
+  if (!studentId || !courseId || !date || !status) {
+    throw ApiError.badRequest("StudentId, CourseId, Date, and Status are required");
+  }
+
+  if (!["present", "absent", "late", "excused"].includes(status)) {
+    throw ApiError.badRequest("Invalid status");
+  }
+
+  const queryDate = new Date(date);
+  queryDate.setHours(0, 0, 0, 0);
+
+  let record = await AttendanceRecord.findOne({
+    student: studentId,
+    course: courseId,
+    date: queryDate,
+  });
+
+  if (record) {
+    record.status = status;
+    record.isFinalized = true;
+    if (reason) record.modificationReason = reason;
+    record.modifiedBy = req.user._id;
+    record.modifiedAt = new Date();
+    record.presencePercentage = (status === "present" || status === "late") ? 100 : 0;
+    await record.save();
+  } else {
+    const lecture = await Lecture.findOne({ course: courseId });
+
+    record = new AttendanceRecord({
+      student: studentId,
+      course: courseId,
+      lecture: lecture ? lecture._id : new mongoose.Types.ObjectId(),
+      hall: lecture ? lecture.hall : new mongoose.Types.ObjectId(),
+      date: queryDate,
+      status,
+      isFinalized: true,
+      finalizedAt: new Date(),
+      presencePercentage: (status === "present" || status === "late") ? 100 : 0,
+      sessions: [],
+      modificationReason: reason || "تعديل يدوي عبر كشف الحضور الرقمي",
+      modifiedBy: req.user._id,
+      modifiedAt: new Date(),
+    });
+
+    await record.save();
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Attendance status updated successfully",
+    data: record,
+  });
+});
+

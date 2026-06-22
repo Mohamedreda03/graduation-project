@@ -54,10 +54,21 @@ export function useLecturesByDate(date: string) {
   });
 }
 
-export function useWeekSchedule(courseId?: string, hallId?: string) {
+export function useWeekSchedule(
+  filters?: {
+    course?: string;
+    specialization?: string;
+    faculty?: string;
+    department?: string;
+    level?: number;
+    section?: string;
+  },
+  options?: { enabled?: boolean }
+) {
   return useQuery({
-    queryKey: lectureKeys.weekSchedule({ courseId, hallId }),
-    queryFn: () => lecturesService.getWeekSchedule(courseId, hallId),
+    queryKey: lectureKeys.weekSchedule(filters ?? {}),
+    queryFn: () => lecturesService.getWeekSchedule(filters),
+    ...options,
   });
 }
 

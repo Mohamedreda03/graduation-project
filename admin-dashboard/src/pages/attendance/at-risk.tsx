@@ -77,7 +77,7 @@ export function AtRiskStudentsPage() {
       cell: ({ row }) => {
         const rate = row.original.attendanceRate;
         return (
-          <Badge variant={rate < 85 ? "destructive" : "outline"}>
+          <Badge variant={rate < 50 ? "destructive" : "outline"}>
             {rate.toFixed(1)}%
           </Badge>
         );
@@ -118,7 +118,7 @@ export function AtRiskStudentsPage() {
           طلاب معرضون للحرمان
         </h1>
         <p className="text-muted-foreground">
-          الطلاب الذين تقل نسبة حضورهم عن 85% وقد يتعرضون للحرمان من دخول
+          الطلاب الذين تقل نسبة حضورهم عن 50% وقد يتعرضون للحرمان من دخول
           الامتحان
         </p>
       </div>
@@ -133,7 +133,7 @@ export function AtRiskStudentsPage() {
         </CardHeader>
         <CardContent>
           <CardDescription>
-            توضح هذه القائمة الطلاب الذين تقل نسبة حضورهم عن 85% وهم معرضون لخطر
+            توضح هذه القائمة الطلاب الذين تقل نسبة حضورهم عن 50% وهم معرضون لخطر
             الحرمان من دخول الامتحان النهائي. يرجى المتابعة مع هؤلاء الطلاب
             وإخطارهم بضرورة الانتظام في الحضور.
           </CardDescription>

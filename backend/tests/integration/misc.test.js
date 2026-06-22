@@ -39,7 +39,7 @@ describe('Miscellaneous API Integration Tests (Settings, Doctors, AI)', () => {
         .set('Authorization', `Bearer ${adminToken}`);
       
       expect(resList.statusCode).toBe(200);
-      expect(resList.body.data.MIN_PRESENCE_PERCENTAGE.value).toBe(85);
+      expect(resList.body.data.MIN_PRESENCE_PERCENTAGE.value).toBe(50);
     });
 
     it('should update a setting', async () => {

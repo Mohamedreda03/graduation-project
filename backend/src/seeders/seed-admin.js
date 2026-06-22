@@ -28,7 +28,7 @@ const defaultAdmin = {
 const defaultSettings = [
   {
     key: "MIN_PRESENCE_PERCENTAGE",
-    value: 85,
+    value: 50,
     description:
       "Minimum presence percentage required for attendance to be marked as present",
   },

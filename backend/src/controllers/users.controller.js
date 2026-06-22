@@ -88,6 +88,13 @@ exports.getUser = catchAsync(async (req, res, next) => {
  * POST /api/users
  */
 exports.createUser = catchAsync(async (req, res, next) => {
+  // Only super_admin can create admin users
+  if (req.body.role === "admin" || req.body.adminRole) {
+    if (req.user.adminRole !== "super_admin") {
+      throw ApiError.forbidden("Only super_admin can create admin users");
+    }
+  }
+
   const user = await User.create(req.body);
 
   res.status(201).json({
@@ -101,18 +108,33 @@ exports.createUser = catchAsync(async (req, res, next) => {
  * PUT /api/users/:id
  */
 exports.updateUser = catchAsync(async (req, res, next) => {
-  // Don't allow password update through this route
-  delete req.body.password;
+  // Hash password if provided, otherwise remove it
+  if (req.body.password) {
+    const bcrypt = require("bcryptjs");
+    req.body.password = await bcrypt.hash(req.body.password, 12);
+  } else {
+    delete req.body.password;
+  }
   delete req.body.device;
+
+  const userToUpdate = await User.findById(req.params.id);
+  if (!userToUpdate) {
+    throw ApiError.notFound("User not found");
+  }
+
+  const isTargetAdmin = userToUpdate.role === "admin";
+  const isUpdatingToAdmin = req.body.role === "admin" || req.body.adminRole;
+
+  if (isTargetAdmin || isUpdatingToAdmin) {
+    if (req.user.adminRole !== "super_admin") {
+      throw ApiError.forbidden("Only super_admin can modify admin users or roles");
+    }
+  }
 
   const user = await User.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
   });
-
-  if (!user) {
-    throw ApiError.notFound("User not found");
-  }
 
   res.status(200).json({
     success: true,
@@ -125,15 +147,22 @@ exports.updateUser = catchAsync(async (req, res, next) => {
  * DELETE /api/users/:id
  */
 exports.deleteUser = catchAsync(async (req, res, next) => {
+  const userToDelete = await User.findById(req.params.id);
+  if (!userToDelete) {
+    throw ApiError.notFound("User not found");
+  }
+
+  if (userToDelete.role === "admin") {
+    if (req.user.adminRole !== "super_admin") {
+      throw ApiError.forbidden("Only super_admin can deactivate admin users");
+    }
+  }
+
   const user = await User.findByIdAndUpdate(
     req.params.id,
     { isActive: false },
     { new: true },
   );
-
-  if (!user) {
-    throw ApiError.notFound("User not found");
-  }
 
   res.status(200).json({
     success: true,

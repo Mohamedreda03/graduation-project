@@ -228,7 +228,7 @@ export function DashboardPage() {
               طلاب متعثرون
             </CardTitle>
             <CardDescription>
-              تنبيه الحضور: نسبة أقل من 85%
+              تنبيه الحضور: نسبة أقل من 50%
             </CardDescription>
           </CardHeader>
           <CardContent>

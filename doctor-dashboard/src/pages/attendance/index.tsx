@@ -1,447 +1,331 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
-import type { ColumnDef } from "@tanstack/react-table";
-import {
-  ClipboardCheck,
-  Users,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Calendar as CalendarIcon,
-  MoreHorizontal,
-  AlertTriangle,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { DataTable } from "@/components/data-table";
-import { attendanceService } from "@/services/attendance.service";
-import { coursesService } from "@/services/courses.service";
-import { useAuth } from "@/contexts/auth-context";
-import { useUpdateAttendanceStatus } from "@/hooks";
-import type { AttendanceRecord, Course } from "@/types";
+import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
-const statusLabels: Record<string, string> = {
+import {
+  useSpecializations,
+  useCourses,
+  useStudents,
+  useCourseMatrix,
+  useStudentMatrix,
+  useUpdateMatrixCell,
+} from "@/hooks";
+
+import { AttendancePageHeader } from "@/components/attendance/page-header";
+import { AttendanceFilters } from "@/components/attendance/attendance-filters";
+import { CourseMatrixTable } from "@/components/attendance/course-matrix-table";
+import { StudentMatrixTable } from "@/components/attendance/student-matrix-table";
+import {
+  SelectCourseEmptyState,
+  NoStudentsEmptyState,
+  LoadingEmptyState,
+  SelectStudentEmptyState,
+  StudentLoadingEmptyState,
+  NoStudentCoursesEmptyState,
+} from "@/components/attendance/empty-states";
+import { useAuth } from "@/contexts/auth-context";
+
+const statusDetails: Record<string, string> = {
   present: "حاضر",
   absent: "غائب",
   late: "متأخر",
-  excused: "معذور",
-  "in-progress": "جاري",
-};
-
-const statusColors: Record<string, string> = {
-  present: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  absent: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  late: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  excused: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  "in-progress":
-    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-};
-
-// Helper function to get student data
-const getStudentData = (student: AttendanceRecord["student"]) => {
-  if (typeof student === "string" || !student)
-    return { name: "-", studentId: "-", id: "" };
-  const name =
-    typeof student.name === "object"
-      ? `${student.name.first} ${student.name.last}`
-      : student.name || "-";
-  return { name, studentId: student.studentId || "-", id: student._id };
-};
-
-// Helper function to get course name
-const getCourseName = (course: AttendanceRecord["course"]) => {
-  if (typeof course === "string" || !course) return "-";
-  return course.name || "-";
+  excused: "عذر",
 };
 
 export function AttendancePage() {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedCourse, setSelectedCourse] = useState(
-    searchParams.get("course") || "",
-  );
-  const [selectedStatus, setSelectedStatus] = useState(
-    searchParams.get("status") || "",
-  );
-  const [selectedDate, setSelectedDate] = useState(
-    searchParams.get("date") || "",
-  );
-  const studentFilter = searchParams.get("student") || "";
 
-  const updateStatusMutation = useUpdateAttendanceStatus();
+  // Master View Mode: 'course' | 'student'
+  const [viewMode, setViewMode] = useState<"course" | "student">("course");
 
-  // Get my courses
-  const { data: coursesData } = useQuery({
-    queryKey: ["my-courses", user?._id],
-    queryFn: () => coursesService.getAll({ doctor: user?._id }),
-    enabled: !!user?._id,
+  // Course Matrix Filters State
+  const [selectedDept, setSelectedDept] = useState<string>("all");
+  const [selectedLevel, setSelectedLevel] = useState<string>("all");
+  const [selectedCourse, setSelectedCourse] = useState<string>("all");
+  const [selectedLectureDate, setSelectedLectureDate] = useState<string>("all");
+
+  // Student Matrix Filters State
+  const [studentSearch, setStudentSearch] = useState("");
+  const [debouncedStudentSearch, setDebouncedStudentSearch] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedStudentSearch(studentSearch);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [studentSearch]);
+
+  // Queries
+  const { data: specializations } = useSpecializations();
+  
+  // Get ONLY my courses (where I am the doctor)
+  const { data: coursesData } = useCourses({ 
+    doctor: user?._id || undefined,
+    limit: 100 
   });
 
-  const myCourses = coursesData?.data || [];
-
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-
-  // Get attendance records with pagination
-  const { data: attendanceData, isLoading } = useQuery({
-    queryKey: [
-      "attendance",
-      selectedCourse,
-      selectedStatus,
-      selectedDate,
-      studentFilter,
-      page,
-      limit,
-    ],
-    queryFn: () =>
-      attendanceService.getAll({
-        course: selectedCourse || undefined,
-        status: selectedStatus || undefined,
-        date: selectedDate || undefined,
-        student: studentFilter || undefined,
-        page,
-        limit,
-      }),
+  const { data: studentsData } = useStudents({
+    search: debouncedStudentSearch || undefined,
+    specialization: selectedDept !== "all" ? selectedDept : undefined,
+    level: selectedLevel !== "all" ? Number(selectedLevel) : undefined,
+    limit: 50,
   });
 
-  const records: AttendanceRecord[] = attendanceData?.data || [];
-  const pagination = attendanceData?.pagination || { total: 0, pages: 0 };
+  const { data: courseMatrix, isLoading: courseMatrixLoading } = useCourseMatrix(
+    viewMode === "course" && selectedCourse !== "all" ? selectedCourse : ""
+  );
+  const { data: studentMatrix, isLoading: studentMatrixLoading } = useStudentMatrix(
+    viewMode === "student" && selectedStudentId ? selectedStudentId : ""
+  );
 
-  // Calculate stats
-  const stats = {
-    total: records.length,
-    present: records.filter((r) => r.status === "present").length,
-    absent: records.filter((r) => r.status === "absent").length,
-    late: records.filter((r) => r.status === "late").length,
-  };
+  const updateMatrixCellMutation = useUpdateMatrixCell();
 
-  const handleCourseChange = (value: string) => {
-    const val = value === "all" ? "" : value;
-    setSelectedCourse(val);
-    setPage(1);
-    if (value === "all") {
-      searchParams.delete("course");
-    } else {
-      searchParams.set("course", value);
+  // Filters calculations
+  const deptsList = specializations || [];
+  const allCourses = coursesData?.data || [];
+
+  const filteredCourses = allCourses.filter((course: any) => {
+    if (
+      selectedDept !== "all" &&
+      course.specialization?._id !== selectedDept &&
+      course.specialization !== selectedDept
+    ) {
+      return false;
     }
-    setSearchParams(searchParams);
-  };
-
-  const handleStatusChange = (value: string) => {
-    const val = value === "all" ? "" : value;
-    setSelectedStatus(val);
-    setPage(1);
-    if (value === "all") {
-      searchParams.delete("status");
-    } else {
-      searchParams.set("status", value);
+    if (selectedLevel !== "all" && String(course.level) !== selectedLevel) {
+      return false;
     }
-    setSearchParams(searchParams);
-  };
+    return true;
+  });
 
-  const handleDateChange = (value: string) => {
-    setSelectedDate(value);
-    setPage(1);
-    if (!value) {
-      searchParams.delete("date");
-    } else {
-      searchParams.set("date", value);
+  // Reset course selection if it is filtered out
+  useEffect(() => {
+    if (
+      selectedCourse !== "all" &&
+      !filteredCourses.some((c) => c._id === selectedCourse)
+    ) {
+      setSelectedCourse("all");
     }
-    setSearchParams(searchParams);
-  };
+  }, [selectedDept, selectedLevel, filteredCourses]);
 
-  const onUpdateStatus = (
-    id: string,
-    status: "present" | "absent" | "late" | "excused",
+  // Reset lecture date selection when course changes
+  useEffect(() => {
+    setSelectedLectureDate("all");
+  }, [selectedCourse]);
+
+  // Reset selected student and search query when department or level filters change
+  useEffect(() => {
+    setSelectedStudentId(null);
+    setStudentSearch("");
+  }, [selectedDept, selectedLevel]);
+
+  // Auto-select first student if available and none selected
+  const studentsList = studentsData?.data || [];
+  useEffect(() => {
+    if (viewMode === "student" && studentsList.length > 0 && !selectedStudentId) {
+      setSelectedStudentId(studentsList[0]._id);
+    }
+  }, [studentsList, viewMode]);
+
+  // Cell status change action
+  const handleMatrixCellChange = async (
+    studentId: string,
+    courseId: string,
+    date: string,
+    newStatus: "present" | "absent" | "late" | "excused"
   ) => {
-    updateStatusMutation.mutate({ id, status });
+    await updateMatrixCellMutation.mutateAsync({
+      studentId,
+      courseId,
+      date,
+      status: newStatus,
+      reason: "تعديل مباشر من كشف الحضور الرقمي للأستاذ",
+    });
   };
 
-  // Define columns for DataTable
-  const columns: ColumnDef<AttendanceRecord>[] = [
-    {
-      accessorKey: "student",
-      header: "الطالب",
-      cell: ({ row }) => {
-        const { name } = getStudentData(row.original.student);
-        return <span className="font-medium">{name}</span>;
-      },
-    },
-    {
-      accessorKey: "studentId",
-      header: "رقم الطالب",
-      cell: ({ row }) => {
-        const { studentId } = getStudentData(row.original.student);
-        return studentId;
-      },
-    },
-    {
-      accessorKey: "course",
-      header: "المادة",
-      cell: ({ row }) => getCourseName(row.original.course),
-    },
-    {
-      accessorKey: "date",
-      header: "التاريخ",
-      cell: ({ row }) =>
-        row.original.date
-          ? new Date(row.original.date).toLocaleDateString("ar-EG")
-          : "-",
-    },
-    {
-      accessorKey: "status",
-      header: "الحالة",
-      cell: ({ row }) => (
-        <Badge className={statusColors[row.original.status] || ""}>
-          {statusLabels[row.original.status] || row.original.status}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: "checkInTime",
-      header: "وقت الدخول",
-      cell: ({ row }) => {
-        // Try to get check-in time from sessions array
-        const sessions = row.original.sessions;
-        if (sessions && sessions.length > 0 && sessions[0].checkIn) {
-          return new Date(sessions[0].checkIn).toLocaleTimeString("ar-EG", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
+  // Export Course Matrix to Excel
+  const handleExportCourseExcel = () => {
+    if (!courseMatrix || courseMatrix.students.length === 0) {
+      toast.error("لا توجد بيانات لتصديرها");
+      return;
+    }
+
+    const { dates, students: rows } = courseMatrix;
+    const data: any[] = [];
+    const statusDetailsMapping: Record<string, string> = {
+      present: "حاضر",
+      absent: "غائب",
+      late: "متأخر",
+      excused: "عذر",
+    };
+
+    const headers = [
+      "رقم الطالب",
+      "اسم الطالب",
+      ...dates.map((d: string) => d),
+      "إجمالي الحضور",
+      "إجمالي الغياب",
+      "نسبة الحضور",
+    ];
+    data.push(headers);
+
+    rows.forEach((student: any) => {
+      const studentRow = [
+        student.studentId,
+        student.name,
+        ...dates.map((d: string) => {
+          const status = student.attendance[d]?.status || "absent";
+          return statusDetailsMapping[status] || "غائب";
+        }),
+        student.stats.present,
+        student.stats.absent,
+        `${student.stats.rate}%`,
+      ];
+      data.push(studentRow);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "كشف حضور المادة");
+    XLSX.writeFile(workbook, `كشف_حضور_${courseMatrix.course.code || "المادة"}.xlsx`);
+    toast.success("تم تصدير ملف الكشف بنجاح");
+  };
+
+  // Export Student Matrix to Excel
+  const handleExportStudentExcel = () => {
+    if (!studentMatrix || studentMatrix.courses.length === 0) {
+      toast.error("لا توجد بيانات لتصديرها");
+      return;
+    }
+
+    const { courses: rows, student } = studentMatrix;
+    const data: any[] = [];
+
+    const maxLectures = Math.max(1, ...rows.map((r: any) => r.lectures.length));
+
+    const headers = [
+      "كود المادة",
+      "المادة الدراسية",
+      ...Array.from({ length: maxLectures }).map((_, i) => `محاضرة ${i + 1}`),
+      "حاضر",
+      "غائب",
+      "نسبة الحضور",
+    ];
+    data.push(headers);
+
+    rows.forEach((rowItem: any) => {
+      const rowData = [
+        rowItem.course.code,
+        rowItem.course.name,
+        ...Array.from({ length: maxLectures }).map((_, idx) => {
+          const lec = rowItem.lectures[idx];
+          if (!lec) return "—";
+          const dateObj = new Date(lec.date);
+          const formatted = dateObj.toLocaleDateString("en-US", {
+            month: "2-digit",
+            day: "2-digit",
           });
-        }
-        return "-";
-      },
-    },
-    {
-      accessorKey: "presencePercentage",
-      header: "نسبة الحضور",
-      cell: ({ row }) =>
-        row.original.presencePercentage !== undefined
-          ? `${row.original.presencePercentage.toFixed(0)}%`
-          : "-",
-    },
-    {
-      id: "actions",
-      header: "تعديل الحالة",
-      cell: ({ row }) => {
-        const record = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => onUpdateStatus(record._id, "present")}
-              >
-                <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
-                تحديد كحاضر
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onUpdateStatus(record._id, "absent")}
-              >
-                <XCircle className="ml-2 h-4 w-4 text-red-600" />
-                تحديد كغائب
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onUpdateStatus(record._id, "late")}
-              >
-                <Clock className="ml-2 h-4 w-4 text-yellow-600" />
-                تحديد كمتأخر
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onUpdateStatus(record._id, "excused")}
-              >
-                <AlertTriangle className="ml-2 h-4 w-4 text-blue-600" />
-                تحديد كمعذور
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
+          return `${statusDetails[lec.status] || "غائب"} (${formatted})`;
+        }),
+        rowItem.stats.present,
+        rowItem.stats.absent,
+        `${rowItem.stats.rate}%`,
+      ];
+      data.push(rowData);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "غياب الطالب الشامل");
+    XLSX.writeFile(workbook, `كشف_غياب_الطالب_${student.studentId}.xlsx`);
+    toast.success("تم تصدير ملف الطالب بنجاح");
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">سجلات الحضور</h1>
-        <p className="text-muted-foreground mt-1">
-          متابعة حضور الطلاب في محاضراتك
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              إجمالي السجلات
-            </CardTitle>
-            <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">سجل حضور</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">حضور</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {stats.present}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0
-                ? `${((stats.present / stats.total) * 100).toFixed(1)}%`
-                : "0%"}{" "}
-              من الإجمالي
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">غياب</CardTitle>
-            <XCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {stats.absent}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0
-                ? `${((stats.absent / stats.total) * 100).toFixed(1)}%`
-                : "0%"}{" "}
-              من الإجمالي
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">تأخير</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {stats.late}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0
-                ? `${((stats.late / stats.total) * 100).toFixed(1)}%`
-                : "0%"}{" "}
-              من الإجمالي
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="space-y-4 text-right" dir="rtl">
+      {/* Page Header */}
+      <AttendancePageHeader
+        viewMode={viewMode}
+        courseMatrix={courseMatrix}
+        studentMatrix={studentMatrix}
+        onExportCourse={handleExportCourseExcel}
+        onExportStudent={handleExportStudentExcel}
+      />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-2xl border shadow-sm">
-        <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground ml-2">
-          <span>تصفية حسب:</span>
-        </div>
+      <AttendanceFilters
+        viewMode={viewMode}
+        onViewModeChange={(mode) => {
+          setViewMode(mode);
+          setStudentSearch("");
+        }}
+        selectedDept={selectedDept}
+        onDeptChange={setSelectedDept}
+        selectedLevel={selectedLevel}
+        onLevelChange={setSelectedLevel}
+        selectedCourse={selectedCourse}
+        onCourseChange={setSelectedCourse}
+        studentSearch={studentSearch}
+        onStudentSearchChange={setStudentSearch}
+        deptsList={deptsList}
+        filteredCourses={filteredCourses}
+        studentsList={studentsList}
+        onSelectStudent={(studentId, studentName, studentIdNum) => {
+          setViewMode("student");
+          setSelectedStudentId(studentId);
+          setStudentSearch(studentIdNum); // Use ID number so they are easily found in the sidebar
+        }}
+        selectedLectureDate={selectedLectureDate}
+        onLectureDateChange={setSelectedLectureDate}
+        lectureDates={courseMatrix?.dates || []}
+      />
 
-        <div className="min-w-[200px]">
-          <Select
-            value={selectedCourse || "all"}
-            onValueChange={handleCourseChange}
-          >
-            <SelectTrigger className="w-[200px] rounded-xl border-muted bg-background">
-              <SelectValue placeholder="المادة الدراسية" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">جميع المواد</SelectItem>
-              {myCourses.map((course: Course) => (
-                <SelectItem key={course._id} value={course._id}>
-                  {course.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="min-w-[180px]">
-          <div className="relative">
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => handleDateChange(e.target.value)}
-              className="w-[180px] rounded-xl border-muted bg-background pl-8"
+      {/* CASE 1: Course Matrix View */}
+      {viewMode === "course" && (
+        <>
+          {selectedCourse === "all" ? (
+            <SelectCourseEmptyState />
+          ) : courseMatrixLoading ? (
+            <LoadingEmptyState message="جاري تحميل كشف المناداة..." />
+          ) : courseMatrix && courseMatrix.students.length === 0 ? (
+            <NoStudentsEmptyState />
+          ) : courseMatrix ? (
+            <CourseMatrixTable
+              courseMatrix={courseMatrix}
+              studentSearch={studentSearch}
+              selectedCourse={selectedCourse}
+              onCellChange={handleMatrixCellChange}
+              onSwitchToStudent={(studentId, studentName) => {
+                setViewMode("student");
+                setSelectedStudentId(studentId);
+                setStudentSearch(studentName);
+              }}
+              selectedLectureDate={selectedLectureDate}
             />
-            <CalendarIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          </div>
-        </div>
+          ) : null}
+        </>
+      )}
 
-        <div className="min-w-[160px]">
-          <Select
-            value={selectedStatus || "all"}
-            onValueChange={handleStatusChange}
-          >
-            <SelectTrigger className="w-[160px] rounded-xl border-muted bg-background">
-              <SelectValue placeholder="الحالة" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">الكل</SelectItem>
-              <SelectItem value="present">حاضر</SelectItem>
-              <SelectItem value="absent">غائب</SelectItem>
-              <SelectItem value="late">متأخر</SelectItem>
-              <SelectItem value="excused">معذور</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* CASE 2: Student Matrix View */}
+      {viewMode === "student" && (
+        <div className="w-full">
+          {!selectedStudentId ? (
+            <SelectStudentEmptyState />
+          ) : studentMatrixLoading ? (
+            <StudentLoadingEmptyState />
+          ) : studentMatrix && studentMatrix.courses.length === 0 ? (
+            <NoStudentCoursesEmptyState />
+          ) : studentMatrix ? (
+            <StudentMatrixTable
+              studentMatrix={studentMatrix}
+              selectedCourse={selectedCourse}
+              onCellChange={handleMatrixCellChange}
+            />
+          ) : null}
         </div>
-      </div>
-
-      {/* Records Table with Pagination */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            سجلات الحضور
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={records}
-            isLoading={isLoading}
-            searchKey="student"
-            searchPlaceholder="بحث بالاسم..."
-            pageSize={limit}
-            pageIndex={page - 1}
-            pageCount={pagination.pages}
-            totalCount={pagination.total}
-            onPageChange={(idx) => setPage(idx + 1)}
-            onPageSizeChange={setLimit}
-            manualPagination={true}
-          />
-        </CardContent>
-      </Card>
+      )}
     </div>
   );
 }

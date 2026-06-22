@@ -49,10 +49,10 @@ export function useAttendanceById(id: string) {
   });
 }
 
-export function useAttendanceByLecture(lectureId: string) {
+export function useAttendanceByLecture(lectureId: string, date?: string) {
   return useQuery({
-    queryKey: attendanceKeys.byLecture(lectureId),
-    queryFn: () => attendanceService.getByLecture(lectureId),
+    queryKey: [...attendanceKeys.byLecture(lectureId), date],
+    queryFn: () => attendanceService.getByLecture(lectureId, date),
     enabled: !!lectureId,
   });
 }
@@ -167,6 +167,52 @@ export function useExportAttendanceReport() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "حدث خطأ أثناء تصدير التقرير");
+    },
+  });
+}
+
+export function useLiveMonitoring() {
+  return useQuery({
+    queryKey: ["attendance", "live-monitoring"],
+    queryFn: () => attendanceService.getLiveMonitoring(),
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time monitoring
+  });
+}
+
+export function useCourseMatrix(courseId: string) {
+  return useQuery({
+    queryKey: ["attendance", "course-matrix", courseId],
+    queryFn: () => attendanceService.getCourseMatrix(courseId),
+    enabled: !!courseId && courseId !== "all",
+  });
+}
+
+export function useStudentMatrix(studentId: string) {
+  return useQuery({
+    queryKey: ["attendance", "student-matrix", studentId],
+    queryFn: () => attendanceService.getStudentMatrix(studentId),
+    enabled: !!studentId,
+  });
+}
+
+export function useUpdateMatrixCell() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      studentId: string;
+      courseId: string;
+      date: string;
+      status: "present" | "absent" | "late" | "excused";
+      reason?: string;
+    }) => attendanceService.updateMatrixCell(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", "course-matrix", variables.courseId] });
+      queryClient.invalidateQueries({ queryKey: ["attendance", "student-matrix", variables.studentId] });
+      toast.success("تم تحديث حالة الحضور في الكشف");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "حدث خطأ أثناء تعديل الحضور");
     },
   });
 }

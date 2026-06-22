@@ -224,6 +224,7 @@ async function handleConnect(student, hall, macAddress, connectionLog) {
           date: getTodayDate(),
           status: ATTENDANCE_STATUS.IN_PROGRESS,
           sessions: [{ checkIn: now }],
+          lectureStartTime: activeLecture.actualStartTime,
         });
         console.log(
           "[ATTENDANCE] ✅ Created NEW attendance record:",
@@ -233,6 +234,9 @@ async function handleConnect(student, hall, macAddress, connectionLog) {
         // Re-open the record if student comes back
         attendanceRecord.status = ATTENDANCE_STATUS.IN_PROGRESS;
         attendanceRecord.sessions.push({ checkIn: now });
+        if (!attendanceRecord.lectureStartTime && activeLecture.actualStartTime) {
+          attendanceRecord.lectureStartTime = activeLecture.actualStartTime;
+        }
         await attendanceRecord.save();
         console.log(
           "[ATTENDANCE] ✅ Re-opened attendance record:",
@@ -355,7 +359,7 @@ exports.getConnectionLogs = catchAsync(async (req, res, next) => {
 
   if (eventType) query.eventType = eventType;
   if (macAddress) query.macAddress = macAddress;
-  if (hallId) query["accessPoint.hall"] = hallId;
+  if (hallId) query.hall = hallId;
 
   if (startDate || endDate) {
     query.timestamp = {};
@@ -366,7 +370,7 @@ exports.getConnectionLogs = catchAsync(async (req, res, next) => {
   const total = await ConnectionLog.countDocuments(query);
   const logs = await ConnectionLog.find(query)
     .populate("student", "studentId name")
-    .populate("accessPoint.hall", "name")
+    .populate("hall", "name")
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
     .sort({ timestamp: -1 });
@@ -385,7 +389,7 @@ exports.getHallConnectionLogs = catchAsync(async (req, res, next) => {
   const { hallId } = req.params;
   const { page = 1, limit = 50, date } = req.query;
 
-  const query = { "accessPoint.hall": hallId };
+  const query = { hall: hallId };
 
   if (date) {
     const startDate = new Date(date);
@@ -398,6 +402,7 @@ exports.getHallConnectionLogs = catchAsync(async (req, res, next) => {
   const total = await ConnectionLog.countDocuments(query);
   const logs = await ConnectionLog.find(query)
     .populate("student", "studentId name")
+    .populate("hall", "name")
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
     .sort({ timestamp: -1 });
@@ -436,7 +441,7 @@ exports.reprocessLog = catchAsync(async (req, res, next) => {
   }
 
   // Find hall
-  const hall = await Hall.findById(log.accessPoint.hall);
+  const hall = await Hall.findById(log.hall);
   if (!hall) {
     return next(new ApiError("Hall not found", 404));
   }

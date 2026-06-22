@@ -38,7 +38,7 @@ const connectionLogSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    matchedStudent: {
+    student: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },

@@ -195,6 +195,10 @@ export interface Lecture {
   specialization?: string;
   isActive: boolean;
   createdAt: string;
+  presentStudents?: any[];
+  absentStudents?: any[];
+  actualStartTime?: string;
+  actualEndTime?: string;
 }
 
 export interface CreateLectureRequest {

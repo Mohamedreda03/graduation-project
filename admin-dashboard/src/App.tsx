@@ -32,10 +32,11 @@ import { LectureSchedulePage } from "@/pages/lectures/schedule";
 import { TodayLecturesPage } from "@/pages/lectures/today";
 import { AttendancePage } from "@/pages/attendance";
 import { LiveAttendancePage } from "@/pages/attendance/live";
-import { AnnualAttendancePage } from "@/pages/attendance/annual";
 import { AtRiskStudentsPage } from "@/pages/attendance/at-risk";
 import { AttendanceReportsPage } from "@/pages/attendance/reports";
+import { AttendanceMonitoringPage } from "@/pages/attendance/monitoring";
 import { SettingsPage } from "@/pages/settings";
+import { EmployeesPage, EmployeeFormPage } from "@/pages/employees";
 import AIChatPage from "@/pages/ai-chat";
 
 const queryClient = new QueryClient({
@@ -90,6 +91,11 @@ function App() {
 
                     {/* Settings */}
                     <Route path="/settings" element={<SettingsPage />} />
+
+                    {/* Employees */}
+                    <Route path="/employees" element={<EmployeesPage />} />
+                    <Route path="/employees/new" element={<EmployeeFormPage />} />
+                    <Route path="/employees/:id/edit" element={<EmployeeFormPage />} />
                   </Route>
 
                   {/* Student Affairs & Super Admin */}
@@ -128,9 +134,13 @@ function App() {
                   <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "dean", "student_affairs", "head_of_department"]} />}>
                     <Route path="/attendance" element={<AttendancePage />} />
                     <Route path="/attendance/live" element={<LiveAttendancePage />} />
-                    <Route path="/attendance/annual" element={<AnnualAttendancePage />} />
                     <Route path="/attendance/at-risk" element={<AtRiskStudentsPage />} />
                     <Route path="/attendance/reports" element={<AttendanceReportsPage />} />
+                  </Route>
+
+                  {/* Dean and Super Admin Only - Comprehensive Monitoring */}
+                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "dean"]} />}>
+                    <Route path="/attendance/monitoring" element={<AttendanceMonitoringPage />} />
                   </Route>
 
                   {/* AI Chat */}

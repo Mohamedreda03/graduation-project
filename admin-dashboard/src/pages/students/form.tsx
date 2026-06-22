@@ -53,7 +53,8 @@ const formSchema = z.object({
     .optional()
     .or(z.literal("")),
   studentId: z.string().min(1, "الرقم الأكاديمي مطلوب"),
-  specialization: z.string().min(1, "التخصص مطلوب"),
+  specialization: z.string().optional().or(z.literal("")),
+  department: z.string().optional().or(z.literal("")),
   level: z.number().min(1).max(5),
   phone: z.string().optional(),
   macAddress: z.string().optional(),
@@ -79,7 +80,8 @@ export function StudentFormPage() {
       email: "",
       password: "",
       studentId: "",
-      specialization: "",
+      specialization: "none",
+      department: "none",
       level: 1,
       phone: "",
       macAddress: "",
@@ -107,7 +109,8 @@ export function StudentFormPage() {
         specialization:
           typeof student.academicInfo?.specialization === "object"
             ? student.academicInfo.specialization._id
-            : student.academicInfo?.specialization || "",
+            : student.academicInfo?.specialization || "none",
+        department: student.academicInfo?.department || "none",
         level: student.academicInfo?.level || 1,
         phone: student.phone || "",
         macAddress: student.device?.macAddress || "",
@@ -128,7 +131,8 @@ export function StudentFormPage() {
         studentId: values.studentId,
         phone: values.phone || undefined,
         academicInfo: {
-          specialization: values.specialization,
+          specialization: (values.specialization && values.specialization !== "none") ? values.specialization : undefined,
+          department: (values.department && values.department !== "none") ? values.department : undefined,
           level: values.level,
         },
         device: values.macAddress
@@ -152,6 +156,11 @@ export function StudentFormPage() {
   };
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
+
+  const selectedSpecializationId = form.watch("specialization");
+  const selectedSpecializationObj = specializationsData?.find((s: any) => s._id === selectedSpecializationId);
+  const departmentsStr = selectedSpecializationObj?.faculty || "";
+  const departmentsList = departmentsStr ? departmentsStr.split(/[،,]/).map((t: string) => t.trim()).filter(Boolean) : [];
 
   if (isEditing && studentLoading) {
     return (
@@ -334,7 +343,7 @@ export function StudentFormPage() {
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 text-sm">
                           <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                          التخصص / القسم
+                          الكلية
                         </FormLabel>
                         <Select
                           key={`dept-${field.value}-${specializationsData?.length ?? 0}`}
@@ -343,15 +352,53 @@ export function StudentFormPage() {
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-10">
+                            <SelectTrigger className="h-10 w-full">
                               <SelectValue placeholder="اختر التخصص" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="none" className="text-right font-medium">بدون تخصص / عام (اختياري)</SelectItem>
                             {specializationsData?.map(
                               (dept: { _id: string; name: string }) => (
-                                <SelectItem key={dept._id} value={dept._id}>
+                                <SelectItem key={dept._id} value={dept._id} className="text-right">
                                   {dept.name}
+                                </SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Layers className="h-3.5 w-3.5 text-primary" />
+                          القسم
+                        </FormLabel>
+                        <Select
+                          key={`dept-field-${field.value}-${departmentsList.length}`}
+                          dir="rtl"
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={!selectedSpecializationId || selectedSpecializationId === "none" || departmentsList.length === 0}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-10 w-full">
+                              <SelectValue placeholder={departmentsList.length === 0 ? "لا يوجد أقسام متاحة" : "اختر القسم"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none" className="text-right font-medium">بدون قسم عام (اختياري)</SelectItem>
+                            {departmentsList.map(
+                              (dept: string, index: number) => (
+                                <SelectItem key={index} value={dept} className="text-right">
+                                  {dept}
                                 </SelectItem>
                               ),
                             )}
@@ -378,7 +425,7 @@ export function StudentFormPage() {
                           value={field.value?.toString()}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-10">
+                            <SelectTrigger className="h-10 w-full">
                               <SelectValue placeholder="اختر الفرقة" />
                             </SelectTrigger>
                           </FormControl>

@@ -221,7 +221,7 @@ const AIChatPageContent: React.FC = () => {
                   )}
                 >
                   <div className="text-[10px] font-medium text-muted-foreground/50">
-                    {msg.timestamp.toLocaleTimeString("ar-EG", {
+                    {msg.timestamp.toLocaleTimeString("en-US", {
                       hour: "2-digit",
                       minute: "2-digit",
                       hour12: true,

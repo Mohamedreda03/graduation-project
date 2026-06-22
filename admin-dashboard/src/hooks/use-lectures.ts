@@ -59,6 +59,7 @@ export function useWeekSchedule(
     course?: string;
     specialization?: string;
     faculty?: string;
+    department?: string;
     level?: number;
     section?: string;
   },

@@ -40,7 +40,7 @@ export function SettingsPage() {
     defaultValues: {
       academicYear: "2024-2025",
       currentSemester: 1,
-      attendanceThreshold: 85,
+      attendanceThreshold: 50,
       lateThresholdMinutes: 15,
       sessionTimeoutMinutes: 30,
       maxDevicesPerStudent: 1,
@@ -57,7 +57,7 @@ export function SettingsPage() {
       form.reset({
         academicYear: getValue("academicYear", "2024-2025"),
         currentSemester: getValue("currentSemester", 1),
-        attendanceThreshold: getValue("attendanceThreshold", 85),
+        attendanceThreshold: getValue("attendanceThreshold", 50),
         lateThresholdMinutes: getValue("lateThresholdMinutes", 15),
         sessionTimeoutMinutes: getValue("sessionTimeoutMinutes", 30),
         maxDevicesPerStudent: getValue("maxDevicesPerStudent", 1),

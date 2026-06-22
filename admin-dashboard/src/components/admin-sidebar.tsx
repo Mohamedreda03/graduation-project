@@ -13,6 +13,7 @@ import {
   Wifi,
   UserCog,
   Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -46,6 +47,22 @@ const navMainItems: NavItem[] = [
     icon: LayoutDashboard,
     isActive: true,
     allowedAdminRoles: ["super_admin", "dean", "student_affairs", "head_of_department"],
+  },
+  {
+    title: "الموظفون والصلاحيات",
+    url: "/employees",
+    icon: ShieldCheck,
+    allowedAdminRoles: ["super_admin"],
+    items: [
+      {
+        title: "جميع الموظفين",
+        url: "/employees",
+      },
+      {
+        title: "إضافة موظف",
+        url: "/employees/new",
+      },
+    ],
   },
   {
     title: "الكليات",
@@ -179,17 +196,18 @@ const navMainItems: NavItem[] = [
         url: "/attendance/live",
       },
       {
-        title: "السجل السنوي",
-        url: "/attendance/annual",
-      },
-      {
         title: "طلاب متعثرون",
         url: "/attendance/at-risk",
+      },
+      {
+        title: "🔍 المتابعة الشاملة",
+        url: "/attendance/monitoring",
+        allowedAdminRoles: ["super_admin", "dean"],
       },
     ],
   },
   {
-    title: "المساعد الذكي",
+    title: "المساعد الأكاديمي",
     url: "/ai-chat",
     icon: Sparkles,
   },
@@ -263,11 +281,11 @@ export function AdminSidebar({
                   <GraduationCap className="size-6" />
                 </div>
                 <div className="grid flex-1 text-right leading-tight group-data-[state=collapsed]:hidden">
-                  <span className="truncate text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                    حضور
+                  <span className="truncate text-xs font-black text-foreground font-sans">
+                    MAC-Based Automated
                   </span>
-                  <span className="truncate text-xs text-muted-foreground font-medium">
-                    لوحة تحكم الإدارة
+                  <span className="truncate text-[10px] text-muted-foreground font-semibold">
+                    Attendance System
                   </span>
                 </div>
               </Link>

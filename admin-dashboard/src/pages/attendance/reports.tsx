@@ -99,7 +99,7 @@ export function AttendanceReportsPage() {
   // Format weekly data for Recharts
   const weeklyChartData = weeklySummaryData?.dailyData?.map((day: any) => {
     const dateObj = new Date(day.date);
-    const dayName = new Intl.DateTimeFormat("ar-EG", { weekday: "short" }).format(dateObj);
+    const dayName = new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(dateObj);
     return {
       name: dayName,
       حاضر: day.present,
@@ -437,9 +437,9 @@ export function AttendanceReportsPage() {
                             <div className="flex items-center gap-2">
                               <span
                                 className={`font-bold ${
-                                  (stats.attendanceRate || 0) < 75
+                                  (stats.attendanceRate || 0) < 50
                                     ? "text-red-500"
-                                    : (stats.attendanceRate || 0) < 85
+                                    : (stats.attendanceRate || 0) < 60
                                     ? "text-yellow-500"
                                     : "text-green-500"
                                 }`}
@@ -449,9 +449,9 @@ export function AttendanceReportsPage() {
                               <Progress
                                 value={stats.attendanceRate || 0}
                                 className={`w-16 h-2 bg-muted ${
-                                  (stats.attendanceRate || 0) < 75
+                                  (stats.attendanceRate || 0) < 50
                                     ? "[&>div]:bg-red-500"
-                                    : (stats.attendanceRate || 0) < 85
+                                    : (stats.attendanceRate || 0) < 60
                                     ? "[&>div]:bg-yellow-500"
                                     : "[&>div]:bg-green-500"
                                 }`}

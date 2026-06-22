@@ -19,6 +19,12 @@ const courseSchema = new mongoose.Schema(
       ref: "Specialization",
       required: [true, "Specialization is required"],
     },
+    departments: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     doctor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -1,4 +1,4 @@
-﻿export * from "./auth.service";
+export * from "./auth.service";
 export * from "./specializations.service";
 export * from "./halls.service";
 export * from "./students.service";
@@ -8,5 +8,7 @@ export * from "./lectures.service";
 export * from "./attendance.service";
 export * from "./settings.service";
 export * from "./dashboard.service";
+export * from "./connections.service";
+export * from "./users.service";
 export { default as aiService } from "./ai.service";
 export type { ChatMessage, ChatResponse } from "./ai.service";

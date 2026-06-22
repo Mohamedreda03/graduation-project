@@ -149,7 +149,7 @@ const baseOptions = {
               },
             },
             totalPresenceTime: { type: "integer", description: "Total time in minutes" },
-            presencePercentage: { type: "number", example: 85.5 },
+            presencePercentage: { type: "number", example: 50.0 },
             isFinalized: { type: "boolean" },
           },
         },
@@ -178,7 +178,7 @@ const baseOptions = {
           type: "object",
           properties: {
             key: { type: "string", example: "MIN_PRESENCE_PERCENTAGE" },
-            value: { type: "number", example: 85 },
+            value: { type: "number", example: 50 },
             description: { type: "string" },
           },
         },

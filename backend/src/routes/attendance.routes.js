@@ -263,6 +263,21 @@ router.get(
 
 /**
  * @swagger
+ * /attendance/live-monitoring:
+ *   get:
+ *     summary: Get live attendance monitoring data
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get(
+  "/live-monitoring",
+  adminOrDoctor,
+  attendanceController.getLiveMonitoring,
+);
+
+/**
+ * @swagger
  * /attendance/daily-summary:
  *   get:
  *     summary: Get daily attendance summary
@@ -289,6 +304,51 @@ router.get(
   "/weekly-summary",
   adminOrDoctor,
   attendanceController.getWeeklySummary,
+);
+
+/**
+ * @swagger
+ * /attendance/course/{courseId}/matrix:
+ *   get:
+ *     summary: Get course attendance matrix (Digital Paper Sheet)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get(
+  "/course/:courseId/matrix",
+  adminOrDoctor,
+  attendanceController.getCourseMatrix,
+);
+
+/**
+ * @swagger
+ * /attendance/student/{studentId}/matrix:
+ *   get:
+ *     summary: Get student attendance matrix (all courses vs lecture counts)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get(
+  "/student/:studentId/matrix",
+  adminOrDoctor,
+  attendanceController.getStudentMatrix,
+);
+
+/**
+ * @swagger
+ * /attendance/matrix/update:
+ *   post:
+ *     summary: Update individual matrix cell
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post(
+  "/matrix/update",
+  adminOrDoctor,
+  attendanceController.updateMatrixCell,
 );
 
 /**

@@ -32,6 +32,7 @@ export const studentsService = {
     level?: number;
     page?: number;
     limit?: number;
+    search?: string;
   }): Promise<PaginatedResponse<Student>> => {
     const response = await api.get<PaginatedResponse<Student>>("/students", {
       params,
