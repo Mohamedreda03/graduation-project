@@ -161,7 +161,6 @@ export function LectureSchedulePage() {
   const [selectedDepartmentName, setSelectedDepartmentName] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState<string>("");
   const [sectionsCount, setSectionsCount] = useState<number>(2);
-  const [inlineAddSlot, setInlineAddSlot] = useState<{ dayOfWeek: string; startTime: string; endTime: string; section: string; periodIdx: number } | null>(null);
 
   // Fetch schedule with selected filters
   const { data: scheduleData, isLoading: scheduleLoading, refetch } = useWeekSchedule({
@@ -208,6 +207,14 @@ export function LectureSchedulePage() {
   const watchTimeType = form.watch("timeType");
   const watchStartPeriod = form.watch("startPeriod");
   const watchEndPeriod = form.watch("endPeriod");
+  const watchLectureType = form.watch("lectureType");
+
+  // Auto-set section to "all" if lectureType is "lecture"
+  useEffect(() => {
+    if (watchLectureType === "lecture") {
+      form.setValue("section", "all");
+    }
+  }, [watchLectureType, form]);
 
   // Dynamic start/end time updates when standard periods are changed
   useEffect(() => {
@@ -351,17 +358,10 @@ export function LectureSchedulePage() {
     return { startIdx, endIdx, span: endIdx - startIdx + 1 };
   };
 
-  // Open "Add Lecture" dialog or activate inline edit with slot values pre-filled
+  // Open "Add Lecture" dialog with slot values pre-filled
   const handleCellClick = (dayOfWeek: string, startTime: string, endTime: string, sectionVal: string, pIdx: number) => {
     setIsEditing(false);
     setEditingId(null);
-    setInlineAddSlot({
-      dayOfWeek,
-      startTime,
-      endTime,
-      section: sectionVal,
-      periodIdx: pIdx,
-    });
 
     form.reset({
       course: "",
@@ -376,29 +376,7 @@ export function LectureSchedulePage() {
       section: sectionVal as any,
       weekType: "all",
     });
-  };
-
-  const onInlineSubmit = async (values: FormValues) => {
-    try {
-      const payload: any = {
-        course: values.course,
-        hall: values.hall,
-        dayOfWeek: parseInt(values.dayOfWeek),
-        startTime: values.startTime,
-        endTime: values.endTime,
-        lectureType: values.lectureType,
-        section: values.section,
-        weekPattern: values.weekType === "all" ? "weekly" : values.weekType,
-      };
-
-      await createMutation.mutateAsync(payload);
-      toast.success("تم إضافة المحاضرة بنجاح");
-      setInlineAddSlot(null);
-      form.reset();
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message || "فشل في حفظ المحاضرة");
-    }
+    setIsDialogOpen(true);
   };
 
   // Open Details Dialog
@@ -536,10 +514,10 @@ export function LectureSchedulePage() {
       // If period boundaries map completely outside our 8 slots
       if (startIdx === -1 || endIdx === -1) return;
 
-      const lecSec = lecture.section || "all";
+      const lecSec = (lecture.lectureType || lecture.type) === "lecture" ? "all" : (lecture.section || "all");
 
       if (lecSec === "all") {
-        // Occupies both rows
+        // Occupies all rows
         for (let s = 0; s < sections.length; s++) {
           for (let p = startIdx; p <= endIdx; p++) {
             if (s === 0 && p === startIdx) {
@@ -550,15 +528,51 @@ export function LectureSchedulePage() {
           }
         }
       } else {
-        // Occupies one row
-        const sIdx = sections.indexOf(lecSec);
-        if (sIdx !== -1) {
-          for (let p = startIdx; p <= endIdx; p++) {
-            if (p === startIdx) {
-              matrix[sIdx][p] = { ...lecture, rowSpan: 1, colSpan: span };
-            } else {
-              matrix[sIdx][p] = "skipped";
+        // Occupies one or more rows (comma-separated e.g. "1,2")
+        const lecSecs = lecSec.split(",").map((s: string) => s.trim());
+        
+        // Find indices in the sections array
+        const sIndices = lecSecs
+          .map((s: string) => sections.indexOf(s))
+          .filter((idx: number) => idx !== -1)
+          .sort((a: number, b: number) => a - b);
+
+        if (sIndices.length > 0) {
+          // Check if indices are contiguous
+          let isContiguous = true;
+          for (let i = 1; i < sIndices.length; i++) {
+            if (sIndices[i] !== sIndices[i - 1] + 1) {
+              isContiguous = false;
+              break;
             }
+          }
+
+          if (isContiguous) {
+            // Render as a single merged cell with rowSpan
+            const firstSIdx = sIndices[0];
+            const rowSpan = sIndices.length;
+            
+            for (let i = 0; i < sIndices.length; i++) {
+              const sIdx = sIndices[i];
+              for (let p = startIdx; p <= endIdx; p++) {
+                if (sIdx === firstSIdx && p === startIdx) {
+                  matrix[sIdx][p] = { ...lecture, rowSpan, colSpan: span };
+                } else {
+                  matrix[sIdx][p] = "skipped";
+                }
+              }
+            }
+          } else {
+            // Non-contiguous: render separate cells in each row
+            sIndices.forEach((sIdx: number) => {
+              for (let p = startIdx; p <= endIdx; p++) {
+                if (p === startIdx) {
+                  matrix[sIdx][p] = { ...lecture, rowSpan: 1, colSpan: span };
+                } else {
+                  matrix[sIdx][p] = "skipped";
+                }
+              }
+            });
           }
         }
       }
@@ -586,91 +600,6 @@ export function LectureSchedulePage() {
           const cell = matrix[sIdx][pIdx];
 
           if (cell === "skipped") return null;
-
-          const isInlineActive =
-            inlineAddSlot &&
-            inlineAddSlot.dayOfWeek === dayValue &&
-            inlineAddSlot.periodIdx === pIdx &&
-            inlineAddSlot.section === section;
-
-          if (isInlineActive) {
-            return (
-              <td
-                key={pIdx}
-                className="p-1 border-l border-slate-200 dark:border-slate-800 align-middle bg-amber-500/10 dark:bg-amber-500/5 min-w-[150px] no-print"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="rounded-xl border border-amber-300 dark:border-amber-800/80 p-2 bg-white dark:bg-slate-950 space-y-1.5 text-right shadow-md animate-in fade-in zoom-in duration-200">
-                  {/* Course select */}
-                  <div className="space-y-0.5">
-                    <label className="text-[9px] font-bold text-amber-600 dark:text-amber-400 block pr-0.5">المادة</label>
-                    <select
-                      className="w-full text-[11px] font-bold p-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:border-amber-500 text-right text-slate-800 dark:text-slate-200"
-                      value={form.watch("course")}
-                      onChange={(e) => form.setValue("course", e.target.value)}
-                    >
-                      <option value="">اختر المادة</option>
-                      {displayCourses.map((c: any) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Hall select */}
-                  <div className="space-y-0.5">
-                    <label className="text-[9px] font-bold text-amber-600 dark:text-amber-400 block pr-0.5">القاعة</label>
-                    <select
-                      className="w-full text-[11px] p-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:border-amber-500 text-right text-slate-800 dark:text-slate-200"
-                      value={form.watch("hall")}
-                      onChange={(e) => form.setValue("hall", e.target.value)}
-                    >
-                      <option value="">اختر القاعة</option>
-                      {halls.map((h) => (
-                        <option key={h._id} value={h._id}>
-                          {h.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Type select */}
-                  <div className="space-y-0.5">
-                    <label className="text-[9px] font-bold text-amber-600 dark:text-amber-400 block pr-0.5">النوع</label>
-                    <select
-                      className="w-full text-[11px] p-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:border-amber-500 text-right text-slate-800 dark:text-slate-200"
-                      value={form.watch("lectureType")}
-                      onChange={(e) => form.setValue("lectureType", e.target.value as any)}
-                    >
-                      <option value="lecture">محاضرة</option>
-                      <option value="section">سكشن</option>
-                      <option value="lab">معمل</option>
-                    </select>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100 dark:border-slate-900">
-                    <button
-                      type="button"
-                      className="h-6 text-[10px] rounded-lg px-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold"
-                      onClick={() => setInlineAddSlot(null)}
-                    >
-                      إلغاء
-                    </button>
-                    <button
-                      type="button"
-                      className="h-6 text-[10px] font-bold rounded-lg px-3 bg-amber-600 hover:bg-amber-700 text-white shadow-sm"
-                      onClick={form.handleSubmit(onInlineSubmit)}
-                      disabled={createMutation.isPending}
-                    >
-                      {createMutation.isPending ? "جاري..." : "حفظ"}
-                    </button>
-                  </div>
-                </div>
-              </td>
-            );
-          }
 
           if (cell === null) {
             // Empty Cell, Click to Add
@@ -1044,191 +973,285 @@ export function LectureSchedulePage() {
 
       {/* Add / Edit Lecture Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-xl text-right" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold border-b pb-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              {isEditing ? "تعديل تفاصيل المحاضرة" : "إضافة محاضرة جديدة للجدول"}
-            </DialogTitle>
-            <DialogDescription className="text-slate-500 text-xs">
-              أدخل تفاصيل المحاضرة والوقت والمكان لحفظها في قاعدة البيانات.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-xl text-right p-0 overflow-hidden rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm" dir="rtl">
+          <div className="bg-slate-50 dark:bg-slate-900/40 p-5 border-b border-slate-200 dark:border-slate-800">
+            <DialogHeader className="p-0">
+              <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
+                <BookOpen className="h-5 w-5 text-primary" />
+                {isEditing ? "تعديل تفاصيل المحاضرة" : "إضافة محاضرة جديدة للجدول"}
+              </DialogTitle>
+              <DialogDescription className="text-slate-500 dark:text-slate-400 text-[11px] mt-1 font-medium">
+                قم بإدخال تفاصيل المادة، القاعة، وتوقيتها الأكاديمي لحفظها في الجداول الرسمية.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
-              {/* Course Selector */}
-              <FormField
-                control={form.control}
-                name="course"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-bold text-xs">المادة الدراسية</FormLabel>
-                    <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="اختر المادة" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent dir="rtl">
-                        {courses.map((c) => (
-                          <SelectItem key={c._id} value={c._id}>
-                            {c.name} ({c.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-5 max-h-[75vh] overflow-y-auto">
+              
+              {/* SECTION 1: Academic Information */}
+              <div className="space-y-3.5 border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-md bg-slate-50/30 dark:bg-slate-900/5">
+                <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 pb-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  البيانات الأكاديمية للمحاضرة
+                </h3>
+                
+                {/* Course Selector */}
+                <FormField
+                  control={form.control}
+                  name="course"
+                  render={({ field }) => (
+                    <FormItem className="space-y-1">
+                      <FormLabel className="font-bold text-[11px] flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                        <BookOpen className="h-3.5 w-3.5 text-primary" />
+                        المادة الدراسية
+                      </FormLabel>
+                      <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="rounded-md w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors h-9">
+                            <SelectValue placeholder="اختر المادة" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent dir="rtl">
+                          {courses.map((c) => (
+                            <SelectItem key={c._id} value={c._id}>
+                              {c.name} ({c.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {/* Type selector */}
+                  <FormField
+                    control={form.control}
+                    name="lectureType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="font-bold text-[11px] flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                          <Layers className="h-3.5 w-3.5 text-primary" />
+                          نوع الحصة
+                        </FormLabel>
+                        <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="rounded-md w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent dir="rtl">
+                            <SelectItem value="lecture">محاضرة</SelectItem>
+                            <SelectItem value="section">سكشن</SelectItem>
+                            <SelectItem value="lab">معمل</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Week Pattern */}
+                  <FormField
+                    control={form.control}
+                    name="weekType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="font-bold text-[11px] flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                          <CalendarClock className="h-3.5 w-3.5 text-primary" />
+                          تكرار الأسبوع
+                        </FormLabel>
+                        <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="rounded-md w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent dir="rtl">
+                            <SelectItem value="all">كل الأسابيع</SelectItem>
+                            <SelectItem value="odd">أسابيع فردية</SelectItem>
+                            <SelectItem value="even">أسابيع زوجية</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Section Selector - conditional */}
+                {watchLectureType !== "lecture" ? (
+                  <FormField
+                    control={form.control}
+                    name="section"
+                    render={({ field }) => {
+                      const isAll = field.value === "all";
+                      const selectedSections = isAll ? [] : field.value.split(",").map(s => s.trim()).filter(Boolean);
+                      
+                      const handleCheckboxChange = (secVal: string, checked: boolean) => {
+                        if (checked) {
+                          const updated = [...selectedSections, secVal].sort();
+                          field.onChange(updated.join(","));
+                        } else {
+                          const updated = selectedSections.filter(s => s !== secVal);
+                          field.onChange(updated.length === 0 ? "all" : updated.join(","));
+                        }
+                      };
+
+                      const handleTypeChange = (type: "all" | "specific") => {
+                        if (type === "all") {
+                          field.onChange("all");
+                        } else {
+                          field.onChange("1");
+                        }
+                      };
+
+                      return (
+                        <FormItem className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <FormLabel className="font-bold text-[11px] flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                            <Grid3X3 className="h-3.5 w-3.5 text-primary" />
+                            السكشن المستهدف (المجموعات)
+                          </FormLabel>
+                          
+                          <div className="flex gap-4 mb-2">
+                            <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                              <input
+                                type="radio"
+                                name="sectionSelectType"
+                                checked={isAll}
+                                onChange={() => handleTypeChange("all")}
+                                className="accent-primary h-3.5 w-3.5 cursor-pointer"
+                              />
+                              جميع المجموعات (الكل)
+                            </label>
+                            <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                              <input
+                                type="radio"
+                                name="sectionSelectType"
+                                checked={!isAll}
+                                onChange={() => handleTypeChange("specific")}
+                                className="accent-primary h-3.5 w-3.5 cursor-pointer"
+                              />
+                              مجموعات محددة (سكاشن)
+                            </label>
+                          </div>
+
+                          {!isAll && (
+                            <div className="grid grid-cols-4 gap-2 p-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-md animate-in fade-in duration-200">
+                              {Array.from({ length: sectionsCount }, (_, i) => (i + 1).toString()).map((sec) => {
+                                const isChecked = selectedSections.includes(sec);
+                                return (
+                                  <label key={sec} className="flex items-center gap-1.5 text-xs font-medium cursor-pointer p-1 hover:bg-slate-50 dark:hover:bg-slate-900 rounded transition-colors">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={(e) => handleCheckboxChange(sec, e.target.checked)}
+                                      className="rounded accent-primary h-3.5 w-3.5 cursor-pointer"
+                                    />
+                                    سكشن {sec}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                ) : (
+                  <div className="text-[11px] text-slate-500 font-semibold bg-slate-100/50 dark:bg-slate-900/40 p-2 rounded-md border border-slate-200/50 dark:border-slate-800/50">
+                    * بما أن الحصة "محاضرة"، فإنها مخصصة لجميع الطلاب والمجموعات (الكل) بشكل تلقائي.
+                  </div>
                 )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Hall Selector */}
-                <FormField
-                  control={form.control}
-                  name="hall"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold text-xs">القاعة الدراسية</FormLabel>
-                      <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl">
-                            <SelectValue placeholder="اختر القاعة" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent dir="rtl">
-                          {halls.map((h) => (
-                            <SelectItem key={h._id} value={h._id}>
-                              {h.name} - {h.building}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Day Selector */}
-                <FormField
-                  control={form.control}
-                  name="dayOfWeek"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold text-xs">اليوم</FormLabel>
-                      <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl">
-                            <SelectValue placeholder="اختر اليوم" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent dir="rtl">
-                          {dayNames.map((d) => (
-                            <SelectItem key={d.value} value={d.value}>
-                              {d.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
-              {/* Lecture Metadata */}
-              <div className="grid grid-cols-3 gap-4">
-                {/* Type selector */}
-                <FormField
-                  control={form.control}
-                  name="lectureType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold text-xs">نوع الحصة</FormLabel>
-                      <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent dir="rtl">
-                          <SelectItem value="lecture">محاضرة</SelectItem>
-                          <SelectItem value="section">سكشن</SelectItem>
-                          <SelectItem value="lab">معمل</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* SECTION 2: Location and Day */}
+              <div className="space-y-3.5 border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-md bg-slate-50/30 dark:bg-slate-900/5">
+                <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 pb-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  مكان وتوقيت الحصة الدراسي
+                </h3>
 
-                {/* Section Selector */}
-                <FormField
-                  control={form.control}
-                  name="section"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold text-xs">السكشن (المجموعة)</FormLabel>
-                      <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent dir="rtl">
-                          <SelectItem value="all">جميع المجموعات (الكل)</SelectItem>
-                          <SelectItem value="1">سكشن 1</SelectItem>
-                          <SelectItem value="2">سكشن 2</SelectItem>
-                          <SelectItem value="3">سكشن 3</SelectItem>
-                          <SelectItem value="4">سكشن 4</SelectItem>
-                          <SelectItem value="5">سكشن 5</SelectItem>
-                          <SelectItem value="6">سكشن 6</SelectItem>
-                          <SelectItem value="7">سكشن 7</SelectItem>
-                          <SelectItem value="8">سكشن 8</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {/* Hall Selector */}
+                  <FormField
+                    control={form.control}
+                    name="hall"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="font-bold text-[11px] flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                          <MapPin className="h-3.5 w-3.5 text-primary" />
+                          القاعة الدراسية
+                        </FormLabel>
+                        <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="rounded-md w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm h-9">
+                              <SelectValue placeholder="اختر القاعة" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent dir="rtl">
+                            {halls.map((h) => (
+                              <SelectItem key={h._id} value={h._id}>
+                                {h.name} - {h.building}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Week Pattern */}
-                <FormField
-                  control={form.control}
-                  name="weekType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold text-xs">تكرار الأسبوع</FormLabel>
-                      <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent dir="rtl">
-                          <SelectItem value="all">كل الأسابيع</SelectItem>
-                          <SelectItem value="odd">أسابيع فردية</SelectItem>
-                          <SelectItem value="even">أسابيع زوجية</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  {/* Day Selector */}
+                  <FormField
+                    control={form.control}
+                    name="dayOfWeek"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="font-bold text-[11px] flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                          <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                          اليوم
+                        </FormLabel>
+                        <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="rounded-md w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm h-9">
+                              <SelectValue placeholder="اختر اليوم" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent dir="rtl">
+                            {dayNames.map((d) => (
+                              <SelectItem key={d.value} value={d.value}>
+                                {d.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
-              {/* Timing Selection Panels */}
-              <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl bg-slate-50/50 dark:bg-slate-900/30 space-y-4">
+              {/* SECTION 3: Timing Selection Panels */}
+              <div className="border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-md bg-slate-50/30 dark:bg-slate-900/5 space-y-3.5">
+                <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 pb-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  تفاصيل توقيت المحاضرة
+                </h3>
+
                 <FormField
                   control={form.control}
                   name="timeType"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel className="font-bold text-xs text-slate-500">نظام توقيت الحصة</FormLabel>
+                      <FormLabel className="font-bold text-[11px] text-slate-500">نظام توقيت الحصة</FormLabel>
                       <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="rounded-xl h-8 bg-white dark:bg-slate-950">
+                          <SelectTrigger className="rounded-md h-9 w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm">
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -1242,16 +1265,16 @@ export function LectureSchedulePage() {
                 />
 
                 {watchTimeType === "periods" ? (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3.5 animate-in fade-in slide-in-from-top-1 duration-150">
                     <FormField
                       control={form.control}
                       name="startPeriod"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">بداية من الفترة</FormLabel>
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">بداية من الفترة</FormLabel>
                           <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="rounded-xl bg-white dark:bg-slate-950">
+                              <SelectTrigger className="rounded-md w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm h-9">
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
@@ -1271,11 +1294,11 @@ export function LectureSchedulePage() {
                       control={form.control}
                       name="endPeriod"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">إلى الفترة</FormLabel>
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">إلى الفترة</FormLabel>
                           <Select dir="rtl" onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="rounded-xl bg-white dark:bg-slate-950">
+                              <SelectTrigger className="rounded-md w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm h-9">
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
@@ -1292,15 +1315,15 @@ export function LectureSchedulePage() {
                     />
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3.5 animate-in fade-in slide-in-from-top-1 duration-150">
                     <FormField
                       control={form.control}
                       name="startTime"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">وقت البدء</FormLabel>
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">وقت البدء</FormLabel>
                           <FormControl>
-                            <Input type="time" {...field} dir="ltr" className="rounded-xl bg-white dark:bg-slate-950" />
+                            <Input type="time" {...field} dir="ltr" className="rounded-md bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm h-9" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1311,10 +1334,10 @@ export function LectureSchedulePage() {
                       control={form.control}
                       name="endTime"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">وقت الانتهاء</FormLabel>
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">وقت الانتهاء</FormLabel>
                           <FormControl>
-                            <Input type="time" {...field} dir="ltr" className="rounded-xl bg-white dark:bg-slate-950" />
+                            <Input type="time" {...field} dir="ltr" className="rounded-md bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm h-9" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1323,22 +1346,22 @@ export function LectureSchedulePage() {
                   </div>
                 )}
 
-                <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono text-left" dir="ltr">
+                <div className="text-[11px] text-slate-500 font-mono text-left bg-slate-100/50 dark:bg-slate-900/60 py-1.5 px-3 rounded-md border border-slate-200/40 dark:border-slate-800/40" dir="ltr">
                   Selected Duration: {form.watch("startTime")} - {form.watch("endTime")}
                 </div>
               </div>
 
               {/* Action buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl">
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-md h-9 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
                   إلغاء
                 </Button>
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="rounded-xl px-6 bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/95 shadow"
+                  className="rounded-md h-9 text-xs font-bold px-5 bg-primary text-primary-foreground hover:bg-primary/95 shadow-sm transition-colors"
                 >
-                  {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
+                  {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-3.5 w-3.5 ml-1.5 animate-spin" />}
                   {isEditing ? "حفظ التغييرات" : "إضافة المحاضرة"}
                 </Button>
               </div>

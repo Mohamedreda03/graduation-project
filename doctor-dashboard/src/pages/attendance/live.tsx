@@ -246,11 +246,20 @@ export function LiveAttendancePage() {
 
   // Enrolled students calculation
   const enrolledStudents = useMemo(() => {
-    if (!selectedLecture) return [];
-    return [...(selectedLecture.presentStudents || []), ...(selectedLecture.absentStudents || [])]
+    if (!selectedLecture || !selectedLecture.course || typeof selectedLecture.course !== "object") return [];
+    const course = selectedLecture.course as any;
+    if (!course.students) return [];
+    return course.students
       .map((student: any) => {
-        const fullName = typeof student.name === "object"
-          ? `${student.name.first} ${student.name.last}`
+        if (typeof student === "string") {
+          return {
+            _id: student,
+            name: "طالب غير معروف",
+            studentId: "—",
+          };
+        }
+        const fullName = student.name && typeof student.name === "object"
+          ? `${student.name.first || ""} ${student.name.last || ""}`.trim()
           : student.name || "طالب غير معروف";
         return {
           _id: student._id || student,
@@ -813,7 +822,7 @@ export function LiveAttendancePage() {
                             </tr>
                           </thead>
                           <tbody>
-                            {studentRows.map((row) => (
+                            {studentRows.map((row: any) => (
                               <StudentTableRow
                                 key={row.student._id}
                                 student={row.student}
@@ -831,7 +840,7 @@ export function LiveAttendancePage() {
 
                       {/* Mobile: Card-list view */}
                       <div className="sm:hidden space-y-2 max-h-[400px] overflow-y-auto">
-                        {studentRows.map((row) => (
+                        {studentRows.map((row: any) => (
                           <StudentCardRow
                             key={row.student._id}
                             student={row.student}

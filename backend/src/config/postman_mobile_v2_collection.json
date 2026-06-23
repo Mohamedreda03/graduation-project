@@ -1,0 +1,289 @@
+{
+  "info": {
+    "name": "Mobile App API v2",
+    "description": "دليل API المطور لتطبيق الموبايل - يحتوي على الروتس الجديدة والمصادقة للطلاب الثلاثة (كامل، متوسط، وبدون بيانات)\n\n📱 نظام المصادقة:\n1. سجل دخول بأحد المستخدمين في مجلد Authentication.\n2. سيتم تحديث متغير {{token}} تلقائياً.\n3. استخدم الروتس في مجلد Mobile App New Routes لتجربة الشاشات الجديدة.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication (المصادقة)",
+      "description": "نظام التسجيل والمصادقة للموبايل - يحتوي على حسابات الطلاب الثلاثة لتجربة حالات البيانات المختلفة",
+      "item": [
+        {
+          "name": "Mobile Login - Full Data (كامل البيانات)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response && response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"token\", response.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student_full@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n    \"deviceName\": \"Full Data Phone\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "login"]
+            },
+            "description": "تسجيل دخول الطالب كامل البيانات (Full Data Student)\n\n🔑 الحساب:\n- البريد الإلكتروني: student_full@student.edu\n- كلمة المرور: student123\n- عنوان الماك (MAC): AA:BB:CC:DD:EE:FF"
+          }
+        },
+        {
+          "name": "Mobile Login - Medium Data (متوسط البيانات)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response && response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"token\", response.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student_medium@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"11:22:33:44:55:66\",\n    \"deviceName\": \"Medium Data Phone\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "login"]
+            },
+            "description": "تسجيل دخول الطالب متوسط البيانات (Medium Data Student)\n\n🔑 الحساب:\n- البريد الإلكتروني: student_medium@student.edu\n- كلمة المرور: student123\n- عنوان الماك (MAC): 11:22:33:44:55:66"
+          }
+        },
+        {
+          "name": "Mobile Login - Empty Data (بدون بيانات)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response && response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"token\", response.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student_empty@student.edu\",\n  \"password\": \"student123\",\n  \"deviceInfo\": {\n    \"macAddress\": \"FF:EE:DD:CC:BB:AA\",\n    \"deviceName\": \"Empty Data Phone\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "login"]
+            },
+            "description": "تسجيل دخول الطالب بدون بيانات (Empty Data Student)\n\n🔑 الحساب:\n- البريد الإلكتروني: student_empty@student.edu\n- كلمة المرور: student123\n- عنوان الماك (MAC): FF:EE:DD:CC:BB:AA"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{your_refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{your_refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mobile/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mobile", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mobile App New Routes",
+      "description": "الروتس الجديدة الخاصة بواجهات تطبيق الموبايل المحدثة",
+      "item": [
+        {
+          "name": "Home Screen (Screen 2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/mobile/home",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mobile", "home"]
+            },
+            "description": "بيانات الشاشة الرئيسية: الترحيب، المحاضرة الحالية، جدول اليوم، والعداد التنازلي للمحاضرة القادمة."
+          }
+        },
+        {
+          "name": "Weekly Schedule (Screen 3)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/mobile/schedule",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mobile", "schedule"]
+            },
+            "description": "جدول المحاضرات الأسبوعي كامل من السبت للخميس."
+          }
+        },
+        {
+          "name": "Attendance Summary (Screen 4)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/mobile/attendance/summary?courseId={{course_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mobile", "attendance", "summary"],
+              "query": [
+                { "key": "courseId", "value": "{{course_id}}", "description": "ID المادة المراد عرض ملخص حضورها" }
+              ]
+            },
+            "description": "ملخص الحضور والغياب لمادة معينة (نسبة الحضور والتنبيهات)."
+          }
+        },
+        {
+          "name": "Attendance History (Screen 5)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/mobile/attendance/history?courseId=all&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mobile", "attendance", "history"],
+              "query": [
+                { "key": "courseId", "value": "all" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "سجل الحضور والغياب التفصيلي مع إمكانية الفلترة حسب المادة."
+          }
+        },
+        {
+          "name": "Student Profile (Screen 6)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/mobile/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mobile", "profile"]
+            },
+            "description": "بيانات البروفايل، الحالة الأكاديمية، وبيانات الجهاز المسجل."
+          }
+        },
+        {
+          "name": "Device Change Request (Screen 7)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"فقدت هاتفي القديم واشتريت هاتف جديد\",\n  \"newDeviceInfo\": {\n    \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n    \"deviceName\": \"iPhone 15 Pro\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/mobile/device-change-request",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mobile", "device-change-request"]
+            },
+            "description": "تقديم طلب لتغيير الجهاز المسجل."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.54.224.164.102.nip.io",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your_jwt_token_here",
+      "type": "string"
+    },
+    {
+      "key": "course_id",
+      "value": "60d0fe4f5311236168a109c1",
+      "type": "string"
+    }
+  ]
+}

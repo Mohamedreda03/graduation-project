@@ -146,7 +146,7 @@ describe('Attendance API Integration Tests', () => {
       expect(session.isActive).toBe(false);
       
       const record = await AttendanceRecord.findOne({ student: studentUser._id });
-      expect(record.status).toBe(ATTENDANCE_STATUS.PRESENT);
+      expect(record.status).toBe(ATTENDANCE_STATUS.IN_PROGRESS);
     });
   });
 

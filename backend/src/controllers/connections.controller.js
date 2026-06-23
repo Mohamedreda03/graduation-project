@@ -230,23 +230,26 @@ async function handleConnect(student, hall, macAddress, connectionLog) {
           "[ATTENDANCE] ✅ Created NEW attendance record:",
           attendanceRecord._id,
         );
-      } else if (attendanceRecord.status !== ATTENDANCE_STATUS.IN_PROGRESS) {
-        // Re-open the record if student comes back
-        attendanceRecord.status = ATTENDANCE_STATUS.IN_PROGRESS;
-        attendanceRecord.sessions.push({ checkIn: now });
-        if (!attendanceRecord.lectureStartTime && activeLecture.actualStartTime) {
-          attendanceRecord.lectureStartTime = activeLecture.actualStartTime;
-        }
-        await attendanceRecord.save();
-        console.log(
-          "[ATTENDANCE] ✅ Re-opened attendance record:",
-          attendanceRecord._id,
-        );
       } else {
-        console.log(
-          "[ATTENDANCE] Already has active attendance record:",
-          attendanceRecord._id,
-        );
+        // Check if student is reconnecting (last session has a checkOut time or there are no sessions)
+        const lastSession = attendanceRecord.sessions[attendanceRecord.sessions.length - 1];
+        if (!lastSession || lastSession.checkOut) {
+          attendanceRecord.sessions.push({ checkIn: now });
+          attendanceRecord.status = ATTENDANCE_STATUS.IN_PROGRESS; // Ensure status is in-progress
+          if (!attendanceRecord.lectureStartTime && activeLecture.actualStartTime) {
+            attendanceRecord.lectureStartTime = activeLecture.actualStartTime;
+          }
+          await attendanceRecord.save();
+          console.log(
+            "[ATTENDANCE] ✅ Re-opened attendance record / added new session:",
+            attendanceRecord._id,
+          );
+        } else {
+          console.log(
+            "[ATTENDANCE] Student is already connected in an active session:",
+            attendanceRecord._id,
+          );
+        }
       }
 
       // Link session to attendance record
@@ -313,11 +316,8 @@ async function handleDisconnect(student, hall, connectionLog) {
         attendanceRecord.totalPresenceTime += durationMinutes;
       }
 
-      // Mark attendance as "present" (student was here and left)
-      if (attendanceRecord.status === ATTENDANCE_STATUS.IN_PROGRESS) {
-        attendanceRecord.status = ATTENDANCE_STATUS.PRESENT;
-        console.log("[ATTENDANCE] ✅ Status changed: in-progress → present");
-      }
+      // Keep attendance as "in-progress" (will be finalized when the lecture ends)
+      console.log("[ATTENDANCE] Student left, status remains: in-progress");
 
       await attendanceRecord.save();
     }

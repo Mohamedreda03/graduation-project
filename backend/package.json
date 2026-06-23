@@ -7,6 +7,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "seed": "node src/seeders/seed.js",
+    "seed:live": "node src/seeders/seed-live.js",
     "seed:admin": "node src/seeders/seed-admin.js",
     "seed:rbac": "node src/seeders/seed-rbac.js",
     "seed:large": "node src/seeders/seed-large.js",

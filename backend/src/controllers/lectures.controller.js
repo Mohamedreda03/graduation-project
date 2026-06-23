@@ -4,6 +4,7 @@ const {
   AttendanceRecord,
   StudentSession,
   Specialization,
+  Setting,
 } = require("../models");
 const { ROLES, ATTENDANCE_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
@@ -50,7 +51,14 @@ exports.getAllLectures = catchAsync(async (req, res, next) => {
  */
 exports.getLecture = catchAsync(async (req, res, next) => {
   const lecture = await Lecture.findById(req.params.id)
-    .populate("course", "name code students")
+    .populate({
+      path: "course",
+      select: "name code students",
+      populate: {
+        path: "students",
+        select: "name studentId",
+      },
+    })
     .populate("hall", "name building")
     .populate("doctor", "name");
 
@@ -288,7 +296,14 @@ exports.getTodayLectures = catchAsync(async (req, res, next) => {
     dayOfWeek: currentDay,
     isActive: true,
   })
-    .populate("course", "name code students")
+    .populate({
+      path: "course",
+      select: "name code students",
+      populate: {
+        path: "students",
+        select: "name studentId",
+      },
+    })
     .populate("hall", "name building")
     .populate("doctor", "name")
     .sort({ startTime: 1 });
@@ -324,7 +339,14 @@ exports.getLecturesByDate = catchAsync(async (req, res, next) => {
     dayOfWeek,
     isActive: true,
   })
-    .populate("course", "name code students")
+    .populate({
+      path: "course",
+      select: "name code students",
+      populate: {
+        path: "students",
+        select: "name studentId",
+      },
+    })
     .populate("hall", "name building")
     .populate("doctor", "name")
     .sort({ startTime: 1 });
@@ -622,8 +644,16 @@ exports.endLecture = catchAsync(async (req, res, next) => {
 
   const now = new Date();
 
+  // Load min presence percentage setting
+  const minPresenceSetting = await Setting.findOne({ key: "MIN_PRESENCE_PERCENTAGE" });
+  const minPresencePercentage = minPresenceSetting ? parseInt(minPresenceSetting.value) : 50;
+
+  // Calculate actual lecture duration in minutes
+  const lectureStartTime = lecture.actualStartTime || new Date(lecture.createdAt);
+  const actualDuration = Math.round((lecture.actualEndTime - lectureStartTime) / 60000);
+  const lectureDuration = Math.max(1, actualDuration); // Use actual elapsed time, minimum 1 min
+
   for (const record of records) {
-    record.status = ATTENDANCE_STATUS.PRESENT;
     record.lectureEndTime = lecture.actualEndTime;
 
     // Close any open sessions within the record
@@ -632,27 +662,35 @@ exports.endLecture = catchAsync(async (req, res, next) => {
       if (!lastSession.checkOut) {
         lastSession.checkOut = now;
 
-        // Calculate minutes if possible (usually record has calculateMinutes helper or similar)
         const diffMs = now - lastSession.checkIn;
         const diffMins = Math.floor(diffMs / 1000 / 60);
-        lastSession.duration = diffMins;
-        record.totalPresenceTime += diffMins;
+        lastSession.duration = Math.max(0, diffMins);
+        record.totalPresenceTime += lastSession.duration;
       }
     }
+
+    // Calculate presence percentage
+    const presencePercentage = lectureDuration > 0
+      ? (record.totalPresenceTime / lectureDuration) * 100
+      : 0;
+
+    record.presencePercentage = Math.min(Math.round(presencePercentage), 100);
+
+    // Determine final status
+    if (record.presencePercentage >= minPresencePercentage) {
+      record.status = ATTENDANCE_STATUS.PRESENT;
+    } else {
+      record.status = ATTENDANCE_STATUS.ABSENT;
+    }
+
+    record.isFinalized = true;
+    record.finalizedAt = now;
+
     await record.save();
   }
 
-  // 2. Finalize all student sessions in this hall for this lecture
-  await StudentSession.updateMany(
-    {
-      currentLecture: lecture._id,
-      isActive: true,
-    },
-    {
-      isActive: false,
-      disconnectedAt: now,
-    },
-  );
+  // 2. Log that sessions for connected students remain active to allow auto-transition to consecutive lectures
+  console.log(`[endLecture] Completed finalization of attendance records for lecture ${lecture._id}. Sessions for physically connected students remain active.`);
 
   res.status(200).json({
     success: true,
