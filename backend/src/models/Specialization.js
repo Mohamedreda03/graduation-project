@@ -1,5 +1,25 @@
 const mongoose = require("mongoose");
 
+const levelSchema = new mongoose.Schema({
+  level: {
+    type: Number,
+    required: [true, "Level number is required"],
+  },
+  name: {
+    type: String,
+    required: [true, "Level name is required"],
+    trim: true
+  },
+  hasDepartments: {
+    type: Boolean,
+    default: false
+  },
+  sectionsCount: {
+    type: Number,
+    default: 2
+  }
+});
+
 const specializationSchema = new mongoose.Schema(
   {
     name: {
@@ -15,15 +35,16 @@ const specializationSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
-    faculty: {
+    departments: [
+      {
+        type: String,
+        trim: true
+      }
+    ],
+    levels: [levelSchema],
+    description: {
       type: String,
-      required: [true, "Faculty name is required"],
-      trim: true,
-    },
-    sectionsCount: {
-      type: Map,
-      of: Number,
-      default: { "1": 6, "2": 3, "3": 3, "4": 3, "5": 3 }
+      trim: true
     }
   },
   {

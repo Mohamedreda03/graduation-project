@@ -5,10 +5,17 @@ const createSpecialization = {
   body: Joi.object({
     name: Joi.string().required().min(3).max(200).trim(),
     code: Joi.string().required().uppercase().trim().max(10),
-    faculty: Joi.string().required().trim(),
     description: Joi.string().max(1000).trim(),
     headOfSpecialization: Joi.string().hex().length(24),
-    sectionsCount: Joi.object().pattern(Joi.string(), Joi.number().min(1).max(8)),
+    departments: Joi.array().items(Joi.string().trim()),
+    levels: Joi.array().items(
+      Joi.object({
+        level: Joi.number().required(),
+        name: Joi.string().required().trim(),
+        hasDepartments: Joi.boolean().default(false),
+        sectionsCount: Joi.number().min(1).max(20).default(2)
+      })
+    ),
   }),
 };
 
@@ -20,11 +27,18 @@ const updateSpecialization = {
   body: Joi.object({
     name: Joi.string().min(3).max(200).trim(),
     code: Joi.string().uppercase().trim().max(10),
-    faculty: Joi.string().trim(),
     description: Joi.string().max(1000).trim(),
     headOfSpecialization: Joi.string().hex().length(24).allow(null),
     isActive: Joi.boolean(),
-    sectionsCount: Joi.object().pattern(Joi.string(), Joi.number().min(1).max(8)),
+    departments: Joi.array().items(Joi.string().trim()),
+    levels: Joi.array().items(
+      Joi.object({
+        level: Joi.number().required(),
+        name: Joi.string().required().trim(),
+        hasDepartments: Joi.boolean().default(false),
+        sectionsCount: Joi.number().min(1).max(20).default(2)
+      })
+    ),
   }),
 };
 

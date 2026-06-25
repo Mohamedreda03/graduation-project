@@ -484,16 +484,19 @@ exports.getLecturesByDate = catchAsync(async (req, res, next) => {
  * GET /api/lectures/week-schedule?course=xxx&hall=xxx
  */
 exports.getWeekSchedule = catchAsync(async (req, res, next) => {
-  const { course, hall, specialization, department, level, section } = req.query;
+  const { course, hall, specialization, department, level, section, semester } = req.query;
 
   const query = { isActive: true };
   if (course) query.course = course;
   if (hall) query.hall = hall;
-  if (level) query.level = parseInt(level);
   if (section) query.section = section;
+  if (semester) query.semester = semester;
 
-  if (specialization) {
-    const courseQuery = { specialization };
+  if (specialization || department || level || semester) {
+    const courseQuery = {};
+    if (specialization) courseQuery.specialization = specialization;
+    if (level) courseQuery.level = parseInt(level);
+    if (semester) courseQuery.semester = semester;
     if (department) {
       courseQuery.$or = [
         { departments: department },

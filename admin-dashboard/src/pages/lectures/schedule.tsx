@@ -160,18 +160,19 @@ export function LectureSchedulePage() {
   const [selectedCollegeId, setSelectedCollegeId] = useState<string>("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState<string>("");
+  const [selectedSemester, setSelectedSemester] = useState<string>("الفصل الدراسي الأول");
   const [sectionsCount, setSectionsCount] = useState<number>(2);
 
   const selectedSpecializationObj = specializations?.find((d: any) => d._id === selectedCollegeId);
-  const availableDepartments = selectedSpecializationObj?.faculty 
-    ? selectedSpecializationObj.faculty.split(/[،,]/).map((d: string) => d.trim()).filter(Boolean)
-    : [];
+  
+  const availableLevels = selectedSpecializationObj?.levels || [];
+  const selectedLevelObj = availableLevels.find((lvl: any) => lvl.level === parseInt(selectedLevel));
+  const availableDepartments = selectedLevelObj?.hasDepartments ? (selectedSpecializationObj?.departments || []) : [];
 
   // Fetch schedule with selected filters
   // Only run the query when the minimum required filters are selected
   // We need at least التخصص (specialization id) AND الفرقة (level), and department if applicable
   const filtersReady = !!selectedCollegeId && !!selectedLevel && (
-    selectedLevel === "1" || 
     availableDepartments.length === 0 || 
     !!selectedDepartment
   );
@@ -180,6 +181,7 @@ export function LectureSchedulePage() {
       specialization: selectedCollegeId || undefined,
       department: selectedDepartment || undefined,
       level: selectedLevel ? parseInt(selectedLevel) : undefined,
+      semester: selectedSemester || undefined,
       section: undefined, // Fetched all, we split them on client row-by-row
     },
     { enabled: filtersReady }
@@ -252,6 +254,7 @@ export function LectureSchedulePage() {
     const specId = typeof c.specialization === "object" ? c.specialization?._id : c.specialization;
     const matchesSpec = !selectedCollegeId || specId === selectedCollegeId;
     const matchesLevel = !selectedLevel || c.level === parseInt(selectedLevel);
+    const matchesSemester = !selectedSemester || c.semester === selectedSemester;
     
     let matchesDept = true;
     if (selectedDepartment) {
@@ -260,7 +263,7 @@ export function LectureSchedulePage() {
       }
     }
     
-    return matchesSpec && matchesLevel && matchesDept;
+    return matchesSpec && matchesLevel && matchesSemester && matchesDept;
   });
   // Fall back to all courses ONLY if no filters are active at all
   const coursesForForm = (!selectedCollegeId && !selectedLevel) ? courses : filteredCoursesForForm;
@@ -274,51 +277,42 @@ export function LectureSchedulePage() {
 
   const handleLevelChange = (value: string) => {
     setSelectedLevel(value);
-    // Preparatory year (Level 1) usually doesn't have a department
-    if (value === "1") {
-      setSelectedDepartment("");
-    }
+    setSelectedDepartment(""); // reset department when level changes
   };
 
   // Sync sectionsCount with DB when specialization/level change
   useEffect(() => {
-    if (selectedSpecializationObj && selectedLevel) {
-      const dbSections = selectedSpecializationObj.sectionsCount?.[selectedLevel];
-      if (typeof dbSections === "number") {
-        setSectionsCount(dbSections);
-      } else {
-        setSectionsCount(selectedLevel === "1" ? 6 : 3); // fallback
-      }
+    if (selectedLevelObj) {
+      setSectionsCount(selectedLevelObj.sectionsCount || 2);
     } else {
-      setSectionsCount(selectedLevel === "1" ? 6 : 3); // default
+      setSectionsCount(2); // default
     }
-  }, [selectedCollegeId, selectedLevel, selectedSpecializationObj]);
+  }, [selectedLevelObj]);
 
   const handleOpenSectionsDialog = () => {
-    if (selectedSpecializationObj) {
-      const currentVal = selectedSpecializationObj.sectionsCount?.[selectedLevel] ?? sectionsCount;
-      setTempSectionsCount(currentVal);
+    if (selectedLevelObj) {
+      setTempSectionsCount(sectionsCount);
       setIsSectionsDialogOpen(true);
     }
   };
 
   const handleSaveSectionsCount = async () => {
-    if (!selectedSpecializationObj || !selectedLevel) return;
+    if (!selectedSpecializationObj || !selectedLevelObj) return;
     setIsSavingSections(true);
     try {
-      const currentSectionsCount = selectedSpecializationObj.sectionsCount || {};
-      const updatedSectionsCount = {
-        ...currentSectionsCount,
-        [selectedLevel]: tempSectionsCount,
-      };
+      const updatedLevels = (selectedSpecializationObj.levels || []).map((lvl: any) => {
+        if (lvl.level === selectedLevelObj.level) {
+          return { ...lvl, sectionsCount: tempSectionsCount };
+        }
+        return lvl;
+      });
 
       await updateSpecializationMutation.mutateAsync({
         id: selectedSpecializationObj._id,
         data: {
           name: selectedSpecializationObj.name,
           code: selectedSpecializationObj.code,
-          faculty: selectedSpecializationObj.faculty,
-          sectionsCount: updatedSectionsCount,
+          levels: updatedLevels,
         },
       });
       toast.success("تم تحديث عدد السكاشن بنجاح");
@@ -484,6 +478,7 @@ export function LectureSchedulePage() {
         lectureType: values.lectureType,
         section: values.section,
         weekPattern: values.weekType === "all" ? "weekly" : values.weekType,
+        semester: selectedSemester,
         // Include level so the lecture is returned when filtering by level
         ...(selectedLevel ? { level: parseInt(selectedLevel) } : {}),
       };
@@ -511,6 +506,7 @@ export function LectureSchedulePage() {
     setSelectedDepartment("");
     setSelectedCollegeId("");
     setSelectedLevel("");
+    setSelectedSemester("الفصل الدراسي الأول");
   };
 
   const handlePrint = () => {
@@ -539,7 +535,8 @@ export function LectureSchedulePage() {
       const specId = typeof c.specialization === "object" ? c.specialization?._id : c.specialization;
       return (
         (!selectedCollegeId || specId === selectedCollegeId) &&
-        (!selectedLevel || c.level === parseInt(selectedLevel))
+        (!selectedLevel || c.level === parseInt(selectedLevel)) &&
+        (!selectedSemester || c.semester === selectedSemester)
       );
     });
     const displayCourses = filteredCourses.length > 0 ? filteredCourses : courses;
@@ -812,9 +809,9 @@ export function LectureSchedulePage() {
                   <SelectValue placeholder="اختر الفرقة" />
                 </SelectTrigger>
                 <SelectContent dir="rtl">
-                  {Object.entries(levelNames).map(([val, label]) => (
-                    <SelectItem key={val} value={val}>
-                      {label}
+                  {availableLevels.map((lvl: any) => (
+                    <SelectItem key={lvl.level.toString()} value={lvl.level.toString()}>
+                      {lvl.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -822,7 +819,7 @@ export function LectureSchedulePage() {
             </div>
 
             {/* Department filter (التخصص) */}
-            {selectedLevel !== "1" && (
+            {availableDepartments.length > 0 && (
               <div className="space-y-1.5">
                 <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
                   <Layers className="h-3.5 w-3.5" /> التخصص
@@ -830,18 +827,9 @@ export function LectureSchedulePage() {
                 <Select
                   value={selectedDepartment}
                   onValueChange={setSelectedDepartment}
-                  disabled={!selectedCollegeId || availableDepartments.length === 0}
                 >
                   <SelectTrigger className="rounded-xl w-full">
-                    <SelectValue
-                      placeholder={
-                        !selectedCollegeId
-                          ? "اختر الكلية أولاً"
-                          : availableDepartments.length === 0
-                          ? "لا يوجد تخصصات لهذه الكلية"
-                          : "اختر التخصص"
-                      }
-                    />
+                    <SelectValue placeholder="اختر التخصص" />
                   </SelectTrigger>
                   <SelectContent dir="rtl">
                     {availableDepartments.map((dept: string) => (
@@ -853,6 +841,22 @@ export function LectureSchedulePage() {
                 </Select>
               </div>
             )}
+
+            {/* Semester filter */}
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5" /> الفصل الدراسي
+              </label>
+              <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                <SelectTrigger className="rounded-xl w-full">
+                  <SelectValue placeholder="اختر الفصل الدراسي" />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  <SelectItem value="الفصل الدراسي الأول">الفصل الدراسي الأول</SelectItem>
+                  <SelectItem value="الفصل الدراسي الثاني">الفصل الدراسي الثاني</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -906,7 +910,7 @@ export function LectureSchedulePage() {
                 جدول محاضرات الفرقة {levelNames[selectedLevel] || "..."}
               </h2>
               <p className="text-[12px] font-semibold">
-                للعام الجامعي 2026/2025 - الفصل الدراسي الثاني
+                للعام الجامعي 2026/2025 - {selectedSemester}
               </p>
             </div>
 

@@ -36,7 +36,7 @@ describe('Attendance API Integration Tests', () => {
     doctorToken = jwt.sign({ id: doctorUser._id }, config.jwt.secret, { expiresIn: '1h' });
 
     // Setup Specialization
-    specialization = await Specialization.create({ name: 'CS', code: 'CS', faculty: 'Eng' });
+    specialization = await Specialization.create({ name: 'CS', code: 'CS', departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }] });
 
     // Setup Student
     studentUser = await User.create({
@@ -80,6 +80,7 @@ describe('Attendance API Integration Tests', () => {
       course: course._id,
       hall: hall._id,
       doctor: doctorUser._id,
+      semester: "الفصل الدراسي الأول",
       dayOfWeek: dayOfWeek,
       startTime: `${startHour.toString().padStart(2, '0')}:00`,
       endTime: `${endHour.toString().padStart(2, '0')}:00`,

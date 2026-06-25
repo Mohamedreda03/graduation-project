@@ -58,7 +58,7 @@ describe('Miscellaneous API Integration Tests (Settings, Doctors, AI)', () => {
     let dept;
 
     beforeEach(async () => {
-      dept = await Specialization.create({ name: 'CS', code: 'CS', faculty: 'Eng' });
+      dept = await Specialization.create({ name: 'CS', code: 'CS', departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }] });
       doctor = await User.create({
         email: 'doc@test.com',
         password: 'password123',

@@ -32,7 +32,7 @@ describe('Academic API Integration Tests', () => {
     specialization = await Specialization.create({
       name: 'Computer Science',
       code: 'CS',
-      faculty: 'Engineering'
+      departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }]
     });
 
     hall = await Hall.create({
@@ -132,7 +132,8 @@ describe('Academic API Integration Tests', () => {
         hall: hall._id,
         dayOfWeek: 1, // Monday
         startTime: '08:00',
-        endTime: '10:00'
+        endTime: '10:00',
+        semester: "الفصل الدراسي الأول"
       };
 
       const res = await request(app)
@@ -151,7 +152,8 @@ describe('Academic API Integration Tests', () => {
           hall: hall._id,
           dayOfWeek: 1,
           startTime: '09:00',
-          endTime: '11:00'
+          endTime: '11:00',
+          semester: "الفصل الدراسي الأول"
         });
 
       expect(res2.statusCode).toBe(409);
@@ -162,6 +164,7 @@ describe('Academic API Integration Tests', () => {
         course: course._id,
         hall: hall._id,
         doctor: doctorUser._id,
+        semester: "الفصل الدراسي الأول",
         dayOfWeek: 1,
         startTime: '10:00',
         endTime: '12:00'

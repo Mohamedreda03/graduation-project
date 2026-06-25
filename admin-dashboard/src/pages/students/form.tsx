@@ -158,9 +158,19 @@ export function StudentFormPage() {
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   const selectedSpecializationId = form.watch("specialization");
+  const selectedLevel = form.watch("level");
+
   const selectedSpecializationObj = specializationsData?.find((s: any) => s._id === selectedSpecializationId);
-  const departmentsStr = selectedSpecializationObj?.faculty || "";
-  const departmentsList = departmentsStr ? departmentsStr.split(/[،,]/).map((t: string) => t.trim()).filter(Boolean) : [];
+  const availableLevels = selectedSpecializationObj?.levels || [];
+  const selectedLevelObj = availableLevels.find((lvl: any) => lvl.level === selectedLevel);
+  const departmentsList = selectedLevelObj?.hasDepartments ? (selectedSpecializationObj?.departments || []) : [];
+
+  // Reset department if the selected level has no departments
+  useEffect(() => {
+    if (departmentsList.length === 0 && form.getValues("department") !== "none") {
+      form.setValue("department", "none");
+    }
+  }, [selectedLevel, departmentsList.length, form]);
 
   if (isEditing && studentLoading) {
     return (
@@ -430,11 +440,11 @@ export function StudentFormPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="1">إعدادي</SelectItem>
-                            <SelectItem value="2">الفرقة الأولى</SelectItem>
-                            <SelectItem value="3">الفرقة الثانية</SelectItem>
-                            <SelectItem value="4">الفرقة الثالثة</SelectItem>
-                            <SelectItem value="5">الفرقة الرابعة</SelectItem>
+                            {availableLevels.map((lvl: any) => (
+                              <SelectItem key={lvl.level.toString()} value={lvl.level.toString()}>
+                                {lvl.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />

@@ -101,25 +101,31 @@ export interface Doctor extends User {
 }
 
 // ============ Specialization ============
+export interface Level {
+  level: number;
+  name: string;
+  hasDepartments: boolean;
+  sectionsCount: number;
+}
+
 export interface Specialization {
   _id: string;
   name: string;
   code: string;
-  faculty: string;
+  departments: string[];
+  levels?: Level[];
   description?: string;
   headOfSpecialization?: string;
   isActive: boolean;
-  sectionsCount?: Record<string, number>;
   createdAt: string;
 }
 
 export interface CreateSpecializationRequest {
   name: string;
   code: string;
-  faculty: string;
+  departments: string[];
+  levels: Level[];
   description?: string;
-  sectionsCount?: Record<string, number>;
-  specializations?: Specialization[];
 }
 
 // ============ Hall ============
@@ -162,7 +168,7 @@ export interface Course {
   departments?: string[];
   doctor: Doctor | string;
   level: number;
-  semester: string;
+  semester: string[];
   students: string[];
   isActive: boolean;
   createdAt: string;
@@ -175,7 +181,7 @@ export interface CreateCourseRequest {
   departments?: string[];
   doctor: string;
   level: number;
-  semester: string;
+  semester: string[];
 }
 
 // ============ Lecture ============
@@ -217,6 +223,7 @@ export interface CreateLectureRequest {
   lectureType?: "lecture" | "section" | "lab";
   section?: string;
   weekPattern?: "weekly" | "odd" | "even";
+  semester?: string;
 }
 
 // ============ Attendance ============

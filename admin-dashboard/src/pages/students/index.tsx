@@ -119,6 +119,9 @@ export function StudentsPage() {
   const { data: statsData } = useStudentStats();
   const { data: specializationsData } = useSpecializations();
 
+  const selectedSpecializationObj = specializationsData?.find((s: any) => s._id === specializationFilter);
+  const availableLevels = selectedSpecializationObj?.levels || [];
+
   const columns: ColumnDef<Student>[] = [
     {
       accessorKey: "studentId",
@@ -297,11 +300,21 @@ export function StudentsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">جميع الفرق</SelectItem>
-              <SelectItem value="1">إعدادي</SelectItem>
-              <SelectItem value="2">الفرقة الأولى</SelectItem>
-              <SelectItem value="3">الفرقة الثانية</SelectItem>
-              <SelectItem value="4">الفرقة الثالثة</SelectItem>
-              <SelectItem value="5">الفرقة الرابعة</SelectItem>
+              {availableLevels.length > 0 ? (
+                availableLevels.map((lvl: any) => (
+                  <SelectItem key={lvl.level.toString()} value={lvl.level.toString()}>
+                    {lvl.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <>
+                  <SelectItem value="1">إعدادي</SelectItem>
+                  <SelectItem value="2">الفرقة الأولى</SelectItem>
+                  <SelectItem value="3">الفرقة الثانية</SelectItem>
+                  <SelectItem value="4">الفرقة الثالثة</SelectItem>
+                  <SelectItem value="5">الفرقة الرابعة</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
 

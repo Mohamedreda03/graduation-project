@@ -23,7 +23,7 @@ describe('Students API Integration Tests', () => {
     specialization = await Specialization.create({
       name: 'Computer Science',
       code: 'CS',
-      faculty: 'Engineering'
+      departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }]
     });
 
     studentUser = await User.create({

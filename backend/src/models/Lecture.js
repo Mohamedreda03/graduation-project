@@ -17,6 +17,10 @@ const lectureSchema = new mongoose.Schema(
       ref: "User",
       required: [true, "Doctor is required"],
     },
+    semester: {
+      type: String,
+      required: [true, "Semester is required"],
+    },
 
     // Lecture metadata
     lectureType: {

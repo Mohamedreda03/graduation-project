@@ -70,7 +70,7 @@ async function seedRBAC() {
       csDept = await Specialization.create({
         name: "Computer Science",
         code: "CS",
-        faculty: "Faculty of Computers and Information",
+        departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
         description: "Computer Science Specialization",
       });
       console.log("✅ Created Computer Science Specialization");

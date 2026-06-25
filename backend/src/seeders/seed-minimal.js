@@ -60,7 +60,7 @@ async function seedMinimal() {
     const specData = {
       name: "عام",
       code: "GEN",
-      faculty: "الكلية العامة",
+      departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
       description: "قسم عام لاختبار الطلاب",
     };
     let spec = await Specialization.findOne({ code: specData.code });

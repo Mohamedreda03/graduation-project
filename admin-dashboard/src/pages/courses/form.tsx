@@ -55,7 +55,7 @@ const formSchema = z.object({
   departments: z.array(z.string()).optional(),
   doctor: z.string().min(1, "الدكتور مطلوب"),
   level: z.number().min(1).max(6),
-  semester: z.string().min(1, "الفصل الدراسي مطلوب"),
+  semester: z.array(z.string()).min(1, "الرجاء اختيار فصل دراسي واحد على الأقل"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -80,7 +80,7 @@ export function CourseFormPage() {
       departments: [],
       doctor: "",
       level: 1,
-      semester: "",
+      semester: [],
     },
   });
 
@@ -94,12 +94,11 @@ export function CourseFormPage() {
             ? course.specialization._id
             : course.specialization,
         departments: course.departments || [],
-        doctor:
-          typeof course.doctor === "object"
-            ? course.doctor._id
+        doctor: typeof course.doctor === "object" && course.doctor !== null
+            ? (course.doctor as any)._id || ""
             : course.doctor || "",
         level: course.level,
-        semester: course.semester,
+        semester: Array.isArray(course.semester) ? course.semester : (course.semester ? [course.semester] : []),
       });
     }
   }, [course, form]);
@@ -120,10 +119,19 @@ export function CourseFormPage() {
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   const selectedSpecializationId = form.watch("specialization");
+  const selectedLevel = form.watch("level");
+  
   const selectedSpecializationObj = specializationsData?.find((s: any) => s._id === selectedSpecializationId);
-  const availableDepartments = selectedSpecializationObj?.faculty 
-    ? selectedSpecializationObj.faculty.split(/[،,]/).map((d: string) => d.trim()).filter(Boolean)
-    : [];
+  const availableLevels = selectedSpecializationObj?.levels || [];
+  const selectedLevelObj = availableLevels.find((lvl: any) => lvl.level === selectedLevel);
+  const availableDepartments = selectedLevelObj?.hasDepartments ? (selectedSpecializationObj?.departments || []) : [];
+
+  // Reset departments if the selected level has no departments
+  useEffect(() => {
+    if (availableDepartments.length === 0) {
+      form.setValue("departments", []);
+    }
+  }, [selectedLevel, availableDepartments.length, form]);
 
   if (isEditing && courseLoading) {
     return (
@@ -358,11 +366,11 @@ export function CourseFormPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="1">إعدادي</SelectItem>
-                            <SelectItem value="2">الفرقة الأولى</SelectItem>
-                            <SelectItem value="3">الفرقة الثانية</SelectItem>
-                            <SelectItem value="4">الفرقة الثالثة</SelectItem>
-                            <SelectItem value="5">الفرقة الرابعة</SelectItem>
+                            {availableLevels.map((lvl: any) => (
+                              <SelectItem key={lvl.level.toString()} value={lvl.level.toString()}>
+                                {lvl.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -373,29 +381,46 @@ export function CourseFormPage() {
                   <FormField
                     control={form.control}
                     name="semester"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="flex items-center gap-2">
+                    render={() => (
+                      <FormItem className="space-y-3 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <FormLabel className="flex items-center gap-2 mb-3">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           الفصل الدراسي
                         </FormLabel>
-                        <Select
-                          dir="rtl"
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="اختر الفصل الدراسي" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="الفصل الدراسي الأول">الفصل الدراسي الأول</SelectItem>
-                            <SelectItem value="الفصل الدراسي الثاني">الفصل الدراسي الثاني</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription className="text-xs">
-                          حدد الفصل الدراسي لهذا المقرر
+                        <div className="grid grid-cols-1 gap-3">
+                          {["الفصل الدراسي الأول", "الفصل الدراسي الثاني"].map((sem) => (
+                            <FormField
+                              key={sem}
+                              control={form.control}
+                              name="semester"
+                              render={({ field }) => (
+                                <FormItem
+                                  key={sem}
+                                  className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border p-3 bg-white dark:bg-slate-950 shadow-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
+                                  dir="rtl"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(sem)}
+                                      onCheckedChange={(checked) => {
+                                        const currentValue = field.value || [];
+                                        return checked
+                                          ? field.onChange([...currentValue, sem])
+                                          : field.onChange(currentValue.filter((value) => value !== sem));
+                                      }}
+                                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary ml-2"
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal text-sm cursor-pointer w-full">
+                                    {sem}
+                                  </FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                          ))}
+                        </div>
+                        <FormDescription className="text-xs text-slate-500 mt-2">
+                          يمكنك اختيار فصل دراسي واحد أو كلاهما (للمواد الممتدة)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

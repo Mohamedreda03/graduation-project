@@ -47,21 +47,31 @@ export function SpecializationsPage() {
       header: "الرمز",
     },
     {
-      accessorKey: "faculty",
-      header: "الأقسام التابعة",
+      accessorKey: "levels",
+      header: "الفرق والأقسام",
       cell: ({ row }) => {
-        const facultyStr = row.original.faculty || "";
-        const depts = facultyStr ? facultyStr.split(/[،,]/).map(t => t.trim()).filter(Boolean) : [];
+        const levels = row.original.levels || [];
         
         return (
-          <div className="flex flex-wrap gap-1 max-w-[400px]">
-            {depts.length === 0 ? (
+          <div className="flex flex-col gap-1.5 max-w-[400px]">
+            {levels.length === 0 ? (
               <span className="text-xs text-muted-foreground">—</span>
             ) : (
-              depts.map((dept, index) => (
-                <Badge key={index} variant="secondary" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-bold py-0 px-2 rounded">
-                  {dept}
-                </Badge>
+              levels.map((lvl: any, index: number) => (
+                <div key={index} className="flex items-center gap-1.5 flex-wrap">
+                  <Badge variant="outline" className="text-[10px] font-bold bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+                    {lvl.name}
+                  </Badge>
+                  {lvl.hasDepartments && row.original.departments && row.original.departments.length > 0 ? (
+                    row.original.departments.map((dept: string, i: number) => (
+                      <Badge key={i} variant="secondary" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-bold px-1.5 py-0">
+                        {dept}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">عام (بدون أقسام)</span>
+                  )}
+                </div>
               ))
             )}
           </div>

@@ -71,7 +71,7 @@ const defaultSettings = [
 const sampleSpecialization = {
   name: "Computer Science",
   code: "CS",
-  faculty: "Faculty of Computers and Information",
+  departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
   description: "Computer Science Specialization",
 };
 

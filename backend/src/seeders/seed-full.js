@@ -36,25 +36,25 @@ const SPECIALIZATIONS = [
   {
     name: "علوم الحاسب",
     code: "CS",
-    faculty: "كلية الحاسبات والذكاء الاصطناعي",
+    departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
     description: "قسم علوم الحاسب",
   },
   {
     name: "نظم المعلومات",
     code: "IS",
-    faculty: "كلية الحاسبات والذكاء الاصطناعي",
+    departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
     description: "قسم نظم المعلومات",
   },
   {
     name: "تكنولوجيا المعلومات",
     code: "IT",
-    faculty: "كلية الحاسبات والذكاء الاصطناعي",
+    departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
     description: "قسم تكنولوجيا المعلومات",
   },
   {
     name: "الذكاء الاصطناعي",
     code: "AI",
-    faculty: "كلية الحاسبات والذكاء الاصطناعي",
+    departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
     description: "قسم الذكاء الاصطناعي",
   },
 ];

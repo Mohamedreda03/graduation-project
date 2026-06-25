@@ -37,9 +37,8 @@ const courseSchema = new mongoose.Schema(
       max: 5,
     },
     semester: {
-      type: String,
+      type: [String],
       required: [true, "Semester is required"],
-      trim: true, // e.g., "Fall 2025", "Spring 2026"
     },
     students: [
       {

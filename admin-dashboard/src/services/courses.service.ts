@@ -7,7 +7,7 @@ interface CreateCourseRequest {
   specialization: string;
   doctor: string;
   level: number;
-  semester: string;
+  semester: string[];
 }
 
 export const coursesService = {
@@ -15,7 +15,7 @@ export const coursesService = {
     specialization?: string;
     doctor?: string;
     level?: number;
-    semester?: number;
+    semester?: string[] | string;
     academicYear?: string;
     page?: number;
     limit?: number;

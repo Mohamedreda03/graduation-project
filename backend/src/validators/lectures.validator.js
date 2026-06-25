@@ -28,6 +28,7 @@ const createLecture = {
       .default("lecture"),
     section: Joi.string().default("all"),
     weekPattern: Joi.string().valid("weekly", "odd", "even").default("weekly"),
+    semester: Joi.string().required(),
   }),
 };
 
@@ -51,8 +52,15 @@ const updateLecture = {
       .messages({ "string.pattern.base": "End time must be in HH:MM format" }),
     lectureType: Joi.string().valid("lecture", "section", "lab"),
     section: Joi.string(),
+    status: Joi.string().valid(
+      "scheduled",
+      "in-progress",
+      "completed",
+      "cancelled",
+    ),
     weekPattern: Joi.string().valid("weekly", "odd", "even"),
     isActive: Joi.boolean(),
+    semester: Joi.string(),
   }),
 };
 

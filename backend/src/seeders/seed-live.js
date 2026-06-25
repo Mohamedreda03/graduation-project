@@ -128,14 +128,14 @@ async function seedLive() {
         _id: SPECIALIZATION_CS_ID,
         name: "علوم الحاسب",
         code: "CS",
-        faculty: "كلية الحاسبات والذكاء الاصطناعي",
+        departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
         description: "قسم علوم الحاسب",
       },
       {
         _id: SPECIALIZATION_IS_ID,
         name: "نظم المعلومات",
         code: "IS",
-        faculty: "كلية الحاسبات والذكاء الاصطناعي",
+        departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
         description: "قسم نظم المعلومات",
       },
     ]);

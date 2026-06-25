@@ -43,7 +43,7 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
     specialization = await Specialization.create({
       name: "هندسة الاتصالات",
       code: "COMM",
-      faculty: "كلية الهندسة",
+      departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }],
     });
 
     // 2. Hall
@@ -107,6 +107,7 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
       course: course1._id,
       hall: hall._id,
       doctor: doctor._id,
+      semester: "Fall 2025",
       dayOfWeek: todayDow,
       startTime: "09:00",
       endTime: "11:00",
@@ -119,6 +120,7 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
       course: course2._id,
       hall: hall._id,
       doctor: doctor._id,
+      semester: "Fall 2025",
       dayOfWeek: anotherDow,
       startTime: "13:00",
       endTime: "15:00",

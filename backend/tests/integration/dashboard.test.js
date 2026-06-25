@@ -20,7 +20,7 @@ describe('Dashboard API Integration Tests', () => {
     adminToken = jwt.sign({ id: adminUser._id }, config.jwt.secret, { expiresIn: '1h' });
 
     // Seed some data for stats
-    const dept = await Specialization.create({ name: 'CS', code: 'CS', faculty: 'Eng' });
+    const dept = await Specialization.create({ name: 'CS', code: 'CS', departments: ['عام'], levels: [{ level: 1, name: 'الفرقة الإعدادية', hasDepartments: false }, { level: 2, name: 'الفرقة الأولى', hasDepartments: true }] });
     const doctor = await User.create({
       email: 'doc@test.com',
       password: 'password123',
@@ -48,6 +48,7 @@ describe('Dashboard API Integration Tests', () => {
       course: course._id,
       hall: hall._id,
       doctor: doctor._id,
+      semester: "الفصل الدراسي الأول",
       dayOfWeek: new Date().getDay(),
       startTime: '08:00',
       endTime: '10:00'

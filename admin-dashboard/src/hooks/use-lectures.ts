@@ -62,6 +62,7 @@ export function useWeekSchedule(
     department?: string;
     level?: number;
     section?: string;
+    semester?: string;
   },
   options?: { enabled?: boolean }
 ) {
