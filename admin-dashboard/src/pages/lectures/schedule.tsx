@@ -158,17 +158,32 @@ export function LectureSchedulePage() {
 
   // Filter States
   const [selectedCollegeId, setSelectedCollegeId] = useState<string>("");
-  const [selectedDepartmentName, setSelectedDepartmentName] = useState<string>("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState<string>("");
   const [sectionsCount, setSectionsCount] = useState<number>(2);
 
+  const selectedSpecializationObj = specializations?.find((d: any) => d._id === selectedCollegeId);
+  const availableDepartments = selectedSpecializationObj?.faculty 
+    ? selectedSpecializationObj.faculty.split(/[،,]/).map((d: string) => d.trim()).filter(Boolean)
+    : [];
+
   // Fetch schedule with selected filters
-  const { data: scheduleData, isLoading: scheduleLoading, refetch } = useWeekSchedule({
-    specialization: selectedCollegeId || undefined,
-    department: selectedDepartmentName || undefined,
-    level: selectedLevel ? parseInt(selectedLevel) : undefined,
-    section: undefined, // Fetched all, we split them on client row-by-row
-  });
+  // Only run the query when the minimum required filters are selected
+  // We need at least التخصص (specialization id) AND الفرقة (level), and department if applicable
+  const filtersReady = !!selectedCollegeId && !!selectedLevel && (
+    selectedLevel === "1" || 
+    availableDepartments.length === 0 || 
+    !!selectedDepartment
+  );
+  const { data: scheduleData, isLoading: scheduleLoading, refetch } = useWeekSchedule(
+    {
+      specialization: selectedCollegeId || undefined,
+      department: selectedDepartment || undefined,
+      level: selectedLevel ? parseInt(selectedLevel) : undefined,
+      section: undefined, // Fetched all, we split them on client row-by-row
+    },
+    { enabled: filtersReady }
+  );
 
   // Mutations
   const createMutation = useCreateLecture();
@@ -231,14 +246,39 @@ export function LectureSchedulePage() {
   const courses = coursesData?.data || [];
   const halls: Hall[] = hallsData || [];
 
+  // Filter courses to only those matching the selected college (specialization) and level
+  // This ensures adding a lecture always links it to the correct group
+  const filteredCoursesForForm = courses.filter((c: any) => {
+    const specId = typeof c.specialization === "object" ? c.specialization?._id : c.specialization;
+    const matchesSpec = !selectedCollegeId || specId === selectedCollegeId;
+    const matchesLevel = !selectedLevel || c.level === parseInt(selectedLevel);
+    
+    let matchesDept = true;
+    if (selectedDepartment) {
+      if (c.departments && c.departments.length > 0) {
+        matchesDept = c.departments.includes(selectedDepartment);
+      }
+    }
+    
+    return matchesSpec && matchesLevel && matchesDept;
+  });
+  // Fall back to all courses ONLY if no filters are active at all
+  const coursesForForm = (!selectedCollegeId && !selectedLevel) ? courses : filteredCoursesForForm;
+
+
   // Reset filter chains on change
   const handleCollegeChange = (value: string) => {
     setSelectedCollegeId(value);
-    setSelectedDepartmentName("");
+    setSelectedDepartment(""); // reset department when college changes
   };
 
-  const selectedSpecializationObj = specializations?.find((d) => d._id === selectedCollegeId);
-  const departmentsList = selectedSpecializationObj?.faculty ? selectedSpecializationObj.faculty.split(",").map((d: string) => d.trim()) : [];
+  const handleLevelChange = (value: string) => {
+    setSelectedLevel(value);
+    // Preparatory year (Level 1) usually doesn't have a department
+    if (value === "1") {
+      setSelectedDepartment("");
+    }
+  };
 
   // Sync sectionsCount with DB when specialization/level change
   useEffect(() => {
@@ -444,6 +484,8 @@ export function LectureSchedulePage() {
         lectureType: values.lectureType,
         section: values.section,
         weekPattern: values.weekType === "all" ? "weekly" : values.weekType,
+        // Include level so the lecture is returned when filtering by level
+        ...(selectedLevel ? { level: parseInt(selectedLevel) } : {}),
       };
 
       if (isEditing && editingId) {
@@ -466,8 +508,8 @@ export function LectureSchedulePage() {
 
   // Clear filters
   const clearFilters = () => {
+    setSelectedDepartment("");
     setSelectedCollegeId("");
-    setSelectedDepartmentName("");
     setSelectedLevel("");
   };
 
@@ -741,7 +783,7 @@ export function LectureSchedulePage() {
         </CardHeader>
         <CardContent className="p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {/* College filter */}
+            {/* College filter (الكلية) */}
             <div className="space-y-1.5">
               <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
                 <Building className="h-3.5 w-3.5" /> الكلية
@@ -751,28 +793,9 @@ export function LectureSchedulePage() {
                   <SelectValue placeholder="اختر الكلية" />
                 </SelectTrigger>
                 <SelectContent dir="rtl">
-                  {specializations?.map((spec) => (
+                  {(specializations || []).map((spec: any) => (
                     <SelectItem key={spec._id} value={spec._id}>
                       {spec.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Department filter */}
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
-                <Layers className="h-3.5 w-3.5" /> التخصص
-              </label>
-              <Select value={selectedDepartmentName} onValueChange={setSelectedDepartmentName} disabled={!selectedCollegeId || departmentsList.length === 0}>
-                <SelectTrigger className="rounded-xl w-full">
-                  <SelectValue placeholder={departmentsList.length === 0 && selectedCollegeId ? "لا يوجد أقسام متاحة" : "اختر التخصص"} />
-                </SelectTrigger>
-                <SelectContent dir="rtl">
-                  {departmentsList.map((dept, idx) => (
-                    <SelectItem key={idx} value={dept}>
-                      {dept}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -784,7 +807,7 @@ export function LectureSchedulePage() {
               <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
                 <GraduationCap className="h-3.5 w-3.5" /> الفرقة الدراسية
               </label>
-              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+              <Select value={selectedLevel} onValueChange={handleLevelChange}>
                 <SelectTrigger className="rounded-xl w-full">
                   <SelectValue placeholder="اختر الفرقة" />
                 </SelectTrigger>
@@ -797,6 +820,39 @@ export function LectureSchedulePage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Department filter (التخصص) */}
+            {selectedLevel !== "1" && (
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
+                  <Layers className="h-3.5 w-3.5" /> التخصص
+                </label>
+                <Select
+                  value={selectedDepartment}
+                  onValueChange={setSelectedDepartment}
+                  disabled={!selectedCollegeId || availableDepartments.length === 0}
+                >
+                  <SelectTrigger className="rounded-xl w-full">
+                    <SelectValue
+                      placeholder={
+                        !selectedCollegeId
+                          ? "اختر الكلية أولاً"
+                          : availableDepartments.length === 0
+                          ? "لا يوجد تخصصات لهذه الكلية"
+                          : "اختر التخصص"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent dir="rtl">
+                    {availableDepartments.map((dept: string) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -827,11 +883,12 @@ export function LectureSchedulePage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
-      ) : (!selectedCollegeId || !selectedDepartmentName || !selectedLevel) ? (
+      ) : !filtersReady ? (
+        // Show placeholder until all required filters are selected
         <div className="text-center py-20 flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-xl mt-4 border border-slate-200 dark:border-slate-800">
           <CalendarClock className="h-16 w-16 text-slate-300 mb-4" />
-          <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200">يرجى تحديد كافة البيانات</h3>
-          <p className="text-slate-500 mt-2">اختر الكلية، التخصص، والفرقة الدراسية لعرض الجدول الخاص بهم</p>
+          <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200">يرجى استكمال تحديد البيانات</h3>
+          <p className="text-slate-500 mt-2">اختر الكلية، الفرقة، والتخصص (إن وُجد) لعرض الجدول</p>
         </div>
       ) : (
         <Card className="shadow-none border-none rounded-none overflow-hidden print-full-width p-0 bg-transparent">
@@ -840,7 +897,7 @@ export function LectureSchedulePage() {
             <div className="text-right space-y-1 text-[11px] font-bold">
               <div>وزارة التعليم العالي</div>
               <div>{selectedSpecializationObj?.name || "المعهد العالي للهندسة ببلبيس"}</div>
-              {selectedDepartmentName && <div>{selectedDepartmentName}</div>}
+              {selectedDepartment && <div>قسم {selectedDepartment}</div>}
               <div>المنشأ بقرار وزاري رقم 1855</div>
             </div>
 
@@ -861,70 +918,79 @@ export function LectureSchedulePage() {
           </div>
 
           <CardContent className="p-0 overflow-x-auto">
-            {hasLectures ? (
-              <table className="w-full min-w-[900px] border-collapse print-grid-border text-slate-900 dark:text-slate-200">
-                <thead>
-                  <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
-                    <th className="p-3 text-center font-bold text-slate-700 dark:text-slate-300 text-[12px] border-l border-slate-200 dark:border-slate-800 w-24">
-                      اليوم
+            {/* Always render the table grid — show empty-state row inside tbody if no lectures */}
+            <table className="w-full min-w-[900px] border-collapse print-grid-border text-slate-900 dark:text-slate-200">
+              <thead>
+                <tr className="bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
+                  <th className="p-3 text-center font-bold text-slate-700 dark:text-slate-300 text-[12px] border-l border-slate-200 dark:border-slate-800 w-24">
+                    اليوم
+                  </th>
+                  <th className="p-3 text-center font-bold text-slate-700 dark:text-slate-300 text-[12px] border-l border-slate-200 dark:border-slate-800 w-12">
+                    Sec
+                  </th>
+                  {PERIODS.map((period) => (
+                    <th
+                      key={period.id}
+                      className="p-3 text-center border-l border-slate-200 dark:border-slate-800 w-32"
+                    >
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100">
+                          الفترة {period.id}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono" dir="ltr">
+                          {period.display}
+                        </span>
+                      </div>
                     </th>
-                    <th className="p-3 text-center font-bold text-slate-700 dark:text-slate-300 text-[12px] border-l border-slate-200 dark:border-slate-800 w-12">
-                      Sec
-                    </th>
-                    {PERIODS.map((period) => (
-                      <th
-                        key={period.id}
-                        className="p-3 text-center border-l border-slate-200 dark:border-slate-800 w-32"
-                      >
-                        <div className="flex flex-col items-center gap-0.5">
-                          <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100">
-                            الفترة {period.id}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-mono" dir="ltr">
-                            {period.display}
-                          </span>
-                        </div>
-                      </th>
-                    ))}
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {hasLectures ? (
+                  dayNames.map((day) => renderDayRows(day.value, day.label))
+                ) : (
+                  // Empty state inside the table so the header is always visible
+                  <tr>
+                    <td
+                      colSpan={2 + PERIODS.length}
+                      className="py-20 text-center"
+                    >
+                      <div className="flex flex-col items-center gap-3">
+                        <Calendar className="h-12 w-12 text-slate-300 dark:text-slate-700" />
+                        <p className="text-slate-500 dark:text-slate-400 font-semibold text-sm">
+                          لا توجد محاضرات مجدولة لهذه الفرقة حتى الآن
+                        </p>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setIsEditing(false);
+                            setEditingId(null);
+                            form.reset({
+                              course: "",
+                              hall: "",
+                              dayOfWeek: "6",
+                              timeType: "periods",
+                              startPeriod: "1",
+                              endPeriod: "2",
+                              startTime: "09:00",
+                              endTime: "10:30",
+                              lectureType: "lecture",
+                              section: "all",
+                              weekType: "all",
+                            });
+                            setIsDialogOpen(true);
+                          }}
+                          className="rounded-xl no-print"
+                        >
+                          <Plus className="h-4 w-4 ml-2" />
+                          إضافة أول محاضرة
+                        </Button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {dayNames.map((day) => renderDayRows(day.value, day.label))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="text-center py-20">
-                <AlertCircle className="h-12 w-12 text-slate-300 dark:text-slate-700 mx-auto mb-4" />
-                <h3 className="text-lg font-bold mb-1.5">لا يوجد محاضرات مجدولة لهذا التصفية</h3>
-                <p className="text-slate-400 dark:text-slate-500 text-sm max-w-md mx-auto mb-6">
-                  يرجى تحديد الكلية، القسم والفرقة المطلوبة من الفلاتر في الأعلى، أو قم بإضافة محاضرة جديدة للبدء.
-                </p>
-                <Button
-                  onClick={() => {
-                    setIsEditing(false);
-                    setEditingId(null);
-                    form.reset({
-                      course: "",
-                      hall: "",
-                      dayOfWeek: "6",
-                      timeType: "periods",
-                      startPeriod: "1",
-                      endPeriod: "2",
-                      startTime: "09:00",
-                      endTime: "10:30",
-                      lectureType: "lecture",
-                      section: "all",
-                      weekType: "all",
-                    });
-                    setIsDialogOpen(true);
-                  }}
-                  className="rounded-xl no-print"
-                >
-                  <Plus className="h-4 w-4 ml-2" />
-                  إضافة محاضرة الآن
-                </Button>
-              </div>
-            )}
+                )}
+              </tbody>
+            </table>
           </CardContent>
         </Card>
       )}
@@ -1013,11 +1079,17 @@ export function LectureSchedulePage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent dir="rtl">
-                          {courses.map((c) => (
-                            <SelectItem key={c._id} value={c._id}>
-                              {c.name} ({c.code})
-                            </SelectItem>
-                          ))}
+                          {coursesForForm.length === 0 ? (
+                            <div className="py-3 px-4 text-center text-slate-400 text-xs">
+                              لا توجد مواد لهذه الكلية والفرقة المختارة
+                            </div>
+                          ) : (
+                            coursesForForm.map((c: any) => (
+                              <SelectItem key={c._id} value={c._id}>
+                                {c.name} ({c.code})
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />

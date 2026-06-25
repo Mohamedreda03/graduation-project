@@ -671,6 +671,7 @@ async function seedLectures(courses, hallList) {
           startTime: "09:00",
           endTime: "11:00",
           level: course.level,
+          specialization: course.specialization,
           isActive: true,
         });
       }
@@ -685,6 +686,7 @@ async function seedLectures(courses, hallList) {
           startTime: "12:00",
           endTime: "14:00",
           level: course.level,
+          specialization: course.specialization,
           isActive: true,
         });
       }
@@ -704,6 +706,7 @@ async function seedLectures(courses, hallList) {
         startTime: timeSlot1.start,
         endTime: timeSlot1.end,
         level: course.level,
+        specialization: course.specialization,
         isActive: true,
       });
 
@@ -716,6 +719,7 @@ async function seedLectures(courses, hallList) {
         startTime: timeSlot2.start,
         endTime: timeSlot2.end,
         level: course.level,
+        specialization: course.specialization,
         isActive: true,
       });
     }

@@ -63,11 +63,15 @@ const lectureSchema = new mongoose.Schema(
       ],
     },
 
-    // For quick filtering
+    // For quick filtering — denormalized from Course at creation time
     level: {
       type: Number,
       min: 1,
       max: 6,
+    },
+    specialization: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Specialization",
     },
     isActive: {
       type: Boolean,
@@ -89,6 +93,8 @@ const lectureSchema = new mongoose.Schema(
 lectureSchema.index({ hall: 1, dayOfWeek: 1, isActive: 1 });
 lectureSchema.index({ course: 1 });
 lectureSchema.index({ doctor: 1 });
+// Fast schedule lookup by specialization + level + day
+lectureSchema.index({ specialization: 1, level: 1, dayOfWeek: 1, isActive: 1 });
 
 // Calculate lecture duration in minutes
 lectureSchema.virtual("durationMinutes").get(function () {

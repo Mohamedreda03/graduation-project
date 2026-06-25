@@ -73,36 +73,102 @@ exports.getLecture = catchAsync(async (req, res, next) => {
 });
 
 /**
+ * Helper to check for lecture conflicts (Hall, Doctor, Students/Section)
+ */
+const checkLectureConflicts = async (lectureData, excludeLectureId = null) => {
+  const { hall, doctor, courseId, dayOfWeek, startTime, endTime, section } = lectureData;
+  const reqSection = section || "all";
+
+  // Validate time logic
+  if (startTime >= endTime) {
+    throw ApiError.badRequest("وقت الانتهاء يجب أن يكون بعد وقت البداية");
+  }
+
+  // Find all active overlapping lectures on the same day
+  const query = {
+    dayOfWeek,
+    isActive: true,
+    $or: [
+      { startTime: { $lt: endTime }, endTime: { $gt: startTime } },
+    ],
+  };
+
+  if (excludeLectureId) {
+    query._id = { $ne: excludeLectureId };
+  }
+
+  const overlappingLectures = await Lecture.find(query).populate("course hall doctor");
+
+  if (overlappingLectures.length === 0) return;
+
+  // Get the new course details
+  const newCourse = await Course.findById(courseId);
+  if (!newCourse) throw ApiError.notFound("المقرر غير موجود");
+
+  const newDepts = newCourse.departments || [];
+  const newSpec = newCourse.specialization.toString();
+  const newLevel = newCourse.level;
+
+  for (const existing of overlappingLectures) {
+    // 1. Hall Conflict
+    if (existing.hall._id.toString() === hall.toString()) {
+      const courseName = existing.course ? existing.course.name : "مادة أخرى";
+      throw ApiError.conflict(`القاعة ${existing.hall.name} مشغولة بالفعل بمحاضرة (${courseName}) في هذا الوقت`);
+    }
+
+    // 2. Doctor Conflict
+    if (existing.doctor && existing.doctor._id.toString() === doctor.toString()) {
+      throw ApiError.conflict(`المحاضر (${existing.doctor.name}) لديه محاضرة أخرى في نفس التوقيت في قاعة ${existing.hall.name}`);
+    }
+
+    // 3. Student / Section Conflict
+    if (existing.course) {
+      const existingSpec = existing.course.specialization.toString();
+      const existingLevel = existing.course.level;
+      
+      if (existingSpec === newSpec && existingLevel === newLevel) {
+        const existingDepts = existing.course.departments || [];
+        
+        const isGeneral = existingDepts.length === 0 || newDepts.length === 0;
+        const shareDept = existingDepts.some(d => newDepts.includes(d));
+
+        if (isGeneral || shareDept) {
+          const existingSec = existing.section || "all";
+          
+          if (existingSec === "all" || reqSection === "all" || existingSec === reqSection) {
+             const deptMsg = isGeneral ? "الفرقة كاملة" : "هذا القسم";
+             const secMsg = (existingSec === "all" || reqSection === "all") ? "محاضرة مجمعة" : `سكشن ${existingSec}`;
+             throw ApiError.conflict(`يوجد تعارض للطلاب: ${deptMsg} لديهم ${secMsg} لمادة (${existing.course.name}) في نفس الوقت`);
+          }
+        }
+      }
+    }
+  }
+};
+
+/**
  * Create lecture
  * POST /api/lectures
  */
 exports.createLecture = catchAsync(async (req, res, next) => {
-  const { course: courseId, hall, dayOfWeek, startTime, endTime } = req.body;
-
-  // Check for conflicts (same hall, same day, overlapping time)
-  const conflictingLecture = await Lecture.findOne({
-    hall,
-    dayOfWeek,
-    isActive: true,
-    $or: [
-      {
-        startTime: { $lt: endTime },
-        endTime: { $gt: startTime },
-      },
-    ],
-  });
-
-  if (conflictingLecture) {
-    throw ApiError.conflict(
-      "There is already a lecture scheduled in this hall at this time",
-    );
-  }
+  const { course: courseId, hall, dayOfWeek, startTime, endTime, section } = req.body;
 
   // Get course info for level and specialization
   const course = await Course.findById(courseId);
   if (!course) {
     throw ApiError.notFound("Course not found");
   }
+
+  // Check all conflicts
+  await checkLectureConflicts({
+    hall,
+    doctor: course.doctor,
+    courseId,
+    dayOfWeek,
+    startTime,
+    endTime,
+    section
+  });
 
   const lectureData = {
     ...req.body,
@@ -124,39 +190,42 @@ exports.createLecture = catchAsync(async (req, res, next) => {
  * PUT /api/lectures/:id
  */
 exports.updateLecture = catchAsync(async (req, res, next) => {
-  const { hall, dayOfWeek, startTime, endTime } = req.body;
+  const { hall, dayOfWeek, startTime, endTime, section, course: newCourseId } = req.body;
 
-  // Check for conflicts if time/hall is being changed
-  if (hall || dayOfWeek !== undefined || startTime || endTime) {
-    const currentLecture = await Lecture.findById(req.params.id);
-
-    const checkHall = hall || currentLecture.hall;
-    const checkDay =
-      dayOfWeek !== undefined ? dayOfWeek : currentLecture.dayOfWeek;
-    const checkStart = startTime || currentLecture.startTime;
-    const checkEnd = endTime || currentLecture.endTime;
-
-    const conflictingLecture = await Lecture.findOne({
-      _id: { $ne: req.params.id },
-      hall: checkHall,
-      dayOfWeek: checkDay,
-      isActive: true,
-      $or: [
-        {
-          startTime: { $lt: checkEnd },
-          endTime: { $gt: checkStart },
-        },
-      ],
-    });
-
-    if (conflictingLecture) {
-      throw ApiError.conflict(
-        "There is already a lecture scheduled in this hall at this time",
-      );
-    }
+  const currentLecture = await Lecture.findById(req.params.id).populate("course");
+  if (!currentLecture) {
+    throw ApiError.notFound("Lecture not found");
   }
 
-  const lecture = await Lecture.findByIdAndUpdate(req.params.id, req.body, {
+  const checkCourseId = newCourseId || currentLecture.course._id;
+  const course = await Course.findById(checkCourseId);
+  if (!course) throw ApiError.notFound("Course not found");
+
+  const checkHall = hall || currentLecture.hall;
+  const checkDay = dayOfWeek !== undefined ? dayOfWeek : currentLecture.dayOfWeek;
+  const checkStart = startTime || currentLecture.startTime;
+  const checkEnd = endTime || currentLecture.endTime;
+  const checkSection = section || currentLecture.section;
+
+  // Check all conflicts (excluding this lecture itself)
+  await checkLectureConflicts({
+    hall: checkHall,
+    doctor: course.doctor,
+    courseId: checkCourseId,
+    dayOfWeek: checkDay,
+    startTime: checkStart,
+    endTime: checkEnd,
+    section: checkSection
+  }, req.params.id);
+
+  const updateData = {
+    ...req.body,
+    doctor: course.doctor,
+    level: course.level,
+    specialization: course.specialization,
+  };
+
+  const lecture = await Lecture.findByIdAndUpdate(req.params.id, updateData, {
     new: true,
     runValidators: true,
   });
@@ -415,7 +484,7 @@ exports.getLecturesByDate = catchAsync(async (req, res, next) => {
  * GET /api/lectures/week-schedule?course=xxx&hall=xxx
  */
 exports.getWeekSchedule = catchAsync(async (req, res, next) => {
-  const { course, hall, specialization, faculty, department, level, section } = req.query;
+  const { course, hall, specialization, department, level, section } = req.query;
 
   const query = { isActive: true };
   if (course) query.course = course;
@@ -423,15 +492,8 @@ exports.getWeekSchedule = catchAsync(async (req, res, next) => {
   if (level) query.level = parseInt(level);
   if (section) query.section = section;
 
-  if (specialization || faculty) {
-    let specQuery = {};
-    if (specialization) specQuery._id = specialization;
-    if (faculty) specQuery.faculty = faculty;
-
-    const specializations = await Specialization.find(specQuery);
-    const specIds = specializations.map((s) => s._id);
-
-    let courseQuery = { specialization: { $in: specIds } };
+  if (specialization) {
+    const courseQuery = { specialization };
     if (department) {
       courseQuery.$or = [
         { departments: department },
@@ -439,18 +501,27 @@ exports.getWeekSchedule = catchAsync(async (req, res, next) => {
         { departments: { $exists: false } }
       ];
     }
-
-    const courses = await Course.find(courseQuery);
+    const courses = await Course.find(courseQuery).select("_id");
     const courseIds = courses.map((c) => c._id);
 
     if (query.course) {
+      // A specific course was also requested — make sure it belongs to this specialization
       const courseIdStr = query.course.toString();
       const belongs = courseIds.some((cId) => cId.toString() === courseIdStr);
       if (!belongs) {
+        // The requested course doesn't belong to this specialization → return empty
         query.course = null;
       }
     } else {
-      query.course = { $in: courseIds };
+      if (department) {
+        // If department is specified, we must strictly filter by the matched courses
+        query.course = { $in: courseIds };
+      } else {
+        query.$or = [
+          { specialization: specialization },
+          { course: { $in: courseIds } },
+        ];
+      }
     }
   }
 

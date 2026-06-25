@@ -122,7 +122,7 @@ export function CourseFormPage() {
   const selectedSpecializationId = form.watch("specialization");
   const selectedSpecializationObj = specializationsData?.find((s: any) => s._id === selectedSpecializationId);
   const availableDepartments = selectedSpecializationObj?.faculty 
-    ? selectedSpecializationObj.faculty.split(",").map((d: string) => d.trim()) 
+    ? selectedSpecializationObj.faculty.split(/[،,]/).map((d: string) => d.trim()).filter(Boolean)
     : [];
 
   if (isEditing && courseLoading) {
@@ -379,11 +379,23 @@ export function CourseFormPage() {
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           الفصل الدراسي
                         </FormLabel>
-                        <FormControl>
-                          <Input placeholder="مثال: خريف 2025" {...field} />
-                        </FormControl>
+                        <Select
+                          dir="rtl"
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="اختر الفصل الدراسي" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="الفصل الدراسي الأول">الفصل الدراسي الأول</SelectItem>
+                            <SelectItem value="الفصل الدراسي الثاني">الفصل الدراسي الثاني</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormDescription className="text-xs">
-                          مثل: خريف 2025، ربيع 2026
+                          حدد الفصل الدراسي لهذا المقرر
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
