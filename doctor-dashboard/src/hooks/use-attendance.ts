@@ -54,6 +54,7 @@ export function useAttendanceByLecture(lectureId: string) {
     queryKey: attendanceKeys.byLecture(lectureId),
     queryFn: () => attendanceService.getByLecture(lectureId),
     enabled: !!lectureId,
+    refetchInterval: 3000, // Refetch every 3 seconds for real-time monitoring
   });
 }
 

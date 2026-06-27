@@ -118,6 +118,7 @@ router.post("/initialize", settingsController.initializeSettings);
  *         description: Setting deleted
  */
 router.get("/:key", settingsController.getSetting);
+router.put("/bulk", settingsController.updateSettingsBulk);
 router.put("/:key", settingsController.updateSetting);
 router.delete("/:key", settingsController.deleteSetting);
 

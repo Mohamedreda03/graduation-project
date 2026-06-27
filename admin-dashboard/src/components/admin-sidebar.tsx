@@ -14,6 +14,7 @@ import {
   UserCog,
   Sparkles,
   ShieldCheck,
+  Settings,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -205,6 +206,12 @@ const navMainItems: NavItem[] = [
         allowedAdminRoles: ["super_admin", "dean"],
       },
     ],
+  },
+  {
+    title: "إعدادات النظام",
+    url: "/settings",
+    icon: Settings,
+    allowedAdminRoles: ["super_admin"],
   },
   {
     title: "المساعد الأكاديمي",

@@ -254,7 +254,11 @@ export function LectureSchedulePage() {
     const specId = typeof c.specialization === "object" ? c.specialization?._id : c.specialization;
     const matchesSpec = !selectedCollegeId || specId === selectedCollegeId;
     const matchesLevel = !selectedLevel || c.level === parseInt(selectedLevel);
-    const matchesSemester = !selectedSemester || c.semester === selectedSemester;
+    const matchesSemester =
+      !selectedSemester ||
+      (Array.isArray(c.semester)
+        ? c.semester.includes(selectedSemester)
+        : c.semester === selectedSemester);
     
     let matchesDept = true;
     if (selectedDepartment) {
@@ -536,7 +540,10 @@ export function LectureSchedulePage() {
       return (
         (!selectedCollegeId || specId === selectedCollegeId) &&
         (!selectedLevel || c.level === parseInt(selectedLevel)) &&
-        (!selectedSemester || c.semester === selectedSemester)
+        (!selectedSemester ||
+          (Array.isArray(c.semester)
+            ? c.semester.includes(selectedSemester)
+            : c.semester === selectedSemester))
       );
     });
     const displayCourses = filteredCourses.length > 0 ? filteredCourses : courses;

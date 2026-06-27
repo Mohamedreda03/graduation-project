@@ -20,6 +20,7 @@ import { StudentsPage } from "@/pages/students";
 import { StudentFormPage } from "@/pages/students/form";
 import { ImportStudentsPage } from "@/pages/students/import";
 import { DeviceRequestsPage } from "@/pages/students/device-requests";
+import { PromoteStudentsPage } from "@/pages/students/promote";
 import { StudentDetailsPage } from "@/pages/students/details";
 import { DoctorsPage } from "@/pages/doctors";
 import { DoctorFormPage } from "@/pages/doctors/form";
@@ -106,6 +107,7 @@ function App() {
                     <Route path="/students/:id/edit" element={<StudentFormPage />} />
                     <Route path="/students/import" element={<ImportStudentsPage />} />
                     <Route path="/students/device-requests" element={<DeviceRequestsPage />} />
+                    <Route path="/students/promote" element={<PromoteStudentsPage />} />
                   </Route>
 
                   {/* Shared across Student Affairs and Super Admin */}

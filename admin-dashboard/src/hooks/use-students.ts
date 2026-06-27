@@ -158,3 +158,36 @@ export function useRejectDeviceChange() {
     },
   });
 }
+
+// ─── Year Promotion Hooks ──────────────────────────────────────────────────
+
+export function usePromotionPreview(params: {
+  level: number;
+  specialization?: string;
+}, enabled = false) {
+  return useQuery({
+    queryKey: ["promotion-preview", params],
+    queryFn: () => studentsService.getPromotionPreview(params),
+    enabled,
+  });
+}
+
+export function usePromoteStudents() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: studentsService.promoteStudents,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: studentKeys.all });
+      const msg = `تمت ترقية ${data.promoted.length} طالب` +
+        (data.graduated.length > 0 ? ` | تخرج ${data.graduated.length} طالب` : "");
+      toast.success(msg);
+      if (data.failed.length > 0) {
+        toast.error(`فشل ${data.failed.length} طالب`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "حدث خطأ أثناء الترقية");
+    },
+  });
+}

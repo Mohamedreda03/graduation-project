@@ -49,25 +49,61 @@ export function SettingsPage() {
 
   useEffect(() => {
     if (settings) {
-      const getValue = (key: string, defaultValue: any) => {
-        const setting = settings.find((s) => s.key === key);
-        return setting?.value ?? defaultValue;
+      const getBackendKey = (frontendKey: string) => {
+        switch (frontendKey) {
+          case "attendanceThreshold":
+            return "MIN_PRESENCE_PERCENTAGE";
+          case "lateThresholdMinutes":
+            return "LATE_THRESHOLD_MINUTES";
+          case "sessionTimeoutMinutes":
+            return "AUTO_FINALIZE_AFTER_MINUTES";
+          default:
+            return frontendKey;
+        }
+      };
+
+      const getValue = (frontendKey: string, defaultValue: any) => {
+        const backendKey = getBackendKey(frontendKey);
+        if (Array.isArray(settings)) {
+          const setting = settings.find((s) => s.key === backendKey || s.key === frontendKey);
+          return setting?.value ?? defaultValue;
+        } else if (settings && typeof settings === "object") {
+          const setting = (settings as Record<string, any>)[backendKey] || (settings as Record<string, any>)[frontendKey];
+          if (setting && typeof setting === "object" && "value" in setting) {
+            return setting.value ?? defaultValue;
+          }
+          return setting ?? defaultValue;
+        }
+        return defaultValue;
       };
 
       form.reset({
         academicYear: getValue("academicYear", "2024-2025"),
-        currentSemester: getValue("currentSemester", 1),
-        attendanceThreshold: getValue("attendanceThreshold", 50),
-        lateThresholdMinutes: getValue("lateThresholdMinutes", 15),
-        sessionTimeoutMinutes: getValue("sessionTimeoutMinutes", 30),
-        maxDevicesPerStudent: getValue("maxDevicesPerStudent", 1),
+        currentSemester: Number(getValue("currentSemester", 1)),
+        attendanceThreshold: Number(getValue("attendanceThreshold", 50)),
+        lateThresholdMinutes: Number(getValue("lateThresholdMinutes", 15)),
+        sessionTimeoutMinutes: Number(getValue("sessionTimeoutMinutes", 30)),
+        maxDevicesPerStudent: Number(getValue("maxDevicesPerStudent", 1)),
       });
     }
   }, [settings, form]);
 
   const onSubmit = async (values: SettingsValues) => {
+    const getBackendKey = (frontendKey: string) => {
+      switch (frontendKey) {
+        case "attendanceThreshold":
+          return "MIN_PRESENCE_PERCENTAGE";
+        case "lateThresholdMinutes":
+          return "LATE_THRESHOLD_MINUTES";
+        case "sessionTimeoutMinutes":
+          return "AUTO_FINALIZE_AFTER_MINUTES";
+        default:
+          return frontendKey;
+      }
+    };
+
     const settingsArray = Object.entries(values).map(([key, value]) => ({
-      key,
+      key: getBackendKey(key),
       value,
     }));
     await updateMutation.mutateAsync(settingsArray);

@@ -59,6 +59,7 @@ const studentStatusMap: Record<string, { label: string; dot: string; text: strin
   absent: { label: "غائب", dot: "bg-red-500", text: "text-red-600" },
   excused: { label: "عذر", dot: "bg-blue-500", text: "text-blue-600" },
   "in-progress": { label: "نشط", dot: "bg-emerald-500 motion-safe:animate-pulse", text: "text-emerald-600" },
+  "in-progress-disconnected": { label: "غير متصل حالياً", dot: "bg-slate-400", text: "text-slate-500" },
 };
 
 function StatusDot({ status }: { status: string }) {
@@ -74,12 +75,14 @@ interface StudentRowProps {
   entryTimeStr: string;
   exitTimeStr: string;
   currentStatus: string;
+  livePresenceTime: number;
+  livePresencePercentage: number;
   onPresence: () => void;
   onExcuse: () => void;
 }
 
 const StudentCardRow = memo(function StudentCardRow({
-  student, record, entryTimeStr, exitTimeStr, currentStatus, onPresence, onExcuse,
+  student, record, entryTimeStr, exitTimeStr, currentStatus, livePresenceTime, livePresencePercentage, onPresence, onExcuse,
 }: StudentRowProps) {
   const statusInfo = studentStatusMap[currentStatus] || studentStatusMap.absent;
   const isAbsent = currentStatus === "absent";
@@ -107,11 +110,11 @@ const StudentCardRow = memo(function StudentCardRow({
         </div>
         <div className="flex flex-col">
           <span className="text-muted-foreground font-medium">المدة</span>
-          <span className="font-semibold text-foreground">{isAbsent ? "\u2014" : `${record?.totalPresenceTime || 0} د`}</span>
+          <span className="font-semibold text-foreground">{isAbsent ? "—" : `${livePresenceTime} د`}</span>
         </div>
         <div className="flex flex-col">
           <span className="text-muted-foreground font-medium">النسبة</span>
-          <span className="font-mono font-semibold text-foreground tabular-nums">{record?.presencePercentage || 0}%</span>
+          <span className="font-mono font-semibold text-foreground tabular-nums">{livePresencePercentage}%</span>
         </div>
       </div>
       {isAbsent && (
@@ -125,7 +128,7 @@ const StudentCardRow = memo(function StudentCardRow({
 });
 
 const StudentTableRow = memo(function StudentTableRow({
-  student, record, entryTimeStr, exitTimeStr, currentStatus, onPresence, onExcuse,
+  student, record, entryTimeStr, exitTimeStr, currentStatus, livePresenceTime, livePresencePercentage, onPresence, onExcuse,
 }: StudentRowProps) {
   const statusInfo = studentStatusMap[currentStatus] || studentStatusMap.absent;
   const isAbsent = currentStatus === "absent";
@@ -147,10 +150,10 @@ const StudentTableRow = memo(function StudentTableRow({
       <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground">{entryTimeStr}</td>
       <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground">{exitTimeStr}</td>
       <td className="py-2 px-2 text-center text-xs text-muted-foreground font-medium">
-        {isAbsent ? "\u2014" : `${record?.totalPresenceTime || 0} د`}
+        {isAbsent ? "—" : `${livePresenceTime} د`}
       </td>
       <td className="py-2 px-2 text-center">
-        <span className="text-xs font-mono font-semibold text-foreground tabular-nums">{record?.presencePercentage || 0}%</span>
+        <span className="text-xs font-mono font-semibold text-foreground tabular-nums">{livePresencePercentage}%</span>
       </td>
       <td className="py-2 px-2 text-center">
         {isAbsent ? (
@@ -182,6 +185,15 @@ export function LiveAttendancePage() {
   const [selectedLectureId, setSelectedLectureId] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [auditSearchQuery, setAuditSearchQuery] = useState<string>("");
+
+  // Local state to force re-render every 30 seconds to update live timers
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 30000); // 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   const todayStr = getLocalDateString();
 
@@ -333,6 +345,13 @@ export function LiveAttendancePage() {
   }, [lectures, selectedDept, selectedLevel, searchTerm, departments]);
 
   const studentRows = useMemo(() => {
+    const getLectureDuration = (startTime: string, endTime: string) => {
+      if (!startTime || !endTime) return 45;
+      const [startHour, startMin] = startTime.split(":").map(Number);
+      const [endHour, endMin] = endTime.split(":").map(Number);
+      return endHour * 60 + endMin - (startHour * 60 + startMin);
+    };
+
     return filteredStudents.map((student: any) => {
       const rec = recordsByStudentId.get(student._id?.toString()) || null;
       const firstSession = rec?.sessions?.[0];
@@ -343,11 +362,39 @@ export function LiveAttendancePage() {
       const exitTimeStr = lastSession?.checkOut
         ? formatTime(lastSession.checkOut)
         : rec?.status === "in-progress" ? "جاري" : "\u2014";
-      const currentStatus = rec ? rec.status : "absent";
+      let currentStatus = rec ? rec.status : "absent";
+      if (currentStatus === "in-progress" && lastSession && lastSession.checkOut) {
+        currentStatus = "in-progress-disconnected";
+      }
 
-      return { student, record: rec, entryTimeStr, exitTimeStr, currentStatus };
+      // Calculate dynamic presence time for active connected sessions
+      let livePresenceTime = rec?.totalPresenceTime || 0;
+      if (rec?.status === "in-progress" && lastSession && !lastSession.checkOut) {
+        const checkInTime = new Date(lastSession.checkIn).getTime();
+        const currentTime = new Date().getTime();
+        const elapsed = Math.round((currentTime - checkInTime) / (1000 * 60));
+        livePresenceTime += Math.max(0, elapsed);
+      }
+
+      const totalDuration = selectedLecture
+        ? getLectureDuration(selectedLecture.startTime, selectedLecture.endTime)
+        : 45;
+
+      const livePresencePercentage = totalDuration > 0
+        ? Math.min(100, Math.round((livePresenceTime / totalDuration) * 100))
+        : 0;
+
+      return {
+        student,
+        record: rec,
+        entryTimeStr,
+        exitTimeStr,
+        currentStatus,
+        livePresenceTime,
+        livePresencePercentage,
+      };
     });
-  }, [filteredStudents, recordsByStudentId]);
+  }, [filteredStudents, recordsByStudentId, selectedLecture, tick]);
 
   const handleManualPresence = useCallback(async (student: any, record: any) => {
     if (!student) return;
@@ -739,7 +786,7 @@ export function LiveAttendancePage() {
                   </div>
                   <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 p-2 rounded-md text-center">
                     <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium block">حاضر</span>
-                    <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5 block">{auditStats.present}</span>
+                    <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5 block">{auditStats.present + auditStats.inProgress}</span>
                   </div>
                   <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 p-2 rounded-md text-center">
                     <span className="text-[11px] text-amber-700 dark:text-amber-400 font-medium block">متأخر</span>
@@ -807,6 +854,8 @@ export function LiveAttendancePage() {
                                 entryTimeStr={row.entryTimeStr}
                                 exitTimeStr={row.exitTimeStr}
                                 currentStatus={row.currentStatus}
+                                livePresenceTime={row.livePresenceTime}
+                                livePresencePercentage={row.livePresencePercentage}
                                 onPresence={() => handleManualPresence(row.student, row.record)}
                                 onExcuse={() => handleManualExcuse(row.student, row.record)}
                               />
@@ -825,6 +874,8 @@ export function LiveAttendancePage() {
                             entryTimeStr={row.entryTimeStr}
                             exitTimeStr={row.exitTimeStr}
                             currentStatus={row.currentStatus}
+                            livePresenceTime={row.livePresenceTime}
+                            livePresencePercentage={row.livePresencePercentage}
                             onPresence={() => handleManualPresence(row.student, row.record)}
                             onExcuse={() => handleManualExcuse(row.student, row.record)}
                           />

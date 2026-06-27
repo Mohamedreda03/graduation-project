@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Layers,
   CheckCircle2,
+  TrendingUp,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -233,6 +234,12 @@ export function StudentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" asChild className="h-10 px-4">
+            <Link to="/students/promote">
+              <TrendingUp className="ml-2 h-4 w-4" />
+              ترقية السنوات
+            </Link>
+          </Button>
           <Button variant="outline" asChild className="h-10 px-4">
             <Link to="/students/import">استيراد طلاب</Link>
           </Button>

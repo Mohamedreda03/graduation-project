@@ -23,6 +23,15 @@ const { catchAsync } = require("../utils/helpers");
 const { ATTENDANCE_STATUS, DEVICE_REQUEST_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
 
+// Helper to get local date string (YYYY-MM-DD) avoiding UTC timezone shifts
+function getLocalDateString(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 // ─────────────────────────────────────────────
 // Arabic helpers
 // ─────────────────────────────────────────────
@@ -288,7 +297,7 @@ exports.getSchedule = catchAsync(async (req, res) => {
     return {
       dayOfWeek: dow,
       dayNameAr: DAY_NAMES_AR[dow],
-      date: date.toISOString().split("T")[0],
+      date: getLocalDateString(date),
       dateFormatted: formatDateAr(date),
       isToday: dow === todayDow,
       lectures: grouped[dow],

@@ -169,6 +169,45 @@ exports.initializeSettings = catchAsync(async (req, res, next) => {
 });
 
 /**
+ * Update multiple settings in bulk
+ * PUT /api/settings/bulk
+ */
+exports.updateSettingsBulk = catchAsync(async (req, res, next) => {
+  const { settings } = req.body;
+
+  if (!settings || !Array.isArray(settings)) {
+    return next(new ApiError("Settings array is required", 400));
+  }
+
+  const updatedSettings = [];
+
+  for (const s of settings) {
+    const { key, value } = s;
+    if (key && value !== undefined) {
+      let setting = await Setting.findOne({ key });
+      if (setting) {
+        setting.value = value;
+        setting.updatedBy = req.user._id;
+        await setting.save();
+      } else {
+        setting = await Setting.create({
+          key,
+          value,
+          updatedBy: req.user._id,
+        });
+      }
+      updatedSettings.push(setting);
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Settings updated successfully",
+    data: updatedSettings,
+  });
+});
+
+/**
  * Get setting value (helper for internal use)
  */
 exports.getSettingValue = async (key, defaultValue = null) => {

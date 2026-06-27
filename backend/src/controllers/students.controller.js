@@ -434,3 +434,157 @@ exports.rejectDeviceChange = catchAsync(async (req, res, next) => {
     message: "Device change rejected",
   });
 });
+
+/**
+ * Get promotion preview — عرض الطلاب في فرقة معينة قبل الترقية
+ * GET /api/students/promotion-preview?specialization=xxx&level=1
+ */
+exports.getPromotionPreview = catchAsync(async (req, res, next) => {
+  const { specialization, level } = req.query;
+
+  if (!level) {
+    throw ApiError.badRequest("Level is required");
+  }
+
+  const currentLevel = parseInt(level);
+
+  const query = { role: ROLES.STUDENT, "academicInfo.level": currentLevel, isActive: true };
+  if (specialization) {
+    query["academicInfo.specialization"] = specialization;
+  }
+
+  const students = await User.find(query)
+    .populate("academicInfo.specialization", "name code levels")
+    .select("studentId name email academicInfo isActive")
+    .sort({ studentId: 1 })
+    .lean();
+
+  // Determine next level per student based on their specialization levels
+  const enriched = students.map((s) => {
+    const spec = s.academicInfo?.specialization;
+    const specLevels = spec?.levels || [];
+    const maxLevel = specLevels.length > 0
+      ? Math.max(...specLevels.map((l) => l.level))
+      : 5; // default max
+
+    const isLastLevel = currentLevel >= maxLevel;
+    const nextLevel = isLastLevel ? null : currentLevel + 1;
+
+    const nextLevelName = !isLastLevel && specLevels.length > 0
+      ? specLevels.find((l) => l.level === nextLevel)?.name || `الفرقة ${nextLevel}`
+      : null;
+
+    return {
+      _id: s._id,
+      studentId: s.studentId,
+      name: s.name,
+      email: s.email,
+      currentLevel,
+      nextLevel,
+      nextLevelName,
+      willGraduate: isLastLevel,
+      specialization: spec
+        ? { _id: spec._id, name: spec.name, code: spec.code }
+        : null,
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      students: enriched,
+      summary: {
+        total: enriched.length,
+        willPromote: enriched.filter((s) => !s.willGraduate).length,
+        willGraduate: enriched.filter((s) => s.willGraduate).length,
+        currentLevel,
+      },
+    },
+  });
+});
+
+/**
+ * Promote students — ترقية الطلاب المحددين للفرقة التالية
+ * POST /api/students/promote
+ * Body: { studentIds: [...], clearEnrolledCourses: true }
+ *
+ * الطلاب اللي مش في القائمة = يعيدوا السنة = لا يُمس حسابهم
+ */
+exports.promoteStudents = catchAsync(async (req, res, next) => {
+  const { studentIds, clearEnrolledCourses = false } = req.body;
+
+  if (!Array.isArray(studentIds) || studentIds.length === 0) {
+    throw ApiError.badRequest("studentIds array is required and must not be empty");
+  }
+
+  // Fetch all selected students
+  const students = await User.find({
+    _id: { $in: studentIds },
+    role: ROLES.STUDENT,
+    isActive: true,
+  }).populate("academicInfo.specialization", "levels");
+
+  if (students.length === 0) {
+    throw ApiError.notFound("No active students found with the provided IDs");
+  }
+
+  const results = {
+    promoted: [],
+    graduated: [],
+    failed: [],
+  };
+
+  for (const student of students) {
+    try {
+      const spec = student.academicInfo?.specialization;
+      const specLevels = spec?.levels || [];
+      const currentLevel = student.academicInfo?.level;
+
+      const maxLevel = specLevels.length > 0
+        ? Math.max(...specLevels.map((l) => l.level))
+        : 5;
+
+      if (currentLevel >= maxLevel) {
+        // Last level → graduate
+        student.isActive = false;
+        if (clearEnrolledCourses) {
+          student.academicInfo.enrolledCourses = [];
+        }
+        await student.save();
+        results.graduated.push({
+          _id: student._id,
+          studentId: student.studentId,
+          name: student.name,
+          level: currentLevel,
+        });
+      } else {
+        // Normal promotion
+        const newLevel = currentLevel + 1;
+        student.academicInfo.level = newLevel;
+        if (clearEnrolledCourses) {
+          student.academicInfo.enrolledCourses = [];
+        }
+        await student.save();
+        results.promoted.push({
+          _id: student._id,
+          studentId: student.studentId,
+          name: student.name,
+          fromLevel: currentLevel,
+          toLevel: newLevel,
+        });
+      }
+    } catch (err) {
+      results.failed.push({
+        _id: student._id,
+        studentId: student.studentId,
+        error: err.message,
+      });
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `تمت الترقية: ${results.promoted.length} طالب، تخرج: ${results.graduated.length} طالب`,
+    data: results,
+  });
+});

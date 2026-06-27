@@ -6,6 +6,31 @@ import type {
   DeviceChangeRequest,
 } from "@/types";
 
+export interface PromotionStudent {
+  _id: string;
+  studentId: string;
+  name: { first: string; last: string };
+  email: string;
+  currentLevel: number;
+  nextLevel: number | null;
+  nextLevelName: string | null;
+  willGraduate: boolean;
+  specialization: { _id: string; name: string; code: string } | null;
+}
+
+export interface PromotionSummary {
+  total: number;
+  willPromote: number;
+  willGraduate: number;
+  currentLevel: number;
+}
+
+export interface PromotionResult {
+  promoted: Array<{ _id: string; studentId: string; name: { first: string; last: string }; fromLevel: number; toLevel: number }>;
+  graduated: Array<{ _id: string; studentId: string; name: { first: string; last: string }; level: number }>;
+  failed: Array<{ _id: string; studentId: string; error: string }>;
+}
+
 interface CreateStudentRequest {
   name: {
     first: string;
@@ -122,5 +147,31 @@ export const studentsService = {
     reason?: string,
   ): Promise<void> => {
     await api.post(`/students/device-requests/${requestId}/reject`, { reason });
+  },
+
+  // ─── Year Promotion ───────────────────────────────────────────────
+  getPromotionPreview: async (params: {
+    level: number;
+    specialization?: string;
+  }): Promise<{
+    students: PromotionStudent[];
+    summary: PromotionSummary;
+  }> => {
+    const response = await api.get<ApiResponse<{
+      students: PromotionStudent[];
+      summary: PromotionSummary;
+    }>>("/students/promotion-preview", { params });
+    return response.data.data;
+  },
+
+  promoteStudents: async (data: {
+    studentIds: string[];
+    clearEnrolledCourses?: boolean;
+  }): Promise<PromotionResult> => {
+    const response = await api.post<ApiResponse<PromotionResult>>(
+      "/students/promote",
+      data,
+    );
+    return response.data.data;
   },
 };

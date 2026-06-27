@@ -15,6 +15,15 @@ const {
   getTodayDate,
 } = require("../utils/helpers");
 
+// Helper to get local date string (YYYY-MM-DD) avoiding UTC timezone shifts
+function getLocalDateString(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 /**
  * Get all attendance records
  * GET /api/attendance
@@ -530,7 +539,7 @@ exports.getDailySummary = catchAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: {
-      date: targetDate.toISOString().split("T")[0],
+      date: getLocalDateString(targetDate),
       total: totalRecords,
       present: presentRecords,
       absent: absentRecords,
@@ -585,7 +594,7 @@ exports.getWeeklySummary = catchAsync(async (req, res, next) => {
     });
 
     dailyData.push({
-      date: dayStart.toISOString().split("T")[0],
+      date: getLocalDateString(dayStart),
       dayOfWeek: i,
       total,
       present,
@@ -600,8 +609,8 @@ exports.getWeeklySummary = catchAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: {
-      weekStart: weekStart.toISOString().split("T")[0],
-      weekEnd: weekEnd.toISOString().split("T")[0],
+      weekStart: getLocalDateString(weekStart),
+      weekEnd: getLocalDateString(weekEnd),
       total: totalAll,
       present: presentAll,
       absent: totalAll - presentAll,
@@ -882,24 +891,48 @@ exports.getCourseMatrix = catchAsync(async (req, res, next) => {
   // 2. Find unique dates
   const uniqueDates = await AttendanceRecord.distinct("date", { course: courseId });
   uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-  const dateStrings = uniqueDates.map((d) => d.toISOString().split("T")[0]);
+  const dateStrings = uniqueDates.map((d) => getLocalDateString(d));
 
   // 3. Find all records for the course
   const records = await AttendanceRecord.find({ course: courseId });
 
-  // Map records by student and date
+  // Map records by student and date (handling multiple lectures on same day by prioritizing presence)
   const studentRecordsMap = {};
   records.forEach((r) => {
     const sId = r.student.toString();
-    const dStr = r.date.toISOString().split("T")[0];
+    const dStr = getLocalDateString(r.date);
     if (!studentRecordsMap[sId]) {
       studentRecordsMap[sId] = {};
     }
-    studentRecordsMap[sId][dStr] = {
-      _id: r._id,
-      status: r.status,
-      presencePercentage: r.presencePercentage,
-    };
+    
+    const existing = studentRecordsMap[sId][dStr];
+    if (!existing) {
+      studentRecordsMap[sId][dStr] = {
+        _id: r._id,
+        status: r.status,
+        presencePercentage: r.presencePercentage,
+      };
+    } else {
+      const statusPriority = { present: 4, late: 3, excused: 2, "in-progress": 1, absent: 0 };
+      const currentPriority = statusPriority[r.status] || 0;
+      const existingPriority = statusPriority[existing.status] || 0;
+      
+      if (currentPriority > existingPriority) {
+        studentRecordsMap[sId][dStr] = {
+          _id: r._id,
+          status: r.status,
+          presencePercentage: r.presencePercentage,
+        };
+      } else if (currentPriority === existingPriority) {
+        if (r.presencePercentage > existing.presencePercentage) {
+          studentRecordsMap[sId][dStr] = {
+            _id: r._id,
+            status: r.status,
+            presencePercentage: r.presencePercentage,
+          };
+        }
+      }
+    }
   });
 
   // 4. Build grid rows
@@ -986,7 +1019,7 @@ exports.getStudentMatrix = catchAsync(async (req, res, next) => {
   for (const course of courses) {
     const uniqueDates = await AttendanceRecord.distinct("date", { course: course._id });
     uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-    const dateStrings = uniqueDates.map((d) => d.toISOString().split("T")[0]);
+    const dateStrings = uniqueDates.map((d) => getLocalDateString(d));
 
     const records = await AttendanceRecord.find({
       student: studentId,
@@ -995,7 +1028,7 @@ exports.getStudentMatrix = catchAsync(async (req, res, next) => {
 
     const recordsMap = {};
     records.forEach((r) => {
-      const dStr = r.date.toISOString().split("T")[0];
+      const dStr = getLocalDateString(r.date);
       recordsMap[dStr] = {
         _id: r._id,
         status: r.status,

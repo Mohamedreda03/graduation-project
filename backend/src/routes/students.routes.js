@@ -75,6 +75,72 @@ router.get("/stats", adminOrDoctor, studentsController.getStudentStats);
 
 /**
  * @swagger
+ * /students/promotion-preview:
+ *   get:
+ *     summary: معاينة الطلاب المرشحين للترقية (Admin/Student Affairs)
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: level
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: الفرقة الحالية
+ *       - in: query
+ *         name: specialization
+ *         schema:
+ *           type: string
+ *         description: فلتر بالتخصص (اختياري)
+ *     responses:
+ *       200:
+ *         description: قائمة الطلاب مع بيانات الترقية
+ */
+router.get(
+  "/promotion-preview",
+  adminOnly,
+  studentsController.getPromotionPreview,
+);
+
+/**
+ * @swagger
+ * /students/promote:
+ *   post:
+ *     summary: ترقية طلاب محددين للفرقة التالية (Admin/Student Affairs)
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - studentIds
+ *             properties:
+ *               studentIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: IDs الطلاب المراد ترقيتهم فقط
+ *               clearEnrolledCourses:
+ *                 type: boolean
+ *                 default: false
+ *                 description: مسح الكورسات المسجلة عند الترقية
+ *     responses:
+ *       200:
+ *         description: نتيجة عملية الترقية
+ */
+router.post(
+  "/promote",
+  adminOnly,
+  studentsController.promoteStudents,
+);
+
+/**
+ * @swagger
  * /students:
  *   get:
  *     summary: Get all students (Admin/Doctor)
