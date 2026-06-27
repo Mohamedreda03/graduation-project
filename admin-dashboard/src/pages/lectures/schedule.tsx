@@ -785,7 +785,7 @@ export function LectureSchedulePage() {
               <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
                 <Building className="h-3.5 w-3.5" /> الكلية
               </label>
-              <Select value={selectedCollegeId} onValueChange={handleCollegeChange}>
+              <Select dir="rtl" value={selectedCollegeId} onValueChange={handleCollegeChange}>
                 <SelectTrigger className="rounded-xl w-full">
                   <SelectValue placeholder="اختر الكلية" />
                 </SelectTrigger>
@@ -804,7 +804,7 @@ export function LectureSchedulePage() {
               <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
                 <GraduationCap className="h-3.5 w-3.5" /> الفرقة الدراسية
               </label>
-              <Select value={selectedLevel} onValueChange={handleLevelChange}>
+              <Select dir="rtl" value={selectedLevel} onValueChange={handleLevelChange}>
                 <SelectTrigger className="rounded-xl w-full">
                   <SelectValue placeholder="اختر الفرقة" />
                 </SelectTrigger>
@@ -825,6 +825,7 @@ export function LectureSchedulePage() {
                   <Layers className="h-3.5 w-3.5" /> التخصص
                 </label>
                 <Select
+                  dir="rtl"
                   value={selectedDepartment}
                   onValueChange={setSelectedDepartment}
                 >
@@ -847,7 +848,7 @@ export function LectureSchedulePage() {
               <label className="text-[12px] font-bold text-slate-500 flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" /> الفصل الدراسي
               </label>
-              <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+              <Select dir="rtl" value={selectedSemester} onValueChange={setSelectedSemester}>
                 <SelectTrigger className="rounded-xl w-full">
                   <SelectValue placeholder="اختر الفصل الدراسي" />
                 </SelectTrigger>

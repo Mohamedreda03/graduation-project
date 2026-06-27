@@ -19,7 +19,7 @@ const lectureSchema = new mongoose.Schema(
     },
     semester: {
       type: String,
-      required: [true, "Semester is required"],
+      // Auto-derived from Course.semester at creation time (like doctor, level, specialization)
     },
 
     // Lecture metadata

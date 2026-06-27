@@ -33,7 +33,6 @@ import { TodayLecturesPage } from "@/pages/lectures/today";
 import { AttendancePage } from "@/pages/attendance";
 import { LiveAttendancePage } from "@/pages/attendance/live";
 import { AtRiskStudentsPage } from "@/pages/attendance/at-risk";
-import { AttendanceReportsPage } from "@/pages/attendance/reports";
 import { AttendanceMonitoringPage } from "@/pages/attendance/monitoring";
 import { SettingsPage } from "@/pages/settings";
 import { EmployeesPage, EmployeeFormPage } from "@/pages/employees";
@@ -109,8 +108,8 @@ function App() {
                     <Route path="/students/device-requests" element={<DeviceRequestsPage />} />
                   </Route>
 
-                  {/* Shared across Dept Head, Student Affairs, Super Admin */}
-                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "student_affairs", "head_of_department"]} />}>
+                  {/* Shared across Student Affairs and Super Admin */}
+                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "student_affairs"]} />}>
                     {/* Doctors */}
                     <Route path="/doctors" element={<DoctorsPage />} />
                     <Route path="/doctors/new" element={<DoctorFormPage />} />
@@ -131,11 +130,10 @@ function App() {
                   </Route>
 
                   {/* Attendance & Reports - Shared across all Admins */}
-                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "dean", "student_affairs", "head_of_department"]} />}>
+                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "dean", "student_affairs"]} />}>
                     <Route path="/attendance" element={<AttendancePage />} />
                     <Route path="/attendance/live" element={<LiveAttendancePage />} />
                     <Route path="/attendance/at-risk" element={<AtRiskStudentsPage />} />
-                    <Route path="/attendance/reports" element={<AttendanceReportsPage />} />
                   </Route>
 
                   {/* Dean and Super Admin Only - Comprehensive Monitoring */}

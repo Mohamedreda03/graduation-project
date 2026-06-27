@@ -15,7 +15,6 @@ import { MySchedulePage } from "@/pages/my-schedule";
 import { MyCoursesPage } from "@/pages/courses";
 import { CourseDetailsPage } from "@/pages/courses/details";
 import { AttendancePage } from "@/pages/attendance";
-import { AttendanceReportsPage } from "@/pages/attendance/reports";
 import { LiveAttendancePage } from "@/pages/attendance/live";
 
 const queryClient = new QueryClient({
@@ -65,7 +64,6 @@ function App() {
                 <Route path="/attendance" element={<AttendancePage />} />
                 <Route path="/attendance/live" element={<LiveAttendancePage />} />
                 <Route path="/attendance/live/:hallId" element={<LiveAttendancePage />} />
-                <Route path="/attendance/reports" element={<AttendanceReportsPage />} />
               </Route>
 
               {/* Fallback */}

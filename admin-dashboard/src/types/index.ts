@@ -39,7 +39,7 @@ export interface ChangePasswordRequest {
 
 // ============ User ============
 export type UserRole = "student" | "doctor" | "admin";
-export type AdminRole = "super_admin" | "dean" | "student_affairs" | "head_of_department";
+export type AdminRole = "super_admin" | "dean" | "student_affairs";
 
 export interface UserName {
   first: string;

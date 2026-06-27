@@ -55,23 +55,11 @@ const formSchema = z
       .optional()
       .or(z.literal("")),
     phone: z.string().optional(),
-    adminRole: z.enum(["super_admin", "dean", "student_affairs", "head_of_department"], {
+    adminRole: z.enum(["super_admin", "dean", "student_affairs"], {
       message: "يرجى تحديد صلاحية الدور للموظف",
     }),
     department: z.string().optional().or(z.literal("")),
-  })
-  .refine(
-    (data) => {
-      if (data.adminRole === "head_of_department" && !data.department) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "القسم العلمي مطلوب عند اختيار صلاحية رئيس قسم",
-      path: ["department"],
-    }
-  );
+  });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -137,7 +125,7 @@ export function EmployeeFormPage() {
         role: "admin",
         adminRole: values.adminRole,
         phone: values.phone || undefined,
-        department: values.adminRole === "head_of_department" ? values.department : undefined,
+        department: undefined,
       };
 
       if (values.password) {
@@ -301,44 +289,12 @@ export function EmployeeFormPage() {
                               <SelectItem value="super_admin" className="text-right">مدير النظام (Super Admin)</SelectItem>
                               <SelectItem value="dean" className="text-right">العميد / الوكيل</SelectItem>
                               <SelectItem value="student_affairs" className="text-right">شؤون الطلاب</SelectItem>
-                              <SelectItem value="head_of_department" className="text-right">رئيس قسم علمي</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
-                    {selectedRole === "head_of_department" && (
-                      <FormField
-                        control={form.control}
-                        name="department"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="font-bold text-xs">القسم العلمي التابع له</FormLabel>
-                            <Select
-                              dir="rtl"
-                              onValueChange={field.onChange}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="h-11 rounded-xl">
-                                  <SelectValue placeholder="اختر القسم..." />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {specializations?.map((dept) => (
-                                  <SelectItem key={dept._id} value={dept._id} className="text-right">
-                                    {dept.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
                   </div>
 
                   <FormField
@@ -403,10 +359,6 @@ export function EmployeeFormPage() {
               <div className="border-r-2 border-primary pr-3 py-0.5">
                 <strong className="block text-foreground mb-0.5">شؤون الطلاب</strong>
                 <span className="text-muted-foreground">صلاحية إدارة الطلاب، تسجيل الغيابات اليدوية، مراجعة طلبات تغيير الأجهزة، وإصدار شهادات الحضور.</span>
-              </div>
-              <div className="border-r-2 border-primary pr-3 py-0.5">
-                <strong className="block text-foreground mb-0.5">رئيس قسم علمي</strong>
-                <span className="text-muted-foreground">صلاحية مراقبة مقررات ومحاضرات القسم التابع له فقط، واستعراض نسب حضور طلاب القسم.</span>
               </div>
             </div>
           </div>

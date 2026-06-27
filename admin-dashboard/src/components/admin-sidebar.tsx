@@ -46,7 +46,7 @@ const navMainItems: NavItem[] = [
     url: "/",
     icon: LayoutDashboard,
     isActive: true,
-    allowedAdminRoles: ["super_admin", "dean", "student_affairs", "head_of_department"],
+    allowedAdminRoles: ["super_admin", "dean", "student_affairs"],
   },
   {
     title: "الموظفون والصلاحيات",
@@ -109,7 +109,7 @@ const navMainItems: NavItem[] = [
     title: "الدكاترة",
     url: "/doctors",
     icon: UserCog,
-    allowedAdminRoles: ["super_admin", "head_of_department", "student_affairs"],
+    allowedAdminRoles: ["super_admin", "student_affairs"],
     items: [
       {
         title: "جميع الدكاترة",
@@ -149,7 +149,7 @@ const navMainItems: NavItem[] = [
     title: "المواد الدراسية",
     url: "/courses",
     icon: BookOpen,
-    allowedAdminRoles: ["super_admin", "head_of_department", "student_affairs"],
+    allowedAdminRoles: ["super_admin", "student_affairs"],
     items: [
       {
         title: "جميع المواد",
@@ -165,7 +165,7 @@ const navMainItems: NavItem[] = [
     title: "المحاضرات",
     url: "/lectures",
     icon: Calendar,
-    allowedAdminRoles: ["super_admin", "head_of_department", "student_affairs"],
+    allowedAdminRoles: ["super_admin", "student_affairs"],
     items: [
       {
         title: "جميع المحاضرات",
@@ -185,7 +185,7 @@ const navMainItems: NavItem[] = [
     title: "الحضور والغياب",
     url: "/attendance",
     icon: ClipboardCheck,
-    allowedAdminRoles: ["super_admin", "dean", "student_affairs", "head_of_department"],
+    allowedAdminRoles: ["super_admin", "dean", "student_affairs"],
     items: [
       {
         title: "سجلات الحضور",

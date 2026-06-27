@@ -36,7 +36,6 @@ const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin: "مدير النظام (Super Admin)",
   dean: "العميد / الوكيل",
   student_affairs: "شؤون الطلاب",
-  head_of_department: "رئيس قسم علمي",
 };
 
 export function EmployeesPage() {
@@ -149,9 +148,6 @@ export function EmployeesPage() {
         return (
           <div className="flex flex-col gap-0.5">
             <span className="font-semibold text-foreground text-xs">{label}</span>
-            {role === "head_of_department" && deptName && (
-              <span className="text-[10px] text-primary font-bold">قسم: {deptName}</span>
-            )}
           </div>
         );
       },

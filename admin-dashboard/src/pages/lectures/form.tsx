@@ -16,6 +16,7 @@ import {
   Lightbulb,
   Info,
   Repeat,
+  Grid3X3,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ import {
   useLecture,
   useCourses,
   useHalls,
+  useSpecializations,
 } from "@/hooks";
 import type { Course, Hall } from "@/types";
 
@@ -63,6 +65,7 @@ const formSchema = z.object({
   endTime: z.string().min(1, "وقت النهاية مطلوب"),
   lectureType: z.enum(["lecture", "section", "lab"]),
   weekPattern: z.enum(["weekly", "odd", "even"]),
+  section: z.string().default("all"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -75,6 +78,7 @@ export function LectureFormPage() {
   const { data: lecture, isLoading: lectureLoading } = useLecture(id ?? "");
   const { data: coursesData } = useCourses();
   const { data: hallsData } = useHalls();
+  const { data: specializations } = useSpecializations();
   const createMutation = useCreateLecture();
   const updateMutation = useUpdateLecture();
 
@@ -88,8 +92,40 @@ export function LectureFormPage() {
       endTime: "",
       lectureType: "lecture",
       weekPattern: "weekly",
+      section: "all",
     },
   });
+
+  // Extract courses array from the response
+  const courses: Course[] = Array.isArray(coursesData)
+    ? coursesData
+    : (coursesData?.data ?? []);
+
+  const watchCourse = form.watch("course");
+  const watchLectureType = form.watch("lectureType");
+
+  // Auto-set section to "all" if lectureType is "lecture"
+  useEffect(() => {
+    if (watchLectureType === "lecture") {
+      form.setValue("section", "all");
+    }
+  }, [watchLectureType, form]);
+
+  const selectedCourse = courses.find((c) => c._id === watchCourse);
+  const courseSpecId = selectedCourse
+    ? typeof selectedCourse.specialization === "object"
+      ? (selectedCourse.specialization as any)?._id
+      : selectedCourse.specialization
+    : "";
+  const courseLevel = selectedCourse?.level;
+
+  const selectedSpecializationObj = specializations?.find(
+    (spec: any) => spec._id === courseSpecId
+  );
+  const selectedLevelObj = selectedSpecializationObj?.levels?.find(
+    (lvl: any) => lvl.level === courseLevel
+  );
+  const sectionsCount = selectedLevelObj?.sectionsCount || 2;
 
   useEffect(() => {
     if (lecture) {
@@ -116,6 +152,7 @@ export function LectureFormPage() {
         endTime: lecture.endTime,
         lectureType: type,
         weekPattern: pattern,
+        section: lecture.section || "all",
       });
     }
   }, [lecture, form]);
@@ -147,11 +184,6 @@ export function LectureFormPage() {
       </div>
     );
   }
-
-  // Extract courses array from the response
-  const courses: Course[] = Array.isArray(coursesData)
-    ? coursesData
-    : (coursesData?.data ?? []);
 
   // Extract halls array from the response
   const halls: Hall[] = Array.isArray(hallsData)
@@ -396,7 +428,7 @@ export function LectureFormPage() {
                     control={form.control}
                     name="weekPattern"
                     render={({ field }) => (
-                      <FormItem className="space-y-3 md:col-span-2">
+                      <FormItem className="space-y-3">
                         <FormLabel className="flex items-center gap-2">
                           <Repeat className="h-4 w-4 text-muted-foreground" />
                           نمط التكرار
@@ -428,6 +460,108 @@ export function LectureFormPage() {
                       </FormItem>
                     )}
                   />
+
+                  {/* Section Selector - conditional */}
+                  {watchLectureType !== "lecture" && (
+                    <FormField
+                      control={form.control}
+                      name="section"
+                      render={({ field }) => {
+                        const isAll = field.value === "all";
+                        const selectedSections = isAll
+                          ? []
+                          : field.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean);
+
+                        const handleCheckboxChange = (
+                          secVal: string,
+                          checked: boolean
+                        ) => {
+                          if (checked) {
+                            const updated = [...selectedSections, secVal].sort();
+                            field.onChange(updated.join(","));
+                          } else {
+                            const updated = selectedSections.filter(
+                              (s) => s !== secVal
+                            );
+                            field.onChange(
+                              updated.length === 0 ? "all" : updated.join(",")
+                            );
+                          }
+                        };
+
+                        const handleTypeChange = (type: "all" | "specific") => {
+                          if (type === "all") {
+                            field.onChange("all");
+                          } else {
+                            field.onChange("1");
+                          }
+                        };
+
+                        return (
+                          <FormItem className="space-y-3 md:col-span-2 pt-4 border-t border-border/50">
+                            <FormLabel className="flex items-center gap-2 font-bold text-sm">
+                              <Grid3X3 className="h-4 w-4 text-primary" />
+                              السكشن المستهدف (المجموعات)
+                            </FormLabel>
+
+                            <div className="flex gap-6 mb-2">
+                              <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="sectionSelectType"
+                                  checked={isAll}
+                                  onChange={() => handleTypeChange("all")}
+                                  className="accent-primary h-4 w-4 cursor-pointer"
+                                />
+                                جميع المجموعات (الكل)
+                              </label>
+                              <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="sectionSelectType"
+                                  checked={!isAll}
+                                  onChange={() => handleTypeChange("specific")}
+                                  className="accent-primary h-4 w-4 cursor-pointer"
+                                />
+                                مجموعات محددة (سكاشن)
+                              </label>
+                            </div>
+
+                            {!isAll && (
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-muted/20 border border-border rounded-2xl animate-in fade-in duration-200">
+                                {Array.from(
+                                  { length: sectionsCount },
+                                  (_, i) => (i + 1).toString()
+                                ).map((sec) => {
+                                  const isChecked = selectedSections.includes(sec);
+                                  return (
+                                    <label
+                                      key={sec}
+                                      className="flex items-center gap-2 text-sm font-medium cursor-pointer p-2 hover:bg-muted/50 rounded-xl transition-colors border border-transparent hover:border-border"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) =>
+                                          handleCheckboxChange(sec, e.target.checked)
+                                        }
+                                        className="rounded accent-primary h-4 w-4 cursor-pointer"
+                                      />
+                                      سكشن {sec}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  )}
                 </div>
 
                 <div className="flex gap-4 pt-6 border-t border-border/50">

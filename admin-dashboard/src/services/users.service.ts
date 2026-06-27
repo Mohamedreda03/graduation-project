@@ -9,7 +9,7 @@ interface CreateUserRequest {
   email: string;
   password?: string;
   role: "student" | "doctor" | "admin";
-  adminRole?: "super_admin" | "dean" | "student_affairs" | "head_of_department";
+  adminRole?: "super_admin" | "dean" | "student_affairs";
   department?: string; // Specialization ID (optional)
   phone?: string;
 }

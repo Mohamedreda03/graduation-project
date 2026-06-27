@@ -356,6 +356,7 @@ export function CourseFormPage() {
                           الفرقه
                         </FormLabel>
                         <Select
+                          key={`level-${field.value}-${availableLevels.length}`}
                           dir="rtl"
                           onValueChange={(v) => field.onChange(parseInt(v))}
                           value={field.value?.toString()}

@@ -175,7 +175,14 @@ exports.createLecture = catchAsync(async (req, res, next) => {
     doctor: course.doctor,
     level: course.level,
     specialization: course.specialization,
+    // Auto-derive semester from Course (take first semester if array)
+    semester: Array.isArray(course.semester)
+      ? course.semester[0]
+      : course.semester,
   };
+
+  // Remove semester if it was manually sent (we ignore it)
+  // lectureData already has the correct value
 
   const lecture = await Lecture.create(lectureData);
 
@@ -223,6 +230,10 @@ exports.updateLecture = catchAsync(async (req, res, next) => {
     doctor: course.doctor,
     level: course.level,
     specialization: course.specialization,
+    // Keep semester in sync with the course (auto-derived)
+    semester: Array.isArray(course.semester)
+      ? course.semester[0]
+      : course.semester,
   };
 
   const lecture = await Lecture.findByIdAndUpdate(req.params.id, updateData, {

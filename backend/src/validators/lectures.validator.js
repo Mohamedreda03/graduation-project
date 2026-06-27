@@ -28,7 +28,7 @@ const createLecture = {
       .default("lecture"),
     section: Joi.string().default("all"),
     weekPattern: Joi.string().valid("weekly", "odd", "even").default("weekly"),
-    semester: Joi.string().required(),
+    // semester is auto-derived from Course in the controller
   }),
 };
 
@@ -60,7 +60,7 @@ const updateLecture = {
     ),
     weekPattern: Joi.string().valid("weekly", "odd", "even"),
     isActive: Joi.boolean(),
-    semester: Joi.string(),
+    // semester is auto-derived from Course, no need to update it manually
   }),
 };
 
