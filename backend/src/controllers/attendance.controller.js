@@ -1097,20 +1097,25 @@ exports.updateMatrixCell = catchAsync(async (req, res, next) => {
   const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
   const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
 
-  let record = await AttendanceRecord.findOne({
+  let records = await AttendanceRecord.find({
     student: studentId,
     course: courseId,
     date: { $gte: startOfDay, $lte: endOfDay },
   });
 
-  if (record) {
-    record.status = status;
-    record.isFinalized = true;
-    if (reason) record.modificationReason = reason;
-    record.modifiedBy = req.user._id;
-    record.modifiedAt = new Date();
-    record.presencePercentage = (status === "present" || status === "late") ? 100 : 0;
-    await record.save();
+  let updatedRecord = null;
+
+  if (records && records.length > 0) {
+    for (let record of records) {
+      record.status = status;
+      record.isFinalized = true;
+      if (reason) record.modificationReason = reason;
+      record.modifiedBy = req.user._id;
+      record.modifiedAt = new Date();
+      record.presencePercentage = (status === "present" || status === "late") ? 100 : 0;
+      await record.save();
+      updatedRecord = record;
+    }
   } else {
     const lecture = await Lecture.findOne({ course: courseId });
 
@@ -1131,12 +1136,13 @@ exports.updateMatrixCell = catchAsync(async (req, res, next) => {
     });
 
     await record.save();
+    updatedRecord = record;
   }
 
   res.status(200).json({
     success: true,
     message: "Attendance status updated successfully",
-    data: record,
+    data: updatedRecord,
   });
 });
 
