@@ -65,7 +65,7 @@ const formSchema = z.object({
   endTime: z.string().min(1, "وقت النهاية مطلوب"),
   lectureType: z.enum(["lecture", "section", "lab"]),
   weekPattern: z.enum(["weekly", "odd", "even"]),
-  section: z.string().default("all"),
+  section: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -235,7 +235,7 @@ export function LectureFormPage() {
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Course */}
-                  <FormField
+                  <FormField<FormValues, "course">
                     control={form.control}
                     name="course"
                     render={({ field }) => (
@@ -269,7 +269,7 @@ export function LectureFormPage() {
                   />
 
                   {/* Hall */}
-                  <FormField
+                  <FormField<FormValues, "hall">
                     control={form.control}
                     name="hall"
                     render={({ field }) => (
@@ -303,7 +303,7 @@ export function LectureFormPage() {
                   />
 
                   {/* Day of Week */}
-                  <FormField
+                  <FormField<FormValues, "dayOfWeek">
                     control={form.control}
                     name="dayOfWeek"
                     render={({ field }) => (
@@ -340,7 +340,7 @@ export function LectureFormPage() {
                   />
 
                   {/* Lecture Type */}
-                  <FormField
+                  <FormField<FormValues, "lectureType">
                     control={form.control}
                     name="lectureType"
                     render={({ field }) => (
@@ -372,7 +372,7 @@ export function LectureFormPage() {
                   />
 
                   {/* Start Time */}
-                  <FormField
+                  <FormField<FormValues, "startTime">
                     control={form.control}
                     name="startTime"
                     render={({ field }) => (
@@ -398,7 +398,7 @@ export function LectureFormPage() {
                   />
 
                   {/* End Time */}
-                  <FormField
+                  <FormField<FormValues, "endTime">
                     control={form.control}
                     name="endTime"
                     render={({ field }) => (
@@ -424,7 +424,7 @@ export function LectureFormPage() {
                   />
 
                   {/* Week Pattern */}
-                  <FormField
+                  <FormField<FormValues, "weekPattern">
                     control={form.control}
                     name="weekPattern"
                     render={({ field }) => (
@@ -463,7 +463,7 @@ export function LectureFormPage() {
 
                   {/* Section Selector - conditional */}
                   {watchLectureType !== "lecture" && (
-                    <FormField
+                    <FormField<FormValues, "section">
                       control={form.control}
                       name="section"
                       render={({ field }) => {

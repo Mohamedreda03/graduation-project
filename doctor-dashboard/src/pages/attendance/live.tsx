@@ -294,7 +294,7 @@ export function LiveAttendancePage() {
 
   // Statistics for the selected lecture
   const auditStats = useMemo(() => {
-    if (!attendanceRecords) return { total: 0, present: 0, late: 0, absent: 0, excused: 0, rate: 0 };
+    if (!attendanceRecords) return { total: 0, present: 0, late: 0, absent: 0, excused: 0, inProgress: 0, rate: 0 };
     let present = 0, late = 0, excused = 0, inProgress = 0;
     for (const r of attendanceRecords) {
       if (r.status === "present") present++;
