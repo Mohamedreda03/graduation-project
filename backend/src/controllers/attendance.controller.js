@@ -891,7 +891,7 @@ exports.getCourseMatrix = catchAsync(async (req, res, next) => {
   // 2. Find unique dates
   const uniqueDates = await AttendanceRecord.distinct("date", { course: courseId });
   uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-  const dateStrings = uniqueDates.map((d) => getLocalDateString(d));
+  const dateStrings = [...new Set(uniqueDates.map((d) => getLocalDateString(d)))];
 
   // 3. Find all records for the course
   const records = await AttendanceRecord.find({ course: courseId });
@@ -1019,7 +1019,7 @@ exports.getStudentMatrix = catchAsync(async (req, res, next) => {
   for (const course of courses) {
     const uniqueDates = await AttendanceRecord.distinct("date", { course: course._id });
     uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-    const dateStrings = uniqueDates.map((d) => getLocalDateString(d));
+    const dateStrings = [...new Set(uniqueDates.map((d) => getLocalDateString(d)))];
 
     const records = await AttendanceRecord.find({
       student: studentId,
@@ -1093,13 +1093,14 @@ exports.updateMatrixCell = catchAsync(async (req, res, next) => {
     throw ApiError.badRequest("Invalid status");
   }
 
-  const queryDate = new Date(date);
-  queryDate.setHours(0, 0, 0, 0);
+  const targetDate = new Date(date);
+  const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
+  const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
 
   let record = await AttendanceRecord.findOne({
     student: studentId,
     course: courseId,
-    date: queryDate,
+    date: { $gte: startOfDay, $lte: endOfDay },
   });
 
   if (record) {
@@ -1118,7 +1119,7 @@ exports.updateMatrixCell = catchAsync(async (req, res, next) => {
       course: courseId,
       lecture: lecture ? lecture._id : new mongoose.Types.ObjectId(),
       hall: lecture ? lecture.hall : new mongoose.Types.ObjectId(),
-      date: queryDate,
+      date: startOfDay,
       status,
       isFinalized: true,
       finalizedAt: new Date(),

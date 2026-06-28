@@ -12,6 +12,7 @@
     "seed:rbac": "node src/seeders/seed-rbac.js",
     "seed:large": "node src/seeders/seed-large.js",
     "db:wipe": "node src/seeders/wipe.js",
+    "db:wipe-admin": "node src/seeders/wipe-and-create-admin.js",
     "db:reset": "node src/seeders/reset.js",
     "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch",

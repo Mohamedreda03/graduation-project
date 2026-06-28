@@ -1,3 +1,31 @@
+require("dotenv").config();
+
+if (process.env.TIME_OFFSET_HOURS) {
+  const offsetMs = parseInt(process.env.TIME_OFFSET_HOURS, 10) * 60 * 60 * 1000;
+  if (!isNaN(offsetMs)) {
+    const OriginalDate = global.Date;
+    
+    const MockDate = function Date(...args) {
+      if (args.length === 0) {
+        const d = new OriginalDate(OriginalDate.now() + offsetMs);
+        return this instanceof MockDate ? d : d.toString();
+      }
+      const d = new OriginalDate(...args);
+      return this instanceof MockDate ? d : d.toString();
+    };
+    
+    MockDate.prototype = OriginalDate.prototype;
+    MockDate.now = function() {
+      return OriginalDate.now() + offsetMs;
+    };
+    MockDate.UTC = OriginalDate.UTC;
+    MockDate.parse = OriginalDate.parse;
+    
+    global.Date = MockDate;
+    console.log(`⏰ [Time Travel] Offset applied: Shifted by ${process.env.TIME_OFFSET_HOURS} hours. Fake server time: ${new Date().toString()}`);
+  }
+}
+
 const app = require("./src/app");
 const connectDB = require("./src/config/database");
 const config = require("./src/config/env");
