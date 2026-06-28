@@ -63,7 +63,6 @@ const formatDateAr = (date) => {
 const STATUS_AR = {
   present: "حضور",
   absent: "غياب",
-  late: "متأخر",
   excused: "مقبول",
   "in-progress": "جارية",
 };
@@ -71,7 +70,6 @@ const STATUS_AR = {
 const STATUS_LEVEL = {
   present: "success",
   absent: "danger",
-  late: "warning",
   excused: "info",
   "in-progress": "info",
 };
@@ -150,53 +148,73 @@ exports.getHome = catchAsync(async (req, res) => {
   let liveLecture = null;
   let nextLecture = null;
 
-  // Check if student is actually inside a hall session
+  // Find current active lecture in time from today's schedule
+  let liveLec = todayLectures.find(lec => {
+    const startMins = toMinutes(lec.startTime);
+    const endMins = toMinutes(lec.endTime);
+    return currentMins >= startMins && currentMins <= endMins;
+  });
+
+  // Check active session (to know if they are connected)
   const activeSession = await StudentSession.findActiveSession(student._id);
 
-  if (activeSession && activeSession.currentLecture) {
-    const liveLec = await Lecture.findById(activeSession.currentLecture)
+  // Fallback: If time-based check missed it, but they are in an active session for some reason
+  if (!liveLec && activeSession && activeSession.currentLecture) {
+    liveLec = await Lecture.findById(activeSession.currentLecture)
       .populate("course", "name code")
       .populate("hall", "name")
       .populate("doctor", "name");
+  }
 
-    if (liveLec) {
-      // Calculate remaining time in seconds
-      const endMins = toMinutes(liveLec.endTime);
-      const remainingSecs = Math.max(0, (endMins - currentMins) * 60);
+  if (liveLec) {
+    // Calculate remaining time in seconds
+    const endMins = toMinutes(liveLec.endTime);
+    const remainingSecs = Math.max(0, (endMins - currentMins) * 60);
 
-      // Get attendance status and check-in time
-      let attendanceStatus = ATTENDANCE_STATUS.IN_PROGRESS;
-      let checkInTime = activeSession.connectedAt || activeSession.createdAt;
+    // Is the student currently connected to this lecture?
+    const isConnected = activeSession && activeSession.currentLecture.toString() === liveLec._id.toString();
 
-      if (activeSession.attendanceRecord) {
-        const rec = await AttendanceRecord.findById(activeSession.attendanceRecord);
-        if (rec) {
-          attendanceStatus = rec.status;
-          if (rec.sessions && rec.sessions.length > 0) {
-            checkInTime = rec.sessions[0].checkIn;
-          }
-        }
+    // Get attendance status and check-in time
+    let attendanceStatus = ATTENDANCE_STATUS.IN_PROGRESS;
+    let checkInTime = null;
+
+    // Fetch attendance record for today for this lecture to get checkInTime
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    const rec = await AttendanceRecord.findOne({
+      student: student._id,
+      lecture: liveLec._id,
+      date: todayDate,
+    });
+
+    if (rec) {
+      attendanceStatus = rec.status;
+      if (rec.sessions && rec.sessions.length > 0) {
+        checkInTime = rec.sessions[0].checkIn;
       }
-
-      liveLecture = {
-        lectureId: liveLec._id,
-        courseName: liveLec.course?.name || "",
-        courseCode: liveLec.course?.code || "",
-        doctorName: liveLec.doctor
-          ? `د. ${liveLec.doctor.name?.first || ""} ${liveLec.doctor.name?.last || ""}`.trim()
-          : "",
-        hallName: liveLec.hall?.name || "",
-        startTime: liveLec.startTime,
-        endTime: liveLec.endTime,
-        startTimeIso: getIsoTimeToday(liveLec.startTime),
-        endTimeIso: getIsoTimeToday(liveLec.endTime),
-        durationMinutes: liveLec.durationMinutes || Math.round((toMinutes(liveLec.endTime) - toMinutes(liveLec.startTime))),
-        remainingTime: minutesToHMS(remainingSecs),
-        attendanceStatus,
-        attendanceStatusAr: STATUS_AR[attendanceStatus] || attendanceStatus,
-        checkInTime: checkInTime ? new Date(checkInTime).toISOString() : null,
-      };
+    } else if (isConnected) {
+      checkInTime = activeSession.connectedAt || activeSession.createdAt;
     }
+
+    liveLecture = {
+      lectureId: liveLec._id,
+      courseName: liveLec.course?.name || "",
+      courseCode: liveLec.course?.code || "",
+      doctorName: liveLec.doctor
+        ? `د. ${liveLec.doctor.name?.first || ""} ${liveLec.doctor.name?.last || ""}`.trim()
+        : "",
+      hallName: liveLec.hall?.name || "",
+      startTime: liveLec.startTime,
+      endTime: liveLec.endTime,
+      startTimeIso: getIsoTimeToday(liveLec.startTime),
+      endTimeIso: getIsoTimeToday(liveLec.endTime),
+      durationMinutes: liveLec.durationMinutes || Math.round((toMinutes(liveLec.endTime) - toMinutes(liveLec.startTime))),
+      remainingTime: minutesToHMS(remainingSecs),
+      attendanceStatus,
+      attendanceStatusAr: STATUS_AR[attendanceStatus] || attendanceStatus,
+      checkInTime: checkInTime ? new Date(checkInTime).toISOString() : null,
+      isConnected: !!isConnected,
+    };
   }
 
   // 3. Determine next upcoming lecture (not live)
@@ -372,7 +390,7 @@ exports.getAttendanceSummary = catchAsync(async (req, res) => {
 
   const totalLectures = records.length;
   const attendedCount = records.filter(
-    (r) => r.status === ATTENDANCE_STATUS.PRESENT || r.status === "late",
+    (r) => r.status === ATTENDANCE_STATUS.PRESENT,
   ).length;
   const absentCount = records.filter(
     (r) => r.status === ATTENDANCE_STATUS.ABSENT,

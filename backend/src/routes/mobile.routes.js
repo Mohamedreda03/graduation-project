@@ -255,7 +255,7 @@ router.get("/attendance/summary", mobileController.getAttendanceSummary);
  *                             type: string
  *                           status:
  *                             type: string
- *                             enum: [present, absent, late, excused]
+ *                             enum: [present, absent, excused]
  *                           statusArabic:
  *                             type: string
  *                             example: حضور

@@ -19,7 +19,6 @@ module.exports = {
     IN_PROGRESS: "in-progress",
     PRESENT: "present",
     ABSENT: "absent",
-    LATE: "late",
     EXCUSED: "excused",
   },
 

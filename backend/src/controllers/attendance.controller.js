@@ -242,7 +242,7 @@ exports.getAtRiskStudents = catchAsync(async (req, res, next) => {
         total: { $sum: 1 },
         present: {
           $sum: {
-            $cond: [{ $in: ["$status", ["present", "late"]] }, 1, 0],
+            $cond: [{ $in: ["$status", ["present"]] }, 1, 0],
           },
         },
         absent: {
@@ -321,9 +321,9 @@ exports.getAtRiskStudents = catchAsync(async (req, res, next) => {
 exports.updateAttendanceStatus = catchAsync(async (req, res, next) => {
   const { status, reason } = req.body;
 
-  if (!status || !["present", "absent", "late", "excused"].includes(status)) {
+  if (!status || !["present", "absent", "excused"].includes(status)) {
     throw ApiError.badRequest(
-      "Valid status is required (present, absent, late, excused)",
+      "Valid status is required (present, absent, excused)",
     );
   }
 
@@ -913,7 +913,7 @@ exports.getCourseMatrix = catchAsync(async (req, res, next) => {
         presencePercentage: r.presencePercentage,
       };
     } else {
-      const statusPriority = { present: 4, late: 3, excused: 2, "in-progress": 1, absent: 0 };
+      const statusPriority = { present: 3, excused: 2, "in-progress": 1, absent: 0 };
       const currentPriority = statusPriority[r.status] || 0;
       const existingPriority = statusPriority[existing.status] || 0;
       
@@ -952,7 +952,7 @@ exports.getCourseMatrix = catchAsync(async (req, res, next) => {
           status: rec.status,
           presencePercentage: rec.presencePercentage,
         };
-        if (rec.status === "present" || rec.status === "late") {
+        if (rec.status === "present") {
           presentCount++;
         } else {
           absentCount++;
@@ -1046,7 +1046,7 @@ exports.getStudentMatrix = catchAsync(async (req, res, next) => {
     });
 
     const total = lectures.length;
-    const present = lectures.filter((l) => l.status === "present" || l.status === "late").length;
+    const present = lectures.filter((l) => l.status === "present").length;
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
 
     courseMatrixData.push({
@@ -1089,7 +1089,7 @@ exports.updateMatrixCell = catchAsync(async (req, res, next) => {
     throw ApiError.badRequest("StudentId, CourseId, Date, and Status are required");
   }
 
-  if (!["present", "absent", "late", "excused"].includes(status)) {
+  if (!["present", "absent", "excused"].includes(status)) {
     throw ApiError.badRequest("Invalid status");
   }
 
@@ -1112,7 +1112,7 @@ exports.updateMatrixCell = catchAsync(async (req, res, next) => {
       if (reason) record.modificationReason = reason;
       record.modifiedBy = req.user._id;
       record.modifiedAt = new Date();
-      record.presencePercentage = (status === "present" || status === "late") ? 100 : 0;
+      record.presencePercentage = (status === "present") ? 100 : 0;
       await record.save();
       updatedRecord = record;
     }
@@ -1128,7 +1128,7 @@ exports.updateMatrixCell = catchAsync(async (req, res, next) => {
       status,
       isFinalized: true,
       finalizedAt: new Date(),
-      presencePercentage: (status === "present" || status === "late") ? 100 : 0,
+      presencePercentage: (status === "present") ? 100 : 0,
       sessions: [],
       modificationReason: reason || "تعديل يدوي عبر كشف الحضور الرقمي",
       modifiedBy: req.user._id,
