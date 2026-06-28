@@ -96,6 +96,15 @@ const nowMinutes = () => {
   return n.getHours() * 60 + n.getMinutes();
 };
 
+/** Convert "HH:MM" to today's Date ISO string */
+const getIsoTimeToday = (timeStr) => {
+  if (!timeStr) return null;
+  const [h, m] = timeStr.split(":");
+  const d = new Date();
+  d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+  return d.toISOString();
+};
+
 /** Compute alert level for attendance percentage */
 const buildAttendanceAlert = (percentage) => {
   if (percentage >= 80) {
@@ -155,11 +164,18 @@ exports.getHome = catchAsync(async (req, res) => {
       const endMins = toMinutes(liveLec.endTime);
       const remainingSecs = Math.max(0, (endMins - currentMins) * 60);
 
-      // Get attendance status
+      // Get attendance status and check-in time
       let attendanceStatus = ATTENDANCE_STATUS.IN_PROGRESS;
+      let checkInTime = activeSession.connectedAt || activeSession.createdAt;
+
       if (activeSession.attendanceRecord) {
         const rec = await AttendanceRecord.findById(activeSession.attendanceRecord);
-        if (rec) attendanceStatus = rec.status;
+        if (rec) {
+          attendanceStatus = rec.status;
+          if (rec.sessions && rec.sessions.length > 0) {
+            checkInTime = rec.sessions[0].checkIn;
+          }
+        }
       }
 
       liveLecture = {
@@ -172,9 +188,13 @@ exports.getHome = catchAsync(async (req, res) => {
         hallName: liveLec.hall?.name || "",
         startTime: liveLec.startTime,
         endTime: liveLec.endTime,
+        startTimeIso: getIsoTimeToday(liveLec.startTime),
+        endTimeIso: getIsoTimeToday(liveLec.endTime),
+        durationMinutes: liveLec.durationMinutes || Math.round((toMinutes(liveLec.endTime) - toMinutes(liveLec.startTime))),
         remainingTime: minutesToHMS(remainingSecs),
         attendanceStatus,
         attendanceStatusAr: STATUS_AR[attendanceStatus] || attendanceStatus,
+        checkInTime: checkInTime ? new Date(checkInTime).toISOString() : null,
       };
     }
   }
