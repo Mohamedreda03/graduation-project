@@ -15,13 +15,42 @@ async function run() {
   await mongoose.connect(MONGODB_URI);
   console.log("📦 Connected to MongoDB");
 
-  // Find Student "كامل البيانات"
-  const student = await User.findOne({ studentId: "20240001" });
+  // Parse arguments dynamically
+  let studentIdentifier = "20240001"; // default: كامل البيانات
+  let leaveOffsetMinutes = 30; // default
+  let leaveDurationMinutes = 20; // default
+
+  const arg1 = process.argv[2];
+  const arg2 = process.argv[3];
+  const arg3 = process.argv[4];
+
+  if (arg1) {
+    const parsedNum = Number(arg1);
+    // If it's not a number or a large number (like a student ID), treat it as student identifier
+    if (isNaN(parsedNum) || parsedNum > 1000) {
+      studentIdentifier = arg1;
+      if (arg2) leaveOffsetMinutes = parseInt(arg2) || 30;
+      if (arg3) leaveDurationMinutes = parseInt(arg3) || 20;
+    } else {
+      // It's the minutes offset
+      leaveOffsetMinutes = parseInt(arg1) || 30;
+      if (arg2) leaveDurationMinutes = parseInt(arg2) || 20;
+    }
+  }
+
+  // Find Student by studentId or email
+  const student = await User.findOne({
+    $or: [
+      { studentId: studentIdentifier },
+      { email: studentIdentifier }
+    ]
+  });
+
   if (!student) {
-    console.error("❌ Student 'كامل البيانات' (20240001) not found.");
+    console.error(`❌ Student with identifier '${studentIdentifier}' not found.`);
     process.exit(1);
   }
-  console.log(`👨‍🎓 Found Student: ${student.fullName} (ID: ${student._id})`);
+  console.log(`👨‍🎓 Found Student: ${student.fullName} (ID: ${student._id}, StudentId: ${student.studentId})`);
 
   // Find the latest attendance record for this student
   const attendanceRecord = await AttendanceRecord.findOne({ student: student._id })
@@ -35,11 +64,6 @@ async function run() {
 
   const lecture = attendanceRecord.lecture;
   console.log(`📊 Found latest Attendance Record for Lecture: ${lecture._id}`);
-
-  // We want to simulate leaving the lecture.
-  // Get leaving offset and stay-outside duration from command args or use defaults
-  const leaveOffsetMinutes = parseInt(process.argv[2]) || 30; // Minutes after start when student leaves
-  const leaveDurationMinutes = parseInt(process.argv[3]) || 20; // How long they stay outside
 
   console.log(`⏳ Simulating leaving the lecture ${leaveOffsetMinutes} mins after start, for ${leaveDurationMinutes} mins...`);
 
