@@ -9,6 +9,12 @@ require("dotenv").config();
 
 const app = express();
 
+// Request logging middleware (shows simulated/fake server time)
+app.use((req, res, next) => {
+  console.log(`⏰ [Server Time: ${new Date().toLocaleString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 // Security middleware
 app.use(helmet());
 

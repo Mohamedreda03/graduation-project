@@ -72,7 +72,7 @@ export function AccessPointsPage() {
           );
         }
         return (
-          <div className="flex items-center gap-2" dir="ltr">
+          <div className="flex items-center justify-end gap-2" dir="ltr">
             <code className="bg-muted px-2 py-1 rounded text-xs font-mono border">
               {apId || ssid}
             </code>
@@ -104,7 +104,7 @@ export function AccessPointsPage() {
         }
         const maskedKey = apiKey.substring(0, 8) + "..." + apiKey.slice(-4);
         return (
-          <div className="flex items-center gap-2" dir="ltr">
+          <div className="flex items-center justify-end gap-2" dir="ltr">
             <code className="bg-muted px-2 py-1 rounded text-xs font-mono border">
               {maskedKey}
             </code>

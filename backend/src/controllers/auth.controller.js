@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const { User, RefreshToken } = require("../models");
 const ApiError = require("../utils/ApiError");
-const { catchAsync } = require("../utils/helpers");
+const { catchAsync, normalizeMacAddress } = require("../utils/helpers");
 const config = require("../config/env");
 const { ROLES } = require("../config/constants");
 
@@ -162,15 +162,19 @@ exports.mobileLogin = catchAsync(async (req, res, next) => {
 
   // Handle device binding for students
   if (deviceInfo && deviceInfo.macAddress) {
+    // Normalize MAC to uppercase XX:XX:XX:XX:XX:XX before any comparison or storage
+    const normalizedMac = normalizeMacAddress(deviceInfo.macAddress);
+    deviceInfo = { ...deviceInfo, macAddress: normalizedMac };
+
     if (!user.device || !user.device.isVerified) {
       // First login ever - generate server-side deviceId and bind device
       user.device = {
         deviceId: uuidv4(),
-        macAddress: deviceInfo.macAddress,
+        macAddress: normalizedMac,
         registeredAt: new Date(),
         isVerified: true,
       };
-    } else if (user.device.macAddress === deviceInfo.macAddress) {
+    } else if (user.device.macAddress === normalizedMac) {
       // Same device - no updates needed
       // deviceId stays the same (server-generated)
     } else {
@@ -394,15 +398,19 @@ exports.login = catchAsync(async (req, res, next) => {
 
   // Handle device binding for students
   if (user.role === "student" && deviceInfo && deviceInfo.macAddress) {
+    // Normalize MAC to uppercase XX:XX:XX:XX:XX:XX before any comparison or storage
+    const normalizedMac = normalizeMacAddress(deviceInfo.macAddress);
+    deviceInfo = { ...deviceInfo, macAddress: normalizedMac };
+
     if (!user.device || !user.device.isVerified) {
       // First login ever - generate server-side deviceId and bind device
       user.device = {
         deviceId: uuidv4(),
-        macAddress: deviceInfo.macAddress,
+        macAddress: normalizedMac,
         registeredAt: new Date(),
         isVerified: true,
       };
-    } else if (user.device.macAddress === deviceInfo.macAddress) {
+    } else if (user.device.macAddress === normalizedMac) {
       // Same device - no updates needed
     } else {
       // Different device - reject

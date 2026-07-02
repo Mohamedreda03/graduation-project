@@ -1,7 +1,9 @@
-const { User, AttendanceRecord, Course } = require("../models");
+const { User, AttendanceRecord, Course, Specialization } = require("../models");
 const { ROLES, DEVICE_REQUEST_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
-const { catchAsync, paginationResponse, buildNameSearchQuery } = require("../utils/helpers");
+const { catchAsync, paginationResponse, buildNameSearchQuery, normalizeMacAddress } = require("../utils/helpers");
+const xlsx = require("xlsx");
+const bcrypt = require("bcryptjs");
 
 /**
  * Get student statistics
@@ -384,9 +386,11 @@ exports.approveDeviceChange = catchAsync(async (req, res, next) => {
     throw ApiError.badRequest("No device change request found");
   }
 
-  // Update device with new info
+  // Update device with new info — normalize MAC to ensure consistent uppercase storage
+  const newDeviceInfo = user.deviceChangeRequest.newDeviceInfo || {};
   user.device = {
-    ...user.deviceChangeRequest.newDeviceInfo,
+    ...newDeviceInfo,
+    macAddress: normalizeMacAddress(newDeviceInfo.macAddress) || newDeviceInfo.macAddress,
     registeredAt: new Date(),
     isVerified: true,
   };
@@ -586,5 +590,196 @@ exports.promoteStudents = catchAsync(async (req, res, next) => {
     success: true,
     message: `تمت الترقية: ${results.promoted.length} طالب، تخرج: ${results.graduated.length} طالب`,
     data: results,
+  });
+});
+
+/**
+ * Import students via Excel
+ * POST /api/students/import-excel
+ */
+exports.importStudentsExcel = catchAsync(async (req, res, next) => {
+  const file = req.file;
+  if (!file) {
+    throw ApiError.badRequest("الرجاء رفع ملف الإكسيل");
+  }
+
+  const workbook = xlsx.read(file.buffer, { type: "buffer" });
+  const sheetName = workbook.SheetNames[0];
+  const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+  if (data.length === 0) {
+    throw ApiError.badRequest("الملف فارغ أو لا يحتوي على بيانات صحيحة");
+  }
+
+  // 1. Check for duplicates INSIDE the Excel file itself
+  const uniqueStudentIds = new Set();
+  const uniqueEmails = new Set();
+  const fileDuplicates = [];
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const rowNum = i + 2;
+    const sId = row.studentId?.toString().trim();
+    const email = row.email?.toString().trim().toLowerCase();
+
+    if (sId) {
+      if (uniqueStudentIds.has(sId)) {
+        fileDuplicates.push(`كود طالب مكرر بداخل الملف (${sId}) في الصف ${rowNum}`);
+      } else {
+        uniqueStudentIds.add(sId);
+      }
+    }
+    if (email) {
+      if (uniqueEmails.has(email)) {
+        fileDuplicates.push(`بريد إلكتروني مكرر بداخل الملف (${email}) في الصف ${rowNum}`);
+      } else {
+        uniqueEmails.add(email);
+      }
+    }
+  }
+
+  if (fileDuplicates.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: "الملف يحتوي على بيانات مكررة بداخله، يرجى مراجعتها وتعديلها",
+      errors: fileDuplicates,
+    });
+  }
+
+  // Fetch all specializations to avoid querying inside the loop
+  const allSpecializations = await Specialization.find();
+  const specMap = {};
+  allSpecializations.forEach((spec) => {
+    specMap[spec.name.trim()] = spec;
+  });
+
+  const excelStudentIds = Array.from(uniqueStudentIds);
+  const excelEmails = Array.from(uniqueEmails);
+
+  // 2. Check for duplicates in the DATABASE
+  const existingStudents = await User.find({
+    role: ROLES.STUDENT,
+    $or: [
+      { studentId: { $in: excelStudentIds } },
+      { email: { $in: excelEmails } },
+    ],
+  });
+
+  if (existingStudents.length > 0) {
+    const duplicatedIds = existingStudents.map((s) => s.studentId || s.email).join(", ");
+    throw ApiError.badRequest(
+      `تم إيقاف الرفع! هؤلاء الطلاب مضافون بالفعل في النظام: ${duplicatedIds}`
+    );
+  }
+
+  // Level mapper
+  const levelMapper = {
+    "اعدادي": 1, "إعدادي": 1, "اعدادية": 1, "الإعدادية": 1, "1": 1,
+    "الاولى": 2, "الأولى": 2, "اولى": 2, "أولى": 2, "2": 2,
+    "الثانية": 3, "ثانية": 3, "3": 3,
+    "الثالثة": 4, "ثالثة": 4, "4": 4,
+    "الرابعة": 5, "رابعة": 5, "5": 5,
+  };
+
+  const studentsToPrepare = [];
+  const errors = [];
+
+  // 3. Validation Phase (No CPU-intensive hashing here)
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const rowNum = i + 2; // Excel row number
+
+    // Required basic info validation
+    const studentId = row.studentId?.toString().trim();
+    const firstName = row.firstName?.toString().trim();
+    const lastName = row.lastName?.toString().trim();
+    const email = row.email?.toString().trim().toLowerCase();
+
+    if (!studentId || !firstName || !lastName || !email) {
+      errors.push(`خطأ في الصف ${rowNum}: بيانات أساسية مفقودة أو فارغة (الكود، الاسم، أو الإيميل)`);
+      continue;
+    }
+
+    // Parse Level
+    const levelText = row.level?.toString().trim();
+    let levelNum = parseInt(levelText);
+
+    if (isNaN(levelNum)) {
+      levelNum = levelMapper[levelText];
+    }
+
+    if (!levelNum || levelNum < 1 || levelNum > 7) {
+      errors.push(`خطأ في الصف ${rowNum}: الفرقة غير صحيحة أو مفقودة (${levelText || "فارغ"})`);
+      continue;
+    }
+
+    let specId = null;
+    let department = null;
+
+    // Handle Specialization
+    const specName = row.specialization?.toString().trim();
+
+    if (specName) {
+      if (specMap[specName]) {
+        specId = specMap[specName]._id;
+
+        // Handle Department
+        if (row.department) {
+          const deptName = row.department.toString().trim();
+          if (specMap[specName].departments.includes(deptName)) {
+            department = deptName;
+          } else {
+            errors.push(
+              `خطأ في الصف ${rowNum}: القسم (${deptName}) غير موجود بداخل تخصص (${specName})`
+            );
+          }
+        }
+      } else {
+        errors.push(
+          `خطأ في الصف ${rowNum}: التخصص (${specName}) غير موجود في النظام`
+        );
+      }
+    }
+
+    studentsToPrepare.push({
+      studentId,
+      email,
+      name: {
+        first: firstName,
+        last: lastName,
+      },
+      role: ROLES.STUDENT,
+      academicInfo: {
+        level: levelNum,
+        specialization: specId,
+        department: department,
+      },
+    });
+  }
+
+  // Return validation errors immediately
+  if (errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: "يوجد أخطاء في البيانات تمنع الرفع، يرجى إصلاحها أولاً",
+      errors,
+    });
+  }
+
+  // 4. Processing Phase: Hash the default password ONCE for all students (Huge CPU saving!)
+  const defaultPassword = req.body.defaultPassword || "123456";
+  const hashedPassword = await bcrypt.hash(defaultPassword, 12);
+
+  const studentsToInsert = studentsToPrepare.map((student) => ({
+    ...student,
+    password: hashedPassword,
+  }));
+
+  // 5. Database Insertion
+  await User.insertMany(studentsToInsert);
+
+  res.status(200).json({
+    success: true,
+    message: `تم رفع وإضافة عدد ${studentsToInsert.length} طالب بنجاح بكلمة مرور افتراضية موحدة`,
   });
 });

@@ -255,7 +255,8 @@ export function MySchedulePage() {
           const courseName = typeof cell.course === "object" ? cell.course.name : "مادة غير معروفة";
           const hallName = typeof cell.hall === "object" ? cell.hall.name : "غير محدد";
           const hallBuilding = typeof cell.hall === "object" ? cell.hall.building : "";
-          const typeLabel = cell.type === "lecture" ? "محاضرة" : cell.type === "lab" ? "معمل" : "تمارين";
+          const typeVal = cell.lectureType || cell.type;
+          const typeLabel = typeVal === "lecture" ? "محاضرة" : typeVal === "lab" ? "معمل" : "تمارين";
 
           // Extract specialization, level, departments
           const courseObj = typeof cell.course === "object" ? cell.course : null;
@@ -482,9 +483,9 @@ export function MySchedulePage() {
                   <div className="p-3 rounded-lg bg-muted/50">
                     <span className="text-[10px] text-muted-foreground block mb-0.5">نوع الحصة</span>
                     <span className="font-semibold text-sm">
-                      {selectedLecture.type === "lecture"
+                      {(selectedLecture.lectureType || selectedLecture.type) === "lecture"
                         ? "محاضرة نظري"
-                        : selectedLecture.type === "lab"
+                        : (selectedLecture.lectureType || selectedLecture.type) === "lab"
                         ? "معمل عملي"
                         : "تمارين"}
                     </span>

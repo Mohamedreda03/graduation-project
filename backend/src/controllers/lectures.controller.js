@@ -630,7 +630,7 @@ exports.scheduleRecurring = catchAsync(async (req, res, next) => {
 exports.startLecture = catchAsync(async (req, res, next) => {
   const lecture = await Lecture.findById(req.params.id)
     .populate("course")
-    .populate("hall", "name building")
+    .populate("hall", "name building accessPoint")
     .populate("doctor", "name");
 
   if (!lecture) {
@@ -648,6 +648,22 @@ exports.startLecture = catchAsync(async (req, res, next) => {
     { $set: { lectureStartTime: lecture.actualStartTime } }
   );
 
+  // Check if AP is currently active (heartbeat within last 3 minutes)
+  const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+  const isApOnline = 
+    lecture.hall.accessPoint && 
+    lecture.hall.accessPoint.lastSeen && 
+    lecture.hall.accessPoint.lastSeen > threeMinutesAgo;
+
+  if (!isApOnline) {
+    console.log(`[startLecture] Hall AP is offline (last seen: ${lecture.hall.accessPoint?.lastSeen}). Deactivating stale sessions...`);
+    // Deactivate all stale sessions for this hall to prevent ghost attendance
+    await StudentSession.updateMany(
+      { currentHall: lecture.hall._id, isActive: true },
+      { $set: { isActive: false, disconnectedAt: new Date() } }
+    );
+  }
+
   // Find all students currently connected to this hall (active sessions)
   const activeSessions = await StudentSession.find({
     currentHall: lecture.hall._id,
@@ -663,26 +679,28 @@ exports.startLecture = catchAsync(async (req, res, next) => {
     );
 
     if (isEnrolled) {
-      // Find or create attendance record
-      let attendanceRecord = await AttendanceRecord.findOne({
-        student: session.student,
-        lecture: lecture._id,
-        date: getTodayDate(),
-      });
-
-      if (!attendanceRecord) {
-        attendanceRecord = await AttendanceRecord.create({
+      // Find or create attendance record using atomic upsert to prevent race conditions
+      let attendanceRecord = await AttendanceRecord.findOneAndUpdate(
+        {
           student: session.student,
-          course: lecture.course._id,
           lecture: lecture._id,
-          hall: lecture.hall._id,
           date: getTodayDate(),
-          status: ATTENDANCE_STATUS.IN_PROGRESS,
-          sessions: [{ checkIn: now }],
-          lectureStartTime: lecture.actualStartTime,
-        });
-        console.log(`[Auto-Start] Attendance record created for student ${session.student} on lecture ${lecture._id}`);
-      }
+        },
+        {
+          $setOnInsert: {
+            student: session.student,
+            course: lecture.course._id,
+            lecture: lecture._id,
+            hall: lecture.hall._id,
+            date: getTodayDate(),
+            status: ATTENDANCE_STATUS.IN_PROGRESS,
+            sessions: [{ checkIn: now }],
+            lectureStartTime: lecture.actualStartTime,
+          },
+        },
+        { upsert: true, new: true }
+      );
+      console.log(`[Auto-Start] Attendance record ensured for student ${session.student} on lecture ${lecture._id}`);
 
       // Link session to attendance record
       session.currentLecture = lecture._id;
@@ -703,7 +721,7 @@ exports.startLecture = catchAsync(async (req, res, next) => {
  */
 exports.endLecture = catchAsync(async (req, res, next) => {
   const lecture = await Lecture.findById(req.params.id)
-    .populate("course", "name code")
+    .populate("course", "name code students")
     .populate("hall", "name building")
     .populate("doctor", "name");
 
@@ -712,6 +730,7 @@ exports.endLecture = catchAsync(async (req, res, next) => {
   }
 
   lecture.status = "completed";
+  lecture.isActive = false;
   lecture.actualEndTime = new Date();
   await lecture.save();
 
@@ -747,7 +766,13 @@ exports.endLecture = catchAsync(async (req, res, next) => {
       if (!lastSession.checkOut) {
         lastSession.checkOut = now;
 
-        const diffMs = now - lastSession.checkIn;
+        // Cap checkIn time to actual lecture start time to avoid counting early connection minutes
+        let effectiveCheckIn = new Date(lastSession.checkIn);
+        if (lecture.actualStartTime && effectiveCheckIn < lecture.actualStartTime) {
+          effectiveCheckIn = new Date(lecture.actualStartTime);
+        }
+
+        const diffMs = now - effectiveCheckIn;
         const diffMins = Math.floor(diffMs / 1000 / 60);
         lastSession.duration = Math.max(0, diffMins);
         record.totalPresenceTime += lastSession.duration;
@@ -762,19 +787,74 @@ exports.endLecture = catchAsync(async (req, res, next) => {
     record.presencePercentage = Math.min(Math.round(presencePercentage), 100);
 
     // Determine final status
+    let finalStatus = ATTENDANCE_STATUS.ABSENT;
     if (record.presencePercentage >= minPresencePercentage) {
-      record.status = ATTENDANCE_STATUS.PRESENT;
-    } else {
-      record.status = ATTENDANCE_STATUS.ABSENT;
+      finalStatus = ATTENDANCE_STATUS.PRESENT;
     }
 
-    record.isFinalized = true;
-    record.finalizedAt = now;
-
-    await record.save();
+    // Use updateOne to absolutely guarantee the database is updated directly
+    await AttendanceRecord.updateOne(
+      { _id: record._id },
+      {
+        $set: {
+          status: finalStatus,
+          presencePercentage: record.presencePercentage,
+          isFinalized: true,
+          finalizedAt: now,
+          totalPresenceTime: record.totalPresenceTime,
+          lectureEndTime: lecture.actualEndTime,
+          sessions: record.sessions // This saves the checkOut changes
+        }
+      }
+    );
   }
 
-  // 2. Log that sessions for connected students remain active to allow auto-transition to consecutive lectures
+  // 2. Create absent records for enrolled students who never joined
+  const allRecords = await AttendanceRecord.find({
+    lecture: lecture._id,
+    date: getTodayDate(),
+  });
+  const allRecordStudentIds = new Set(allRecords.map(r => r.student.toString()));
+  const enrolledStudents = lecture.course?.students || [];
+
+  const missingStudents = enrolledStudents.filter(
+    sId => !allRecordStudentIds.has(sId.toString())
+  );
+
+  if (missingStudents.length > 0) {
+    const newAbsentRecords = missingStudents.map(studentId => ({
+      student: studentId,
+      course: lecture.course._id,
+      lecture: lecture._id,
+      hall: lecture.hall._id,
+      date: getTodayDate(),
+      status: ATTENDANCE_STATUS.ABSENT,
+      isFinalized: true,
+      finalizedAt: now,
+      lectureStartTime: lecture.actualStartTime,
+      lectureEndTime: lecture.actualEndTime,
+      presencePercentage: 0,
+      totalPresenceTime: 0,
+      sessions: []
+    }));
+
+    await AttendanceRecord.insertMany(newAbsentRecords);
+    console.log(`[endLecture] Created ${newAbsentRecords.length} absent records for students who never joined.`);
+  }
+
+  // 3. Close all active StudentSessions linked to this lecture to prevent ghost attendance
+  // in the next lecture. Sessions remain recorded but are marked inactive.
+  await StudentSession.updateMany(
+    { currentLecture: lecture._id, isActive: true },
+    {
+      $set: {
+        isActive: false,
+        disconnectedAt: now,
+      },
+    }
+  );
+
+  // 4. Log finalization summary
   console.log(`[endLecture] Completed finalization of attendance records for lecture ${lecture._id}. Sessions for physically connected students remain active.`);
 
   res.status(200).json({

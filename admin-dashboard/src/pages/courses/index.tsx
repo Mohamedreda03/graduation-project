@@ -185,7 +185,13 @@ export function CoursesPage() {
     {
       accessorKey: "semester",
       header: "الفصل الدراسي",
-      cell: ({ row }) => row.original.semester || "غير محدد",
+      cell: ({ row }) => {
+        const sem = row.original.semester;
+        if (Array.isArray(sem)) {
+          return sem.join("، ") || "غير محدد";
+        }
+        return sem || "غير محدد";
+      },
     },
     {
       id: "actions",

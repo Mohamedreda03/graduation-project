@@ -111,10 +111,13 @@ lectureSchema.virtual("durationMinutes").get(function () {
 // Check if lecture is currently active
 lectureSchema.methods.isCurrentlyActive = function (currentTime = new Date()) {
   if (!this.startTime || !this.endTime) return false;
-  const currentDay = currentTime.getDay();
+  
+  // Convert input time to local Egypt time
+  const localTime = new Date(currentTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+  const currentDay = localTime.getDay();
   if (currentDay !== this.dayOfWeek) return false;
 
-  const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+  const currentMinutes = localTime.getHours() * 60 + localTime.getMinutes();
   const [startHour, startMin] = this.startTime.split(":").map(Number);
   const [endHour, endMin] = this.endTime.split(":").map(Number);
   const startMinutes = startHour * 60 + startMin;
@@ -128,14 +131,16 @@ lectureSchema.statics.findActiveLecture = async function (
   hallId,
   currentTime = new Date(),
 ) {
-  const currentDay = currentTime.getDay();
-  const currentHours = currentTime.getHours().toString().padStart(2, "0");
-  const currentMins = currentTime.getMinutes().toString().padStart(2, "0");
+  // Convert input time to local Egypt time to avoid UTC shift issues
+  const localTime = new Date(currentTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+  const currentDay = localTime.getDay();
+  const currentHours = localTime.getHours().toString().padStart(2, "0");
+  const currentMins = localTime.getMinutes().toString().padStart(2, "0");
   const currentTimeStr = `${currentHours}:${currentMins}`;
 
   // Match lectures that are either:
   // 1. Scheduled for right now (by time window), or
-  // 2. Manually set to "in-progress" status
+  // 2. Manually set to "in-progress" status — MUST be in the same hall
   return this.findOne({
     hall: hallId,
     isActive: true,
@@ -147,11 +152,13 @@ lectureSchema.statics.findActiveLecture = async function (
         endTime: { $gte: currentTimeStr },
       },
       {
-        // Match if manually activated
+        // Match if manually activated — scoped to same hall
         status: "in-progress",
+        hall: hallId,
       },
     ],
   }).populate("course doctor");
+
 };
 
 lectureSchema.set("toJSON", { virtuals: true });

@@ -82,8 +82,8 @@ exports.handleConnectionEvent = catchAsync(async (req, res, next) => {
 
   console.log("[HALL] Found hall:", hall.name, "(id:", hall._id, ")");
 
-  // Update AP online status
-  await hall.updateApStatus(true);
+  // AP online status is already updated in the verifyAccessPoint middleware
+  // so we skip updating it here to avoid a redundant database write.
 
   // Log the connection event
   const connectionLog = await ConnectionLog.create({
@@ -149,6 +149,46 @@ exports.handleConnectionEvent = catchAsync(async (req, res, next) => {
 });
 
 /**
+ * Helper to close a student session and update attendance record
+ */
+async function closeStudentSession(session, now = new Date()) {
+  if (session.attendanceRecord) {
+    // Find attendance record and update last session
+    const attendanceRecord = await AttendanceRecord.findById(session.attendanceRecord);
+
+    if (attendanceRecord && attendanceRecord.sessions.length > 0) {
+      const lastSession = attendanceRecord.sessions[attendanceRecord.sessions.length - 1];
+
+      if (!lastSession.checkOut) {
+        lastSession.checkOut = now;
+
+        // Calculate session duration, capping checkIn to lecture start time
+        let effectiveCheckIn = new Date(lastSession.checkIn);
+        if (attendanceRecord.lectureStartTime && effectiveCheckIn < attendanceRecord.lectureStartTime) {
+          effectiveCheckIn = new Date(attendanceRecord.lectureStartTime);
+        }
+        
+        const durationMinutes = calculateMinutes(effectiveCheckIn, lastSession.checkOut);
+        lastSession.duration = durationMinutes;
+
+        // Update total presence time
+        attendanceRecord.totalPresenceTime += durationMinutes;
+      }
+
+      console.log("[ATTENDANCE] Student left, status remains: in-progress");
+      await attendanceRecord.save();
+    }
+  } else {
+    console.log("[DISCONNECT] Session had no active attendance record (lecture likely hadn't started)");
+  }
+
+  // Deactivate session
+  session.isActive = false;
+  session.disconnectedAt = now;
+  await session.save();
+}
+
+/**
  * Handle student connect event
  */
 async function handleConnect(student, hall, macAddress, connectionLog) {
@@ -157,32 +197,38 @@ async function handleConnect(student, hall, macAddress, connectionLog) {
   console.log("\n--- [handleConnect] START ---");
   console.log("Student:", student.studentId, "| Hall:", hall.name);
 
-  // Create or update student session
-  let session = await StudentSession.findOne({
-    student: student._id,
-    isActive: true,
-  });
-
-  if (session) {
-    // Update existing session
-    session.currentHall = hall._id;
-    session.connectedAt = now;
-    session.macAddress = macAddress;
-    await session.save();
-    console.log("[SESSION] Updated existing session");
-  } else {
-    // Create new session
-    session = await StudentSession.create({
-      student: student._id,
-      currentHall: hall._id,
-      macAddress,
-      connectedAt: now,
-      isActive: true,
-    });
-    console.log("[SESSION] Created new session");
+  // ── Step 0: Check if student has an active session in a DIFFERENT hall ──
+  let session = await StudentSession.findOne({ student: student._id, isActive: true });
+  
+  if (session && session.currentHall.toString() !== hall._id.toString()) {
+    console.log(`[SESSION] Student moved from hall ${session.currentHall} to ${hall._id}. Closing old session.`);
+    await closeStudentSession(session, now);
+    session = null; // Proceed to create a new session
   }
 
-  // Find active lecture in this hall
+  // ── Step 1: Upsert StudentSession (atomic — prevents duplicate active sessions) ──
+  // $setOnInsert sets fields only when a new document is created
+  // $set updates fields in both new and existing documents
+  session = await StudentSession.findOneAndUpdate(
+    { student: student._id, isActive: true },
+    {
+      $setOnInsert: {
+        student: student._id,
+        isActive: true,
+      },
+      $set: {
+        currentHall: hall._id,
+        connectedAt: now,
+        macAddress,
+        lastActivity: now,
+      },
+    },
+    { upsert: true, new: true }
+  );
+
+  console.log("[SESSION] Upserted session:", session._id);
+
+  // ── Step 2: Find active lecture in this hall ──
   const activeLecture = await Lecture.findActiveLecture(hall._id);
   console.log(
     "[LECTURE] findActiveLecture =>",
@@ -208,51 +254,64 @@ async function handleConnect(student, hall, macAddress, connectionLog) {
     );
 
     if (isEnrolled) {
-      // Find or create attendance record
-      let attendanceRecord = await AttendanceRecord.findOne({
-        student: student._id,
-        lecture: activeLecture._id,
-        date: getTodayDate(),
-      });
-
-      if (!attendanceRecord) {
-        attendanceRecord = await AttendanceRecord.create({
+      // ── Step 3: Upsert AttendanceRecord (atomic — prevents duplicate key errors) ──
+      // Use findOneAndUpdate with upsert to safely handle concurrent requests
+      let attendanceRecord = await AttendanceRecord.findOneAndUpdate(
+        {
           student: student._id,
-          course: activeLecture.course._id,
           lecture: activeLecture._id,
-          hall: hall._id,
           date: getTodayDate(),
-          status: ATTENDANCE_STATUS.IN_PROGRESS,
-          sessions: [{ checkIn: now }],
-          lectureStartTime: activeLecture.actualStartTime,
-        });
+        },
+        {
+          $setOnInsert: {
+            student: student._id,
+            course: activeLecture.course._id,
+            lecture: activeLecture._id,
+            hall: hall._id,
+            date: getTodayDate(),
+            status: ATTENDANCE_STATUS.IN_PROGRESS,
+            lectureStartTime: activeLecture.actualStartTime || null,
+            totalPresenceTime: 0,
+            presencePercentage: 0,
+            isFinalized: false,
+          },
+        },
+        { upsert: true, new: true }
+      );
+
+      // ── Step 4: Add new check-in session only if last session is closed or none exist ──
+      const lastSession =
+        attendanceRecord.sessions.length > 0
+          ? attendanceRecord.sessions[attendanceRecord.sessions.length - 1]
+          : null;
+
+      if (!lastSession || lastSession.checkOut) {
+        // Append a new open session
+        attendanceRecord = await AttendanceRecord.findByIdAndUpdate(
+          attendanceRecord._id,
+          {
+            $push: { sessions: { checkIn: now } },
+            $set: {
+              status: ATTENDANCE_STATUS.IN_PROGRESS,
+              ...((!attendanceRecord.lectureStartTime && activeLecture.actualStartTime)
+                ? { lectureStartTime: activeLecture.actualStartTime }
+                : {}),
+            },
+          },
+          { new: true }
+        );
         console.log(
-          "[ATTENDANCE] ✅ Created NEW attendance record:",
+          "[ATTENDANCE] ✅ Added new session (check-in):",
           attendanceRecord._id,
         );
       } else {
-        // Check if student is reconnecting (last session has a checkOut time or there are no sessions)
-        const lastSession = attendanceRecord.sessions[attendanceRecord.sessions.length - 1];
-        if (!lastSession || lastSession.checkOut) {
-          attendanceRecord.sessions.push({ checkIn: now });
-          attendanceRecord.status = ATTENDANCE_STATUS.IN_PROGRESS; // Ensure status is in-progress
-          if (!attendanceRecord.lectureStartTime && activeLecture.actualStartTime) {
-            attendanceRecord.lectureStartTime = activeLecture.actualStartTime;
-          }
-          await attendanceRecord.save();
-          console.log(
-            "[ATTENDANCE] ✅ Re-opened attendance record / added new session:",
-            attendanceRecord._id,
-          );
-        } else {
-          console.log(
-            "[ATTENDANCE] Student is already connected in an active session:",
-            attendanceRecord._id,
-          );
-        }
+        console.log(
+          "[ATTENDANCE] Student is already in an active open session:",
+          attendanceRecord._id,
+        );
       }
 
-      // Link session to attendance record
+      // ── Step 5: Link session to attendance record ──
       session.currentLecture = activeLecture._id;
       session.attendanceRecord = attendanceRecord._id;
       await session.save();
@@ -292,44 +351,12 @@ async function handleDisconnect(student, hall, connectionLog) {
     isActive: true,
   });
 
-  if (session && session.attendanceRecord) {
-    // Find attendance record and update last session
-    const attendanceRecord = await AttendanceRecord.findById(
-      session.attendanceRecord,
-    );
-
-    if (attendanceRecord && attendanceRecord.sessions.length > 0) {
-      const lastSession =
-        attendanceRecord.sessions[attendanceRecord.sessions.length - 1];
-
-      if (!lastSession.checkOut) {
-        lastSession.checkOut = now;
-
-        // Calculate session duration
-        const durationMinutes = calculateMinutes(
-          lastSession.checkIn,
-          lastSession.checkOut,
-        );
-        lastSession.duration = durationMinutes;
-
-        // Update total presence time
-        attendanceRecord.totalPresenceTime += durationMinutes;
-      }
-
-      // Keep attendance as "in-progress" (will be finalized when the lecture ends)
-      console.log("[ATTENDANCE] Student left, status remains: in-progress");
-
-      await attendanceRecord.save();
-    }
-
-    // Deactivate session
-    session.isActive = false;
-    session.disconnectedAt = now;
-    await session.save();
+  if (session) {
+    await closeStudentSession(session, now);
 
     connectionLog.student = student._id;
-    connectionLog.processingResult = "Check-out recorded, marked as present";
-    console.log("[DISCONNECT] Session closed, attendance marked as present");
+    connectionLog.processingResult = "Check-out recorded";
+    console.log("[DISCONNECT] Session closed");
   } else {
     connectionLog.processingResult = "No active session found";
     console.log("[DISCONNECT] No active session found");

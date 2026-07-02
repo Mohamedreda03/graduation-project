@@ -218,16 +218,16 @@ export function DashboardPage() {
                       <Badge
                         variant="default"
                         className={
-                          lecture.type === "lecture"
+                          (lecture.lectureType || lecture.type) === "lecture"
                             ? "bg-blue-500/10 text-blue-600"
-                            : lecture.type === "section"
+                            : (lecture.lectureType || lecture.type) === "section"
                               ? "bg-green-500/10 text-green-600"
                               : "bg-purple-500/10 text-purple-600"
                         }
                       >
-                        {lecture.type === "lecture"
+                        {(lecture.lectureType || lecture.type) === "lecture"
                           ? "محاضرة"
-                          : lecture.type === "section"
+                          : (lecture.lectureType || lecture.type) === "section"
                             ? "تمارين"
                             : "معمل"}
                       </Badge>

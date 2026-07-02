@@ -53,7 +53,7 @@ const formSchema = z.object({
     .optional()
     .or(z.literal("")),
   studentId: z.string().min(1, "الرقم الأكاديمي مطلوب"),
-  specialization: z.string().optional().or(z.literal("")),
+  specialization: z.string().min(1, "الرجاء اختيار الكلية"),
   department: z.string().optional().or(z.literal("")),
   level: z.number().min(1).max(5),
   phone: z.string().optional(),
@@ -80,8 +80,8 @@ export function StudentFormPage() {
       email: "",
       password: "",
       studentId: "",
-      specialization: "none",
-      department: "none",
+      specialization: "",
+      department: "",
       level: 1,
       phone: "",
       macAddress: "",
@@ -109,8 +109,8 @@ export function StudentFormPage() {
         specialization:
           typeof student.academicInfo?.specialization === "object"
             ? student.academicInfo.specialization._id
-            : student.academicInfo?.specialization || "none",
-        department: student.academicInfo?.department || "none",
+            : student.academicInfo?.specialization || "",
+        department: student.academicInfo?.department || "",
         level: student.academicInfo?.level || 1,
         phone: student.phone || "",
         macAddress: student.device?.macAddress || "",
@@ -131,8 +131,8 @@ export function StudentFormPage() {
         studentId: values.studentId,
         phone: values.phone || undefined,
         academicInfo: {
-          specialization: (values.specialization && values.specialization !== "none") ? values.specialization : undefined,
-          department: (values.department && values.department !== "none") ? values.department : undefined,
+          specialization: values.specialization || undefined,
+          department: (values.department && values.department !== "none" && values.department !== "") ? values.department : undefined,
           level: values.level,
         },
         device: values.macAddress
@@ -367,7 +367,6 @@ export function StudentFormPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none" className="text-right font-medium">بدون تخصص / عام (اختياري)</SelectItem>
                             {specializationsData?.map(
                               (dept: { _id: string; name: string }) => (
                                 <SelectItem key={dept._id} value={dept._id} className="text-right">
@@ -375,6 +374,39 @@ export function StudentFormPage() {
                                 </SelectItem>
                               ),
                             )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="level"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm">
+                          <Layers className="h-3.5 w-3.5 text-primary" />
+                          الفرقة الدراسية
+                        </FormLabel>
+                        <Select
+                          key={`level-${field.value}-${availableLevels.length}`}
+                          dir="rtl"
+                          onValueChange={(v) => field.onChange(parseInt(v))}
+                          value={field.value?.toString()}
+                          disabled={!selectedSpecializationId || selectedSpecializationId === ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-10 w-full">
+                              <SelectValue placeholder="اختر الفرقة" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {availableLevels.map((lvl: any) => (
+                              <SelectItem key={lvl.level.toString()} value={lvl.level.toString()}>
+                                {lvl.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -412,39 +444,6 @@ export function StudentFormPage() {
                                 </SelectItem>
                               ),
                             )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="level"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 text-sm">
-                          <Layers className="h-3.5 w-3.5 text-primary" />
-                          الفرقة الدراسية
-                        </FormLabel>
-                        <Select
-                          key={`level-${field.value}`}
-                          dir="rtl"
-                          onValueChange={(v) => field.onChange(parseInt(v))}
-                          value={field.value?.toString()}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-10 w-full">
-                              <SelectValue placeholder="اختر الفرقة" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {availableLevels.map((lvl: any) => (
-                              <SelectItem key={lvl.level.toString()} value={lvl.level.toString()}>
-                                {lvl.name}
-                              </SelectItem>
-                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />

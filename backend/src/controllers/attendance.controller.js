@@ -395,10 +395,18 @@ exports.getCourseAttendanceReport = catchAsync(async (req, res, next) => {
     throw ApiError.notFound("Course not found");
   }
 
-  const total = course.students.length;
+  // Get all valid active students first to ensure accurate pagination
+  const validStudents = await User.find({
+    _id: { $in: course.students },
+    isActive: { $ne: false }
+  }).select("_id");
+  
+  const validStudentIds = validStudents.map(s => s._id.toString());
+  
+  const total = validStudentIds.length;
   const startIndex = (parseInt(page) - 1) * parseInt(limit);
   const endIndex = startIndex + parseInt(limit);
-  const paginatedStudentIds = course.students.slice(startIndex, endIndex);
+  const paginatedStudentIds = validStudentIds.slice(startIndex, endIndex);
 
   const students = [];
   for (const studentId of paginatedStudentIds) {
@@ -726,30 +734,116 @@ exports.getLiveMonitoring = catchAsync(async (req, res, next) => {
     activeLectures.map((l) => l.hall?._id?.toString()).filter(Boolean),
   ).size;
 
+  if (totalActiveLectures === 0) {
+    return res.status(200).json({
+      success: true,
+      data: {
+        stats: {
+          activeLecturesCount: 0,
+          connectedStudentsCount: activeSessionsCount,
+          occupiedHallsCount: 0,
+          overallAttendanceRate: 0,
+        },
+        departments: [],
+        lectures: [],
+      },
+    });
+  }
+
+  // 4. Batch-fetch ALL attendance records for all active lectures in ONE query (N+1 fix)
+  const lectureIds = activeLectures.map((l) => l._id);
+  const allRecords = await AttendanceRecord.find({
+    lecture: { $in: lectureIds },
+    date: today,
+  }).populate("student", "studentId name");
+
+  // Group records by lecture ID for fast in-memory lookup
+  const recordsByLecture = {};
+  allRecords.forEach((r) => {
+    const lid = r.lecture.toString();
+    if (!recordsByLecture[lid]) recordsByLecture[lid] = [];
+    recordsByLecture[lid].push(r);
+  });
+
+  // 5. Collect ALL absent student IDs across all lectures in one pass
+  const absentIdsByLecture = {};
+  const allAbsentIds = new Set();
+
+  for (const lecture of activeLectures) {
+    const lid = lecture._id.toString();
+    const records = recordsByLecture[lid] || [];
+    const enrolledIds = lecture.course?.students || [];
+    const presentIdsSet = new Set(
+      records.map((r) => r.student?._id?.toString()).filter(Boolean),
+    );
+    const absentIds = enrolledIds
+      .map((id) => id.toString())
+      .filter((id) => !presentIdsSet.has(id));
+
+    absentIdsByLecture[lid] = absentIds;
+    absentIds.forEach((id) => allAbsentIds.add(id));
+  }
+
+  // 6. Batch-fetch ALL absent students in ONE query (excluding deactivated ones)
+  const absentUsersArr = allAbsentIds.size > 0
+    ? await User.find({ _id: { $in: [...allAbsentIds] }, isActive: { $ne: false } }).select("studentId name")
+    : [];
+
+  const absentUsersMap = {};
+  absentUsersArr.forEach((u) => {
+    absentUsersMap[u._id.toString()] = u;
+  });
+
+  // 7. Build per-lecture data
   let totalEnrolled = 0;
   let totalPresent = 0;
-
-  // Department-wise stats aggregation map
   const deptStatsMap = {};
-
   const lecturesData = [];
 
   for (const lecture of activeLectures) {
+    const lid = lecture._id.toString();
     const course = lecture.course || {};
-    const enrolledIds = course.students || [];
-    const enrolledCount = enrolledIds.length;
-    totalEnrolled += enrolledCount;
 
-    // Get attendance records for this lecture today
-    const records = await AttendanceRecord.find({
-      lecture: lecture._id,
-      date: today,
-    }).populate("student", "studentId name");
-
+    const records = recordsByLecture[lid] || [];
     const presentCount = records.filter(
       (r) => r.status === "in-progress" || r.status === "present",
     ).length;
     totalPresent += presentCount;
+
+    // Build present students list
+    const presentStudents = records.map((r) => {
+      const student = r.student || {};
+      const nameStr = student.name
+        ? `${student.name.first || ""} ${student.name.last || ""}`.trim()
+        : "غير معروف";
+      return {
+        _id: student._id,
+        name: nameStr || "غير معروف",
+        studentId: student.studentId || "-",
+        status: r.status,
+        connectedAt: r.sessions && r.sessions.length > 0 ? r.sessions[r.sessions.length - 1].checkIn : null,
+        macAddress: r.deviceInfo?.macAddress || "-",
+      };
+    });
+
+    // Build absent students list from pre-fetched map
+    const absentStudents = (absentIdsByLecture[lid] || []).map((id) => {
+      const u = absentUsersMap[id];
+      if (!u) return null;
+      const nameStr = u.name
+        ? `${u.name.first || ""} ${u.name.last || ""}`.trim()
+        : "غير معروف";
+      return {
+        _id: u._id,
+        name: nameStr || "غير معروف",
+        studentId: u.studentId || "-",
+        status: "absent",
+      };
+    }).filter(Boolean);
+
+    // Calculate ACTUAL enrolled count (present + valid absent)
+    const enrolledCount = presentCount + absentStudents.length;
+    totalEnrolled += enrolledCount;
 
     // Aggregating department (specialization) statistics
     const specialization = course.specialization;
@@ -767,48 +861,6 @@ exports.getLiveMonitoring = catchAsync(async (req, res, next) => {
       deptStatsMap[specId].activeLectures += 1;
       deptStatsMap[specId].totalEnrolled += enrolledCount;
       deptStatsMap[specId].presentCount += presentCount;
-    }
-
-    // Build lists of present vs absent students
-    const presentStudents = records.map((r) => {
-      const student = r.student || {};
-      const nameStr = student.name
-        ? `${student.name.first || ""} ${student.name.last || ""}`.trim()
-        : "غير معروف";
-      return {
-        _id: student._id,
-        name: nameStr || "غير معروف",
-        studentId: student.studentId || "-",
-        status: r.status,
-        connectedAt: r.sessions && r.sessions.length > 0 ? r.sessions[r.sessions.length - 1].checkIn : null,
-        macAddress: r.deviceInfo?.macAddress || "-",
-      };
-    });
-
-    // Find absent students
-    const presentIdsSet = new Set(
-      records.map((r) => r.student?._id?.toString()).filter(Boolean),
-    );
-    const absentStudents = [];
-
-    const absentIds = enrolledIds.filter(
-      (id) => !presentIdsSet.has(id.toString()),
-    );
-    if (absentIds.length > 0) {
-      const absentUsers = await User.find({ _id: { $in: absentIds } }).select(
-        "studentId name",
-      );
-      absentUsers.forEach((u) => {
-        const nameStr = u.name
-          ? `${u.name.first || ""} ${u.name.last || ""}`.trim()
-          : "غير معروف";
-        absentStudents.push({
-          _id: u._id,
-          name: nameStr || "غير معروف",
-          studentId: u.studentId || "-",
-          status: "absent",
-        });
-      });
     }
 
     const courseName = course.name || "مادة غير معروفة";
@@ -839,7 +891,7 @@ exports.getLiveMonitoring = catchAsync(async (req, res, next) => {
       stats: {
         enrolled: enrolledCount,
         present: presentCount,
-        absent: Math.max(0, enrolledCount - presentCount),
+        absent: absentStudents.length,
         percentage:
           enrolledCount > 0 ? Math.round((presentCount / enrolledCount) * 100) : 0,
       },
@@ -1119,7 +1171,7 @@ exports.updateMatrixCell = catchAsync(async (req, res, next) => {
   } else {
     const lecture = await Lecture.findOne({ course: courseId });
 
-    record = new AttendanceRecord({
+    const record = new AttendanceRecord({
       student: studentId,
       course: courseId,
       lecture: lecture ? lecture._id : new mongoose.Types.ObjectId(),

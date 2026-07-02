@@ -8,12 +8,23 @@ const catchAsync = (fn) => {
 };
 
 /**
- * Get today's date at midnight
+ * Get current time in Egypt timezone (Africa/Cairo)
+ */
+const getLocalTime = (date = new Date()) => {
+  return new Date(date.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+};
+
+/**
+ * Get today's date at midnight (Local Egypt Time, stored as UTC)
  */
 const getTodayDate = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
+  const today = getLocalTime();
+  // We want to return a Date object representing 00:00:00 of the local day in UTC
+  // so that MongoDB queries for "today" match perfectly regardless of server timezone.
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  return new Date(`${yyyy}-${mm}-${dd}T00:00:00Z`);
 };
 
 /**
@@ -25,10 +36,10 @@ const timeToMinutes = (timeStr) => {
 };
 
 /**
- * Get current time as HH:MM string
+ * Get current time as HH:MM string in Local Egypt Time
  */
 const getCurrentTimeString = () => {
-  const now = new Date();
+  const now = getLocalTime();
   const hours = now.getHours().toString().padStart(2, "0");
   const minutes = now.getMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
@@ -49,11 +60,21 @@ const calculateMinutes = (start, end) => {
 };
 
 /**
- * Normalize MAC address format
+ * Normalize MAC address format to XX:XX:XX:XX:XX:XX (uppercase, colon-separated)
+ * Handles: AA:BB:CC:DD:EE:FF, AA-BB-CC-DD-EE-FF, AA.BB.CC.DD.EE.FF, AABBCCDDEEFF
  */
 const normalizeMacAddress = (mac) => {
   if (!mac) return null;
-  return mac.toUpperCase().replace(/-/g, ":");
+  // Trim whitespace and uppercase
+  const cleaned = mac.trim().toUpperCase();
+  // Remove all common separators (colon, dash, dot)
+  const stripped = cleaned.replace(/[:\-\.]/g, "");
+  // If exactly 12 hex chars, reformat as XX:XX:XX:XX:XX:XX
+  if (/^[0-9A-F]{12}$/.test(stripped)) {
+    return stripped.match(/.{2}/g).join(":");
+  }
+  // Fallback: return cleaned as-is (already colon-separated or unknown format)
+  return cleaned;
 };
 
 /**

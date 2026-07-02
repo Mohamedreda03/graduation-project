@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const { ROLES, ADMIN_ROLES, DEVICE_REQUEST_STATUS } = require("../config/constants");
+const { normalizeMacAddress } = require("../utils/helpers");
 
 const userSchema = new mongoose.Schema(
   {
@@ -146,6 +147,15 @@ userSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, 12);
 });
 
+// Normalize MAC address to uppercase before saving (safety net for all code paths)
+userSchema.pre("save", function () {
+  if (this.device && this.device.macAddress) {
+    const normalized = normalizeMacAddress(this.device.macAddress);
+    if (normalized) this.device.macAddress = normalized;
+  }
+});
+
+
 // Compare password method
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
@@ -157,9 +167,13 @@ userSchema.methods.isDeviceMatch = function (deviceInfo) {
 
   const { deviceId, macAddress } = deviceInfo;
 
-  // MAC address is the primary identifier
-  if (macAddress && this.device.macAddress === macAddress) {
-    return true;
+  // MAC address is the primary identifier — normalize both sides before comparing
+  if (macAddress) {
+    const normalizedIncoming = normalizeMacAddress(macAddress);
+    const normalizedStored = normalizeMacAddress(this.device.macAddress);
+    if (normalizedIncoming && normalizedStored && normalizedStored === normalizedIncoming) {
+      return true;
+    }
   }
 
   // DeviceId as fallback
@@ -170,10 +184,11 @@ userSchema.methods.isDeviceMatch = function (deviceInfo) {
   return false;
 };
 
-// Find student by MAC Address
+// Find student by MAC Address — normalizes MAC before querying
 userSchema.statics.findByMacAddress = function (macAddress) {
+  const normalized = normalizeMacAddress(macAddress);
   return this.findOne({
-    "device.macAddress": macAddress,
+    "device.macAddress": normalized,
     "device.isVerified": true,
     role: ROLES.STUDENT,
   });
@@ -181,52 +196,29 @@ userSchema.statics.findByMacAddress = function (macAddress) {
 
 /**
  * Find student by device identifier (MAC address → deviceId fallback)
- * Used by Access Point events
+ * Uses a single DB query with $or for efficiency under high load.
+ * Used by Access Point events.
  */
 userSchema.statics.findByDeviceIdentifier = async function (identifier) {
   if (!identifier) return null;
 
   console.log("[findByDeviceIdentifier] Looking for:", identifier);
 
-  // 1. Try MAC address with isVerified: true
-  let student = await this.findOne({
+  // Single query: try MAC address first (verified preferred), then deviceId
+  const student = await this.findOne({
     role: ROLES.STUDENT,
-    "device.macAddress": identifier,
-    "device.isVerified": true,
+    $or: [
+      { "device.macAddress": identifier },
+      { "device.deviceId": identifier },
+    ],
   });
-  if (student) {
-    console.log(
-      "[findByDeviceIdentifier] Found by MAC (verified):",
-      student.studentId,
-    );
-    return student;
-  }
 
-  // 2. Try MAC address without isVerified check (admin-set MAC addresses)
-  student = await this.findOne({
-    role: ROLES.STUDENT,
-    "device.macAddress": identifier,
-  });
   if (student) {
     console.log(
-      "[findByDeviceIdentifier] Found by MAC (unverified):",
+      "[findByDeviceIdentifier] Found:",
       student.studentId,
       "| isVerified:",
       student.device?.isVerified,
-    );
-    return student;
-  }
-
-  // 3. Try deviceId as fallback
-  student = await this.findOne({
-    role: ROLES.STUDENT,
-    "device.deviceId": identifier,
-    "device.isVerified": true,
-  });
-  if (student) {
-    console.log(
-      "[findByDeviceIdentifier] Found by deviceId:",
-      student.studentId,
     );
   } else {
     console.log(

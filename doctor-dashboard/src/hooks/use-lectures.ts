@@ -160,6 +160,7 @@ export function useEndLecture() {
     mutationFn: lecturesService.endLecture,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: lectureKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] }); // Invalidate all attendance queries globally
       toast.success("Lecture ended");
     },
     onError: (error: Error) => {

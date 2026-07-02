@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
 const studentsController = require("../controllers/students.controller");
 const {
   protect,
@@ -7,6 +8,12 @@ const {
   adminOrDoctor,
   studentOnly,
 } = require("../middlewares");
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+});
 
 router.use(protect);
 
@@ -441,5 +448,36 @@ router.post("/bulk", adminOnly, studentsController.createStudentsBulk);
  *         description: Student updated
  */
 router.put("/:id", adminOnly, studentsController.updateStudent);
+
+/**
+ * @swagger
+ * /students/import-excel:
+ *   post:
+ *     summary: Import multiple students via Excel file (Admin only)
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Students created successfully
+ *       400:
+ *         description: Bad request or validation errors
+ */
+router.post(
+  "/import-excel",
+  adminOnly,
+  upload.single("file"),
+  studentsController.importStudentsExcel
+);
 
 module.exports = router;

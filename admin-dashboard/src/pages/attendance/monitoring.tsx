@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatTime12h } from "@/lib/utils";
 
 // Helper to get local YYYY-MM-DD date string
 const getLocalDateString = (date = new Date()) => {
@@ -381,13 +382,19 @@ export function AttendanceMonitoringPage() {
                 <div className="flex flex-col text-right">
                   <span className="text-[10px] text-muted-foreground font-bold">التوقيت المجدول للمقرر</span>
                   <span className="text-xs font-mono font-bold mt-0.5 text-foreground text-right block" dir="ltr">
-                    {selectedLecture.startTime} - {selectedLecture.endTime}
+                    {formatTime12h(selectedLecture.startTime)} - {formatTime12h(selectedLecture.endTime)}
                   </span>
                 </div>
                 <div className="flex flex-col text-right">
                   <span className="text-[10px] text-muted-foreground font-bold">تسجيل الدكتور الفعلي (بدء / إنهاء)</span>
                   <span className="text-xs font-mono font-bold mt-0.5 text-primary text-right block" dir="ltr">
-                    {doctorStartTimeStr} - {doctorEndTimeStr}
+                    {doctorStartTimeStr !== "—" && doctorEndTimeStr !== "—" ? (
+                      `${doctorStartTimeStr} - ${doctorEndTimeStr}`
+                    ) : doctorStartTimeStr !== "—" ? (
+                      doctorStartTimeStr
+                    ) : (
+                      "—"
+                    )}
                   </span>
                 </div>
                 <div className="flex flex-col text-right">
@@ -405,7 +412,7 @@ export function AttendanceMonitoringPage() {
               </div>
 
               {/* Statistics Mini Cards */}
-              <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-4">
                 <div className="bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 p-2 rounded-md text-center">
                   <span className="text-[10px] text-muted-foreground font-bold block">إجمالي</span>
                   <span className="text-lg font-bold text-foreground mt-0.5 block">{auditTotalEnrolled}</span>
@@ -414,17 +421,11 @@ export function AttendanceMonitoringPage() {
                   <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold block">حاضر</span>
                   <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 block">{auditPresentCount}</span>
                 </div>
-                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/40 dark:border-amber-900/30 p-2 rounded-md text-center">
-                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold block">متأخر</span>
-                  <span className="text-lg font-bold text-amber-700 dark:text-amber-400 mt-0.5 block">{auditLateCount}</span>
-                </div>
                 <div className="bg-red-50 dark:bg-red-950/20 border border-red-200/40 dark:border-red-900/30 p-2 rounded-md text-center">
-                  <span className="text-[10px] text-red-700 dark:text-red-400 font-bold block">غائب</span>
+                  <span className="text-[10px] text-red-700 dark:text-red-400 font-bold block">
+                    {selectedLecture?.status === "in-progress" ? "غير متصل" : "غائب"}
+                  </span>
                   <span className="text-lg font-bold text-red-700 dark:text-red-400 mt-0.5 block">{auditAbsentCount}</span>
-                </div>
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200/40 dark:border-blue-900/30 p-2 rounded-md text-center">
-                  <span className="text-[10px] text-blue-700 dark:text-blue-400 font-bold block">بعذر</span>
-                  <span className="text-lg font-bold text-blue-700 dark:text-blue-400 mt-0.5 block">{auditExcusedCount}</span>
                 </div>
                 <div className="bg-primary/10 dark:bg-primary/5 border border-primary/20 dark:border-primary/15 p-2 rounded-md text-center">
                   <span className="text-[10px] text-primary dark:text-primary/90 font-bold block">النسبة</span>
@@ -508,7 +509,7 @@ export function AttendanceMonitoringPage() {
                             statusText = "متأخر";
                           } else if (rec.status === "absent") {
                             statusBadge = "bg-red-50 text-red-700 border-red-200/40";
-                            statusText = "غائب";
+                            statusText = selectedLecture?.status === "in-progress" ? "غير متصل" : "غائب";
                           } else if (rec.status === "excused") {
                             statusBadge = "bg-blue-50 text-blue-700 border-blue-200/40";
                             statusText = "عذر";
@@ -536,11 +537,11 @@ export function AttendanceMonitoringPage() {
                               </TableCell>
 
                               <TableCell className="py-1.5 px-2 text-center font-mono text-[10px] font-semibold text-foreground">
-                                {entryTimeStr}
+                                <span dir="ltr">{entryTimeStr}</span>
                               </TableCell>
 
                               <TableCell className="py-1.5 px-2 text-center font-mono text-[10px] font-semibold text-foreground">
-                                {exitTimeStr}
+                                <span dir="ltr">{exitTimeStr}</span>
                               </TableCell>
 
                               <TableCell className="py-1.5 px-2 text-center text-xs text-muted-foreground font-semibold">

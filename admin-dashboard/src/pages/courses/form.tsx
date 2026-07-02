@@ -252,64 +252,6 @@ export function CourseFormPage() {
                     )}
                   />
 
-                  {selectedSpecializationId && availableDepartments.length > 0 && (
-                    <FormField
-                      control={form.control}
-                      name="departments"
-                      render={() => (
-                        <FormItem className="space-y-3 col-span-1 md:col-span-2 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                          <FormLabel className="flex items-center gap-2 mb-3">
-                            <Layers className="h-4 w-4 text-muted-foreground" />
-                            الأقسام التي تدرس هذا المقرر (اختياري)
-                          </FormLabel>
-                          <FormDescription className="text-xs mb-3 text-slate-500">
-                            اترك جميع الخيارات فارغة إذا كان هذا المقرر عاماً ويدرسه جميع أقسام الكلية.
-                          </FormDescription>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                            {availableDepartments.map((dept) => (
-                              <FormField
-                                key={dept}
-                                control={form.control}
-                                name="departments"
-                                render={({ field }) => {
-                                  return (
-                                    <FormItem
-                                      key={dept}
-                                      className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border p-3 bg-white dark:bg-slate-950 shadow-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
-                                      dir="rtl"
-                                    >
-                                      <FormControl>
-                                        <Checkbox
-                                          checked={field.value?.includes(dept)}
-                                          onCheckedChange={(checked) => {
-                                            const currentValue = field.value || [];
-                                            return checked
-                                              ? field.onChange([...currentValue, dept])
-                                              : field.onChange(
-                                                  currentValue.filter(
-                                                    (value) => value !== dept
-                                                  )
-                                                );
-                                          }}
-                                          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary ml-2"
-                                        />
-                                      </FormControl>
-                                      <FormLabel className="font-normal text-sm cursor-pointer w-full">
-                                        {dept}
-                                      </FormLabel>
-                                    </FormItem>
-                                  );
-                                }}
-                              />
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-
-
                   <FormField
                     control={form.control}
                     name="doctor"
@@ -378,6 +320,63 @@ export function CourseFormPage() {
                       </FormItem>
                     )}
                   />
+
+                  {selectedSpecializationId && availableDepartments.length > 0 && (
+                    <FormField
+                      control={form.control}
+                      name="departments"
+                      render={() => (
+                        <FormItem className="space-y-3 col-span-1 md:col-span-2 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                          <FormLabel className="flex items-center gap-2 mb-3">
+                            <Layers className="h-4 w-4 text-muted-foreground" />
+                            الأقسام التي تدرس هذا المقرر (اختياري)
+                          </FormLabel>
+                          <FormDescription className="text-xs mb-3 text-slate-500">
+                            اترك جميع الخيارات فارغة إذا كان هذا المقرر عاماً ويدرسه جميع أقسام الكلية.
+                          </FormDescription>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            {availableDepartments.map((dept) => (
+                              <FormField
+                                key={dept}
+                                control={form.control}
+                                name="departments"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={dept}
+                                      className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border p-3 bg-white dark:bg-slate-950 shadow-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
+                                      dir="rtl"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(dept)}
+                                          onCheckedChange={(checked) => {
+                                            const currentValue = field.value || [];
+                                            return checked
+                                              ? field.onChange([...currentValue, dept])
+                                              : field.onChange(
+                                                  currentValue.filter(
+                                                    (value) => value !== dept
+                                                  )
+                                                );
+                                          }}
+                                          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary ml-2"
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm cursor-pointer w-full">
+                                        {dept}
+                                      </FormLabel>
+                                    </FormItem>
+                                  );
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}

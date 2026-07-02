@@ -334,7 +334,7 @@ export function LectureSchedulePage() {
     const [hourStr, minuteStr] = timeStr.split(":");
     let hour = parseInt(hourStr);
     const minute = parseInt(minuteStr);
-    const ampm = hour >= 12 ? "م" : "ص";
+    const ampm = hour >= 12 ? "PM" : "AM";
     hour = hour % 12;
     hour = hour ? hour : 12;
     const minuteStrFormatted = minute.toString().padStart(2, "0");
@@ -1365,7 +1365,7 @@ export function LectureSchedulePage() {
                             <SelectContent dir="rtl">
                               {PERIODS.map((p) => (
                                 <SelectItem key={p.id} value={p.id.toString()}>
-                                  الفترة {p.id} ({p.start})
+                                  الفترة {p.id} ({formatTime12h(p.start)})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -1389,7 +1389,7 @@ export function LectureSchedulePage() {
                             <SelectContent dir="rtl">
                               {PERIODS.map((p) => (
                                 <SelectItem key={p.id} value={p.id.toString()} disabled={parseInt(watchStartPeriod || "1") > p.id}>
-                                  الفترة {p.id} ({p.end})
+                                  الفترة {p.id} ({formatTime12h(p.end)})
                                 </SelectItem>
                               ))}
                             </SelectContent>

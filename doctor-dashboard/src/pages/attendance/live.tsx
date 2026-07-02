@@ -61,11 +61,10 @@ const levelLabels: Record<number | string, string> = {
 
 const studentStatusMap: Record<string, { label: string; dot: string; text: string }> = {
   present: { label: "حاضر", dot: "bg-emerald-500", text: "text-emerald-600" },
-  late: { label: "متأخر", dot: "bg-amber-500", text: "text-amber-600" },
   absent: { label: "غائب", dot: "bg-red-500", text: "text-red-600" },
-  excused: { label: "عذر", dot: "bg-blue-500", text: "text-blue-600" },
   "in-progress": { label: "نشط", dot: "bg-emerald-500 motion-safe:animate-pulse", text: "text-emerald-600" },
   "in-progress-disconnected": { label: "غير متصل حالياً", dot: "bg-slate-400", text: "text-slate-500" },
+  "not-joined-yet": { label: "غير متصل", dot: "bg-slate-300 dark:bg-slate-700", text: "text-slate-400 dark:text-slate-500" },
 };
 
 function StatusDot({ status }: { status: string }) {
@@ -83,15 +82,16 @@ interface StudentRowProps {
   currentStatus: string;
   livePresenceTime: number;
   livePresencePercentage: number;
+  isLectureCompleted: boolean;
   onPresence: () => void;
   onExcuse: () => void;
 }
 
 const StudentCardRow = memo(function StudentCardRow({
-  student, record, entryTimeStr, exitTimeStr, currentStatus, livePresenceTime, livePresencePercentage, onPresence, onExcuse,
+  student, record, entryTimeStr, exitTimeStr, currentStatus, livePresenceTime, livePresencePercentage, isLectureCompleted, onPresence, onExcuse,
 }: StudentRowProps) {
   const statusInfo = studentStatusMap[currentStatus] || studentStatusMap.absent;
-  const isAbsent = currentStatus === "absent";
+  const isAbsent = currentStatus === "absent" || currentStatus === "not-joined-yet";
 
   return (
     <div className="border border-border/50 rounded-md p-3 bg-card space-y-2 text-right">
@@ -120,24 +120,20 @@ const StudentCardRow = memo(function StudentCardRow({
         </div>
         <div className="flex flex-col">
           <span className="text-muted-foreground font-medium">النسبة</span>
-          <span className="font-mono font-semibold text-foreground tabular-nums">{livePresencePercentage}%</span>
+          <span className="font-mono font-semibold text-foreground tabular-nums">
+            {isLectureCompleted ? `${livePresencePercentage}%` : "—"}
+          </span>
         </div>
       </div>
-      {isAbsent && (
-        <div className="flex items-center gap-2 pt-1">
-          <Button variant="outline" size="sm" className="flex-1 text-xs min-h-[44px] text-emerald-700 hover:bg-emerald-50 font-semibold rounded-md border-emerald-200 cursor-pointer" onClick={onPresence}>تحضير</Button>
-          <Button variant="outline" size="sm" className="flex-1 text-xs min-h-[44px] text-blue-700 hover:bg-blue-50 font-semibold rounded-md border-blue-200 cursor-pointer" onClick={onExcuse}>عذر</Button>
-        </div>
-      )}
     </div>
   );
 });
 
 const StudentTableRow = memo(function StudentTableRow({
-  student, record, entryTimeStr, exitTimeStr, currentStatus, livePresenceTime, livePresencePercentage, onPresence, onExcuse,
+  student, record, entryTimeStr, exitTimeStr, currentStatus, livePresenceTime, livePresencePercentage, isLectureCompleted, onPresence, onExcuse,
 }: StudentRowProps) {
   const statusInfo = studentStatusMap[currentStatus] || studentStatusMap.absent;
-  const isAbsent = currentStatus === "absent";
+  const isAbsent = currentStatus === "absent" || currentStatus === "not-joined-yet";
 
   return (
     <tr className="hover:bg-muted/10 border-b border-border/50 transition-colors">
@@ -153,23 +149,15 @@ const StudentTableRow = memo(function StudentTableRow({
           {statusInfo.label}
         </span>
       </td>
-      <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground">{entryTimeStr}</td>
-      <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground">{exitTimeStr}</td>
+      <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground"><span dir="ltr">{entryTimeStr}</span></td>
+      <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground"><span dir="ltr">{exitTimeStr}</span></td>
       <td className="py-2 px-2 text-center text-xs text-muted-foreground font-medium">
         {isAbsent ? "—" : `${livePresenceTime} د`}
       </td>
       <td className="py-2 px-2 text-center">
-        <span className="text-xs font-mono font-semibold text-foreground tabular-nums">{livePresencePercentage}%</span>
-      </td>
-      <td className="py-2 px-2 text-center">
-        {isAbsent ? (
-          <div className="flex items-center justify-center gap-1">
-            <Button variant="outline" size="sm" className="text-[11px] h-7 px-2 text-emerald-700 hover:bg-emerald-50 font-semibold rounded-md border-emerald-200 cursor-pointer" onClick={onPresence}>تحضير</Button>
-            <Button variant="outline" size="sm" className="text-[11px] h-7 px-2 text-blue-700 hover:bg-blue-50 font-semibold rounded-md border-blue-200 cursor-pointer" onClick={onExcuse}>عذر</Button>
-          </div>
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        )}
+        <span className="text-xs font-mono font-semibold text-foreground tabular-nums">
+          {isLectureCompleted ? `${livePresencePercentage}%` : "—"}
+        </span>
       </td>
     </tr>
   );
@@ -294,18 +282,16 @@ export function LiveAttendancePage() {
 
   // Statistics for the selected lecture
   const auditStats = useMemo(() => {
-    if (!attendanceRecords) return { total: 0, present: 0, late: 0, absent: 0, excused: 0, inProgress: 0, rate: 0 };
-    let present = 0, late = 0, excused = 0, inProgress = 0;
+    if (!attendanceRecords) return { total: 0, present: 0, absent: 0, inProgress: 0, rate: 0 };
+    let present = 0, absent = 0, inProgress = 0;
     for (const r of attendanceRecords) {
       if (r.status === "present") present++;
-      else if (r.status === "late") late++;
-      else if (r.status === "excused") excused++;
       else if (r.status === "in-progress") inProgress++;
     }
     const total = enrolledStudents.length;
-    const absent = Math.max(0, total - present - late - excused - inProgress);
-    const rate = total > 0 ? Math.round(((present + late + inProgress) / total) * 100) : 0;
-    return { total, present, late, absent, excused, inProgress, rate };
+    absent = Math.max(0, total - present - inProgress);
+    const rate = total > 0 ? Math.round(((present + inProgress) / total) * 100) : 0;
+    return { total, present, absent, inProgress, rate };
   }, [attendanceRecords, enrolledStudents.length]);
 
   const timeBoundaries = useMemo(() => {
@@ -387,6 +373,9 @@ export function LiveAttendancePage() {
         ? formatTime(lastSession.checkOut)
         : rec?.status === "in-progress" ? "جاري" : "—";
       let currentStatus = rec ? rec.status : "absent";
+      if (currentStatus === "absent" && selectedLecture?.status === "in-progress") {
+        currentStatus = "not-joined-yet";
+      }
       if (currentStatus === "in-progress" && lastSession && lastSession.checkOut) {
         currentStatus = "in-progress-disconnected";
       }
@@ -394,18 +383,36 @@ export function LiveAttendancePage() {
       // Calculate dynamic presence time for active connected sessions
       let livePresenceTime = rec?.totalPresenceTime || 0;
       if (rec?.status === "in-progress" && lastSession && !lastSession.checkOut) {
-        const checkInTime = new Date(lastSession.checkIn).getTime();
+        let checkInTime = new Date(lastSession.checkIn).getTime();
+        if (rec?.lectureStartTime) {
+          const lecStart = new Date(rec.lectureStartTime).getTime();
+          if (checkInTime < lecStart) {
+            checkInTime = lecStart; // Capped to lecture actual start
+          }
+        }
         const currentTime = new Date().getTime();
         const elapsed = Math.round((currentTime - checkInTime) / (1000 * 60));
         livePresenceTime += Math.max(0, elapsed);
       }
 
-      const totalDuration = selectedLecture
-        ? getLectureDuration(selectedLecture.startTime, selectedLecture.endTime)
-        : 45;
+      let activeDuration = 45;
+      if (selectedLecture) {
+        if (selectedLecture.status === "in-progress" || selectedLecture.status === "completed") {
+          const docStartStr = selectedLecture.actualStartTime || selectedLecture.createdAt;
+          if (docStartStr) {
+            const startT = new Date(docStartStr).getTime();
+            const endT = selectedLecture.status === "completed" && selectedLecture.actualEndTime 
+              ? new Date(selectedLecture.actualEndTime).getTime() 
+              : new Date().getTime();
+            activeDuration = Math.max(1, Math.round((endT - startT) / (1000 * 60)));
+          }
+        } else {
+          activeDuration = getLectureDuration(selectedLecture.startTime, selectedLecture.endTime);
+        }
+      }
 
-      const livePresencePercentage = totalDuration > 0
-        ? Math.min(100, Math.round((livePresenceTime / totalDuration) * 100))
+      const livePresencePercentage = activeDuration > 0
+        ? Math.min(100, Math.round((livePresenceTime / activeDuration) * 100))
         : 0;
 
       return {
@@ -778,13 +785,19 @@ export function LiveAttendancePage() {
                   <div className="flex flex-col">
                     <span className="text-[11px] text-muted-foreground font-medium">التوقيت المجدول للمحاضرة</span>
                     <span className="text-xs font-mono font-semibold mt-0.5 text-foreground text-right block" dir="ltr">
-                      {selectedLecture.startTime} - {selectedLecture.endTime}
+                      {formatTime12h(selectedLecture.startTime)} - {formatTime12h(selectedLecture.endTime)}
                     </span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[11px] text-muted-foreground font-medium">بداية البث الفعلي للمحاضرة</span>
                     <span className="text-xs font-mono font-semibold mt-0.5 text-primary text-right block" dir="ltr">
-                      {timeBoundaries.doctorStart} - {timeBoundaries.doctorEnd}
+                      {timeBoundaries.doctorStart !== "—" && timeBoundaries.doctorEnd !== "—" ? (
+                        `${timeBoundaries.doctorStart} - ${timeBoundaries.doctorEnd}`
+                      ) : timeBoundaries.doctorStart !== "—" ? (
+                        timeBoundaries.doctorStart
+                      ) : (
+                        "—"
+                      )}
                     </span>
                   </div>
                   <div className="flex flex-col">
@@ -802,7 +815,7 @@ export function LiveAttendancePage() {
                 </div>
 
                 {/* Statistics Mini Cards */}
-                <div className="grid gap-1.5 sm:gap-2 grid-cols-3 sm:grid-cols-6">
+                <div className="grid gap-1.5 sm:gap-2 grid-cols-2 sm:grid-cols-4">
                   <div className="bg-muted/30 border border-border p-2 rounded-md text-center">
                     <span className="text-[11px] text-muted-foreground font-medium block">إجمالي الطلاب</span>
                     <span className="text-base font-bold text-foreground tabular-nums mt-0.5 block">{auditStats.total}</span>
@@ -811,17 +824,11 @@ export function LiveAttendancePage() {
                     <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium block">حاضر</span>
                     <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5 block">{auditStats.present + auditStats.inProgress}</span>
                   </div>
-                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 p-2 rounded-md text-center">
-                    <span className="text-[11px] text-amber-700 dark:text-amber-400 font-medium block">متأخر</span>
-                    <span className="text-base font-bold text-amber-700 dark:text-amber-400 tabular-nums mt-0.5 block">{auditStats.late}</span>
-                  </div>
                   <div className="bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 p-2 rounded-md text-center">
-                    <span className="text-[11px] text-red-700 dark:text-red-400 font-medium block">غائب</span>
+                    <span className="text-[11px] text-red-700 dark:text-red-400 font-medium block">
+                      {selectedLecture?.status === "in-progress" ? "غير متصل" : "غائب"}
+                    </span>
                     <span className="text-base font-bold text-red-700 dark:text-red-400 tabular-nums mt-0.5 block">{auditStats.absent}</span>
-                  </div>
-                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30 p-2 rounded-md text-center">
-                    <span className="text-[11px] text-blue-700 dark:text-blue-400 font-medium block">بعذر</span>
-                    <span className="text-base font-bold text-blue-700 dark:text-blue-400 tabular-nums mt-0.5 block">{auditStats.excused}</span>
                   </div>
                   <div className="bg-primary/10 border border-primary/20 p-2 rounded-md text-center">
                     <span className="text-[11px] text-primary font-medium block">النسبة</span>
@@ -865,7 +872,6 @@ export function LiveAttendancePage() {
                               <th className="text-center font-bold p-2 text-xs text-muted-foreground">الخروج</th>
                               <th className="text-center font-bold p-2 text-xs text-muted-foreground">المدة</th>
                               <th className="text-center font-bold p-2 text-xs text-muted-foreground">النسبة</th>
-                              <th className="text-center font-bold p-2 text-xs text-muted-foreground">الإجراء</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -879,6 +885,7 @@ export function LiveAttendancePage() {
                                 currentStatus={row.currentStatus}
                                 livePresenceTime={row.livePresenceTime}
                                 livePresencePercentage={row.livePresencePercentage}
+                                isLectureCompleted={selectedLecture?.status === "completed"}
                                 onPresence={() => handleManualPresence(row.student, row.record)}
                                 onExcuse={() => handleManualExcuse(row.student, row.record)}
                               />
@@ -899,6 +906,7 @@ export function LiveAttendancePage() {
                             currentStatus={row.currentStatus}
                             livePresenceTime={row.livePresenceTime}
                             livePresencePercentage={row.livePresencePercentage}
+                            isLectureCompleted={selectedLecture?.status === "completed"}
                             onPresence={() => handleManualPresence(row.student, row.record)}
                             onExcuse={() => handleManualExcuse(row.student, row.record)}
                           />
