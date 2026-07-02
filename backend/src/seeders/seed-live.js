@@ -530,7 +530,7 @@ async function seedLive() {
             presencePercentage = 0;
             totalPresenceTime = 0;
           } else if (rand > 0.8) {
-            status = "late";
+            status = "present";
             presencePercentage = 80;
             totalPresenceTime = 96;
           }
