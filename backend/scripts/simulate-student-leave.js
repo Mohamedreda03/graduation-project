@@ -26,15 +26,14 @@ async function run() {
 
   if (arg1) {
     const parsedNum = Number(arg1);
-    // If it's not a number or a large number (like a student ID), treat it as student identifier
     if (isNaN(parsedNum) || parsedNum > 1000) {
       studentIdentifier = arg1;
-      if (arg2) leaveOffsetMinutes = parseInt(arg2) || 30;
-      if (arg3) leaveDurationMinutes = parseInt(arg3) || 20;
+      if (arg2 !== undefined && arg2 !== "") leaveOffsetMinutes = parseInt(arg2);
+      if (arg3 !== undefined && arg3 !== "") leaveDurationMinutes = parseInt(arg3);
     } else {
       // It's the minutes offset
-      leaveOffsetMinutes = parseInt(arg1) || 30;
-      if (arg2) leaveDurationMinutes = parseInt(arg2) || 20;
+      leaveOffsetMinutes = parseInt(arg1);
+      if (arg2 !== undefined && arg2 !== "") leaveDurationMinutes = parseInt(arg2);
     }
   }
 
@@ -73,9 +72,10 @@ async function run() {
   const disconnectTime = new Date(baseTime.getTime() + leaveOffsetMinutes * 60000);
   const reconnectTime = new Date(disconnectTime.getTime() + leaveDurationMinutes * 60000);
 
+  const hasReturned = leaveDurationMinutes > 0;
+
   // Split sessions:
   // Session 1: From start until disconnectTime
-  // Session 2: From reconnectTime until lecture end (or current time if ongoing)
   const session1 = {
     checkIn: baseTime,
     checkOut: disconnectTime
@@ -85,21 +85,28 @@ async function run() {
   const lectureDuration = 120; // default 2 hours
   const baseEndTime = new Date(baseTime.getTime() + lectureDuration * 60000);
 
-  const session2 = {
-    checkIn: reconnectTime,
-    checkOut: isOngoing ? undefined : baseEndTime
-  };
+  let sessions = [session1];
+  if (hasReturned) {
+    const session2 = {
+      checkIn: reconnectTime,
+      checkOut: isOngoing ? undefined : baseEndTime
+    };
+    sessions.push(session2);
+  }
 
-  attendanceRecord.sessions = [session1, session2];
+  attendanceRecord.sessions = sessions;
 
   // Calculate new totalPresenceTime
   let newTotal = calculateMinutes(session1.checkIn, session1.checkOut);
-  if (session2.checkOut) {
-    newTotal += calculateMinutes(session2.checkIn, session2.checkOut);
-  } else {
-    const now = new Date();
-    const activeEndTime = now > reconnectTime ? now : reconnectTime;
-    newTotal += calculateMinutes(session2.checkIn, activeEndTime);
+  if (hasReturned) {
+    const session2 = sessions[1];
+    if (session2.checkOut) {
+      newTotal += calculateMinutes(session2.checkIn, session2.checkOut);
+    } else {
+      const now = new Date();
+      const activeEndTime = now > reconnectTime ? now : reconnectTime;
+      newTotal += calculateMinutes(session2.checkIn, activeEndTime);
+    }
   }
 
   attendanceRecord.totalPresenceTime = Math.round(newTotal);
@@ -116,7 +123,10 @@ async function run() {
   await attendanceRecord.save();
   console.log(`✅ Updated Attendance Record sessions:`);
   console.log(`   - Session 1: Check-in: ${session1.checkIn.toLocaleTimeString()}, Check-out: ${session1.checkOut.toLocaleTimeString()}`);
-  console.log(`   - Session 2: Check-in: ${session2.checkIn.toLocaleTimeString()}, Check-out: ${session2.checkOut ? session2.checkOut.toLocaleTimeString() : "Ongoing"}`);
+  if (hasReturned) {
+    const session2 = sessions[1];
+    console.log(`   - Session 2: Check-in: ${session2.checkIn.toLocaleTimeString()}, Check-out: ${session2.checkOut ? session2.checkOut.toLocaleTimeString() : "Ongoing"}`);
+  }
   console.log(`   - New Total Presence Time: ${attendanceRecord.totalPresenceTime} mins`);
 
   // Create Connection Logs for audit trail
@@ -132,28 +142,43 @@ async function run() {
     processingResult: "Simulated leave: Student disconnected"
   });
 
-  // 2. Reconnect Event
-  await ConnectionLog.create({
-    macAddress: student.device.macAddress,
-    hall: attendanceRecord.hall,
-    eventType: CONNECTION_EVENTS.CONNECTED,
-    timestamp: reconnectTime,
-    processed: true,
-    student: student._id,
-    attendanceRecord: attendanceRecord._id,
-    processingResult: "Simulated return: Student reconnected"
-  });
-
-  console.log(`📝 Generated Connection Logs (DISCONNECTED and CONNECTED) to match the simulation.`);
+  if (hasReturned) {
+    // 2. Reconnect Event
+    await ConnectionLog.create({
+      macAddress: student.device.macAddress,
+      hall: attendanceRecord.hall,
+      eventType: CONNECTION_EVENTS.CONNECTED,
+      timestamp: reconnectTime,
+      processed: true,
+      student: student._id,
+      attendanceRecord: attendanceRecord._id,
+      processingResult: "Simulated return: Student reconnected"
+    });
+    console.log(`📝 Generated Connection Logs (DISCONNECTED and CONNECTED) to match the simulation.`);
+  } else {
+    console.log(`📝 Generated Connection Log (DISCONNECTED) to match the simulation.`);
+  }
 
   // Update active StudentSession if ongoing
   if (isOngoing) {
-    const studentSession = await StudentSession.findOne({ student: student._id, isActive: true });
+    const studentSession = await StudentSession.findOne({ student: student._id });
     if (studentSession) {
-      studentSession.connectedAt = reconnectTime;
-      studentSession.lastActivity = reconnectTime;
-      await studentSession.save();
-      console.log(`⚡ Updated active StudentSession to reflect reconnect time.`);
+      if (hasReturned) {
+        studentSession.isActive = true;
+        studentSession.currentHall = attendanceRecord.hall;
+        studentSession.currentLecture = attendanceRecord.lecture;
+        studentSession.attendanceRecord = attendanceRecord._id;
+        studentSession.connectedAt = reconnectTime;
+        studentSession.lastActivity = reconnectTime;
+        studentSession.disconnectedAt = undefined;
+        await studentSession.save();
+        console.log(`⚡ Activated and updated StudentSession to reflect reconnect time.`);
+      } else {
+        studentSession.isActive = false;
+        studentSession.disconnectedAt = disconnectTime;
+        await studentSession.save();
+        console.log(`⚡ Deactivated active StudentSession (Student is now currently offline).`);
+      }
     }
   }
 
