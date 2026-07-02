@@ -51,10 +51,20 @@ async function run() {
   }
   console.log(`👨‍🎓 Found Student: ${student.fullName} (ID: ${student._id}, StudentId: ${student.studentId})`);
 
-  // Find the latest attendance record for this student
-  const attendanceRecord = await AttendanceRecord.findOne({ student: student._id })
-    .sort({ createdAt: -1 })
-    .populate("lecture");
+  // Find active student session first to get the correct live attendance record
+  const activeSession = await StudentSession.findOne({ student: student._id, isActive: true });
+  
+  let attendanceRecord;
+  if (activeSession && activeSession.attendanceRecord) {
+    attendanceRecord = await AttendanceRecord.findById(activeSession.attendanceRecord).populate("lecture");
+  }
+
+  // Fallback if no active session is found (e.g. they are already offline)
+  if (!attendanceRecord) {
+    attendanceRecord = await AttendanceRecord.findOne({ student: student._id })
+      .sort({ date: -1, createdAt: -1 })
+      .populate("lecture");
+  }
 
   if (!attendanceRecord) {
     console.error("❌ No attendance record found for this student.");
