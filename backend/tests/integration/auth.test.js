@@ -107,6 +107,20 @@ describe('Authentication API Integration Tests', () => {
       expect(updatedStudent.device.isVerified).toBe(true);
     });
 
+    it('should login successfully for student without deviceInfo', async () => {
+      const res = await request(app)
+        .post('/api/auth/mobile/login')
+        .send({ 
+          studentId: studentUser.studentId, 
+          password
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.data).toHaveProperty('accessToken');
+      expect(res.body.data).toHaveProperty('refreshToken');
+      expect(res.body.data.user.studentId).toBe(studentUser.studentId);
+    });
+
     it('should reject login if device MAC address mismatch', async () => {
       // First login to bind device
       await request(app)

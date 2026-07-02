@@ -135,7 +135,8 @@ exports.webLogin = catchAsync(async (req, res, next) => {
  * Returns tokens in response body
  */
 exports.mobileLogin = catchAsync(async (req, res, next) => {
-  const { email, studentId, password, deviceInfo } = req.body;
+  const { email, studentId, password } = req.body;
+  let deviceInfo = req.body.deviceInfo;
 
   // Find user by email or studentId
   const query = email ? { email } : { studentId };
@@ -376,7 +377,8 @@ exports.mobileLogout = catchAsync(async (req, res, next) => {
  * POST /api/auth/login
  */
 exports.login = catchAsync(async (req, res, next) => {
-  const { email, studentId, password, deviceInfo } = req.body;
+  const { email, studentId, password } = req.body;
+  let deviceInfo = req.body.deviceInfo;
 
   // Find user by email or studentId
   const query = email ? { email } : { studentId };

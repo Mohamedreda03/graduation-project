@@ -6,8 +6,9 @@ const loginSchema = Joi.object({
   password: Joi.string().required().min(6),
   deviceInfo: Joi.object({
     deviceId: Joi.string().allow("", null),
-    macAddress: Joi.string().required(),
-  }),
+    macAddress: Joi.string().allow("", null),
+    deviceName: Joi.string().allow("", null),
+  }).optional().allow(null),
 }).xor("email", "studentId"); // Either email or studentId required
 
 const changePasswordSchema = Joi.object({
