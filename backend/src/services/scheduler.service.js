@@ -245,37 +245,99 @@ function getMostRecentDayOfWeekDate(dayOfWeek) {
 
 /**
  * Automatically complete ended lectures that are still in-progress
+ * Also finalizes all attendance records immediately (no delay)
  */
 async function autoCompleteLectures() {
   console.log("[Scheduler] Checking for ended in-progress lectures...");
   try {
     const now = new Date();
-    const autoFinalizeSetting = await Setting.findOne({
-      key: "AUTO_FINALIZE_AFTER_MINUTES",
-    });
-    const autoFinalizeMinutes = autoFinalizeSetting
-      ? autoFinalizeSetting.value
-      : 30;
 
-    const cursor = Lecture.find({
+    const minPresenceSetting = await Setting.findOne({ key: "MIN_PRESENCE_PERCENTAGE" });
+    const minPresencePercentage = minPresenceSetting ? parseInt(minPresenceSetting.value) : 50;
+
+    const lectures = await Lecture.find({
       status: "in-progress",
       isActive: true,
-    }).cursor();
+    });
 
     let completedCount = 0;
 
-    for await (const lecture of cursor) {
+    for (const lecture of lectures) {
       const lectureEnd = getLectureEndTime(
         getMostRecentDayOfWeekDate(lecture.dayOfWeek),
         lecture.endTime
       );
 
-      if (now >= lectureEnd) {
-        lecture.status = "completed";
-        await lecture.save();
-        completedCount++;
-        console.log(`[Scheduler] Auto-completed lecture ${lecture._id} (${lecture.startTime} - ${lecture.endTime})`);
+      if (now < lectureEnd) continue;
+
+      // 1. Mark lecture as completed with actual end time
+      lecture.status = "completed";
+      lecture.actualEndTime = lecture.actualEndTime || lectureEnd;
+      lecture.isActive = false;
+      await lecture.save();
+      completedCount++;
+      console.log(`[Scheduler] Auto-completed lecture ${lecture._id} (${lecture.startTime} - ${lecture.endTime})`);
+
+      const actualEndTime = lecture.actualEndTime;
+      const lectureStartTime = lecture.actualStartTime || lectureEnd; // fallback
+      const lectureDuration = Math.max(1, Math.round((actualEndTime - lectureStartTime) / 60000));
+
+      // 2. Finalize all in-progress attendance records for this lecture RIGHT NOW
+      const records = await AttendanceRecord.find({
+        lecture: lecture._id,
+        status: ATTENDANCE_STATUS.IN_PROGRESS,
+      });
+
+      for (const record of records) {
+        // Close any open session
+        let totalPresenceTime = record.totalPresenceTime || 0;
+        const sessions = record.sessions || [];
+
+        if (sessions.length > 0) {
+          const lastSession = sessions[sessions.length - 1];
+          if (!lastSession.checkOut) {
+            lastSession.checkOut = actualEndTime;
+
+            // Cap checkIn to lecture actual start time
+            let effectiveCheckIn = new Date(lastSession.checkIn);
+            if (lecture.actualStartTime && effectiveCheckIn < lecture.actualStartTime) {
+              effectiveCheckIn = new Date(lecture.actualStartTime);
+            }
+
+            const diffMins = Math.max(0, Math.floor((actualEndTime - effectiveCheckIn) / 60000));
+            lastSession.duration = diffMins;
+            totalPresenceTime += diffMins;
+          }
+        }
+
+        const presencePercentage = Math.min(100, Math.round((totalPresenceTime / lectureDuration) * 100));
+        const finalStatus = presencePercentage >= minPresencePercentage
+          ? ATTENDANCE_STATUS.PRESENT
+          : ATTENDANCE_STATUS.ABSENT;
+
+        await AttendanceRecord.updateOne(
+          { _id: record._id },
+          {
+            $set: {
+              status: finalStatus,
+              presencePercentage,
+              totalPresenceTime,
+              isFinalized: true,
+              finalizedAt: now,
+              lectureEndTime: actualEndTime,
+              sessions,
+            },
+          }
+        );
       }
+
+      // 3. Close all active StudentSessions for this lecture
+      await StudentSession.updateMany(
+        { currentLecture: lecture._id, isActive: true },
+        { $set: { isActive: false, disconnectedAt: actualEndTime } }
+      );
+
+      console.log(`[Scheduler] Finalized ${records.length} attendance records for lecture ${lecture._id}`);
     }
 
     if (completedCount > 0) {

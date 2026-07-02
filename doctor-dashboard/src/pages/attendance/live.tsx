@@ -381,8 +381,10 @@ export function LiveAttendancePage() {
       }
 
       // Calculate dynamic presence time for active connected sessions
+      // Only count live time if: lecture is still in-progress AND scheduled time hasn't ended yet
       let livePresenceTime = rec?.totalPresenceTime || 0;
-      if (rec?.status === "in-progress" && lastSession && !lastSession.checkOut) {
+      const isLectureStillRunning = selectedLecture?.status === "in-progress";
+      if (rec?.status === "in-progress" && isLectureStillRunning && lastSession && !lastSession.checkOut) {
         let checkInTime = new Date(lastSession.checkIn).getTime();
         if (rec?.lectureStartTime) {
           const lecStart = new Date(rec.lectureStartTime).getTime();
