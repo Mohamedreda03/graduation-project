@@ -8,7 +8,7 @@ const {
 } = require("../models");
 const { ROLES, ATTENDANCE_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
-const { catchAsync, getCurrentTimeString, getTodayDate } = require("../utils/helpers");
+const { catchAsync, getCurrentTimeString, getTodayDate, getLocalTime } = require("../utils/helpers");
 
 /**
  * Get all lectures
@@ -369,7 +369,7 @@ exports.getMySchedule = catchAsync(async (req, res, next) => {
  * GET /api/lectures/today
  */
 exports.getTodayLectures = catchAsync(async (req, res, next) => {
-  const now = new Date();
+  const now = getLocalTime();
   const currentDay = now.getDay();
 
   const lectures = await Lecture.find({

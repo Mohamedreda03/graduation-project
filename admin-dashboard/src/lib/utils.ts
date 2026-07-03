@@ -13,7 +13,7 @@ export function formatTime12h(timeStr: string) {
   const minutes = parts[1];
   if (isNaN(hours)) return timeStr;
   
-  const ampm = hours >= 12 ? "PM" : "AM";
+  const ampm = hours >= 12 ? "م" : "ص";
   hours = hours % 12;
   hours = hours ? hours : 12; // the hour '0' should be '12'
   const formattedHours = hours.toString().padStart(2, '0');

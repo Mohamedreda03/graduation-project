@@ -429,8 +429,16 @@ exports.getAttendanceHistory = catchAsync(async (req, res) => {
     _id: { $in: student.academicInfo?.enrolledCourses || [] },
   }).select("name code");
 
+  // Exclude Friday (dayOfWeek 5)
+  const nonFridayLectures = await Lecture.find({ dayOfWeek: { $ne: 5 } }).select("_id");
+  const nonFridayLectureIds = nonFridayLectures.map(l => l._id);
+
   // Build query
-  const query = { student: student._id, isFinalized: true };
+  const query = { 
+    student: student._id, 
+    isFinalized: true,
+    lecture: { $in: nonFridayLectureIds }
+  };
   if (courseId && courseId !== "all") {
     query.course = courseId;
   }

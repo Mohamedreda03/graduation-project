@@ -39,6 +39,16 @@ const generateTokens = (userId) => {
 };
 
 /**
+ * Generate 7-day token for mobile users
+ */
+const generateMobileToken = (userId) => {
+  const accessToken = jwt.sign({ id: userId }, config.jwt.secret, {
+    expiresIn: "7d",
+  });
+  return { accessToken };
+};
+
+/**
  * Prepare user data for response
  */
 const prepareUserData = (user) => ({
@@ -190,19 +200,8 @@ exports.mobileLogin = catchAsync(async (req, res, next) => {
   user.lastLogin = new Date();
   await user.save();
 
-  // Generate tokens
-  const { accessToken, refreshToken } = generateTokens(user._id);
-
-  // Save refresh token
-  const refreshExpiry = new Date();
-  refreshExpiry.setDate(refreshExpiry.getDate() + 7);
-
-  await RefreshToken.create({
-    token: refreshToken,
-    user: user._id,
-    deviceId: deviceInfo?.deviceId,
-    expiresAt: refreshExpiry,
-  });
+  // Generate 7-day token for mobile
+  const { accessToken } = generateMobileToken(user._id);
 
   // Return tokens in response body for mobile (always include deviceId)
   res.status(200).json({
@@ -210,7 +209,6 @@ exports.mobileLogin = catchAsync(async (req, res, next) => {
     data: {
       user: prepareUserData(user),
       accessToken,
-      refreshToken,
     },
   });
 });
@@ -310,48 +308,7 @@ exports.webLogout = catchAsync(async (req, res, next) => {
  * Uses refresh token from body
  */
 exports.mobileRefreshToken = catchAsync(async (req, res, next) => {
-  const { refreshToken } = req.body;
-
-  if (!refreshToken) {
-    throw ApiError.badRequest("Refresh token is required");
-  }
-
-  // Verify refresh token
-  let decoded;
-  try {
-    decoded = jwt.verify(refreshToken, config.jwt.refreshSecret);
-  } catch (error) {
-    throw ApiError.unauthorized("Invalid refresh token");
-  }
-
-  // Check if token exists in database
-  const storedToken = await RefreshToken.findOne({
-    token: refreshToken,
-    user: decoded.id,
-  });
-
-  if (!storedToken) {
-    throw ApiError.unauthorized("Refresh token not found");
-  }
-
-  // Check if token is expired
-  if (storedToken.expiresAt < new Date()) {
-    await storedToken.deleteOne();
-    throw ApiError.unauthorized("Refresh token expired");
-  }
-
-  // Generate new tokens
-  const tokens = generateTokens(decoded.id);
-
-  // Update refresh token in database
-  storedToken.token = tokens.refreshToken;
-  storedToken.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  await storedToken.save();
-
-  res.status(200).json({
-    success: true,
-    data: tokens,
-  });
+  throw ApiError.badRequest("نظام الـ Refresh Token غير مدعوم في الموبايل. يُرجى تسجيل الدخول مجدداً عند انتهاء صلاحية الجلسة.");
 });
 
 /**
@@ -360,11 +317,8 @@ exports.mobileRefreshToken = catchAsync(async (req, res, next) => {
  * Invalidates refresh token
  */
 exports.mobileLogout = catchAsync(async (req, res, next) => {
-  const { refreshToken } = req.body;
-
-  if (refreshToken) {
-    await RefreshToken.findOneAndDelete({ token: refreshToken });
-  }
+  // Mobile app does not use refresh tokens anymore. 
+  // We can just return success to clear local state on the device.
 
   res.status(200).json({
     success: true,

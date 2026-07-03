@@ -37,9 +37,7 @@ const baseDayNames = [
   { value: "4", label: "الخميس" },
 ];
 
-const dayNames = import.meta.env.DEV
-  ? [...baseDayNames, { value: "5", label: "الجمعة" }]
-  : baseDayNames;
+const dayNames = [...baseDayNames, { value: "5", label: "الجمعة" }];
 
 const PERIODS = [
   { id: 1, label: "الأولى", start: "09:00", end: "09:45", display: "9:45 - 9:00" },
