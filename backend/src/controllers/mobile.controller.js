@@ -19,7 +19,7 @@ const {
   User,
 } = require("../models");
 
-const { catchAsync, getLocalTime, getTodayDate } = require("../utils/helpers");
+const { catchAsync, getLocalTime, getTodayDate, getAbsoluteTimeFromLocal } = require("../utils/helpers");
 const { ATTENDANCE_STATUS, DEVICE_REQUEST_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
 
@@ -38,10 +38,8 @@ function getLocalDateString(date) {
 
 const env = require("../config/env");
 
-/** Egyptian academic week: Saturday(6) → Thursday(4) (Friday excluded as holiday) */
-const DAY_ORDER = env.nodeEnv === "development"
-  ? [6, 0, 1, 2, 3, 4, 5]
-  : [6, 0, 1, 2, 3, 4];
+/** Egyptian academic week: Saturday(6) → Friday(5) (Friday included) */
+const DAY_ORDER = [6, 0, 1, 2, 3, 4, 5];
 
 const DAY_NAMES_AR = {
   0: "الأحد",
@@ -98,19 +96,11 @@ const nowMinutes = () => {
   return n.getHours() * 60 + n.getMinutes();
 };
 
-/** Convert "HH:MM" to today's Date ISO string */
 const getIsoTimeToday = (timeStr) => {
   if (!timeStr) return null;
-  const [h, m] = timeStr.split(":");
   const now = new Date();
-  const localNow = getLocalTime(now);
-  const offsetMs = localNow.getTime() - now.getTime();
-  
   const localToday = getLocalTime(now);
-  localToday.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
-  
-  const utcDate = new Date(localToday.getTime() - offsetMs);
-  return utcDate.toISOString();
+  return getAbsoluteTimeFromLocal(localToday, timeStr).toISOString();
 };
 
 /** Compute alert level for attendance percentage */
@@ -154,16 +144,12 @@ exports.getHome = catchAsync(async (req, res) => {
     .populate("doctor", "name")
     .sort({ startTime: 1 });
 
-  // 2. Identify live lecture (ongoing right now)
+  // 2. Identify live lecture (must be in-progress)
   let liveLecture = null;
   let nextLecture = null;
 
-  // Find current active lecture in time from today's schedule
-  let liveLec = todayLectures.find(lec => {
-    const startMins = toMinutes(lec.startTime);
-    const endMins = toMinutes(lec.endTime);
-    return currentMins >= startMins && currentMins <= endMins;
-  });
+  // Find current active lecture from today's schedule that is actually in-progress
+  let liveLec = todayLectures.find(lec => lec.status === "in-progress");
 
   // Check active session (to know if they are connected)
   const activeSession = await StudentSession.findActiveSession(student._id);
@@ -523,7 +509,7 @@ exports.getAttendanceHistory = catchAsync(async (req, res) => {
 exports.getProfile = catchAsync(async (req, res) => {
   // Re-fetch with specialization populated
   const student = await User.findById(req.user._id)
-    .populate("academicInfo.specialization", "name")
+    .populate("academicInfo.specialization", "name levels")
     .populate("academicInfo.enrolledCourses", "name code")
     .select("-password");
 
@@ -557,6 +543,29 @@ exports.getProfile = catchAsync(async (req, res) => {
     };
   }
 
+  let levelName = null;
+  const spec = student.academicInfo?.specialization;
+  const levelNum = student.academicInfo?.level;
+
+  if (spec && Array.isArray(spec.levels) && levelNum) {
+    const matchedLevel = spec.levels.find((l) => l.level === levelNum);
+    if (matchedLevel) {
+      levelName = matchedLevel.name;
+    }
+  }
+
+  if (!levelName && levelNum) {
+    const LEVEL_NAMES_AR = {
+      1: "الفرقة الإعدادية",
+      2: "الفرقة الأولى",
+      3: "الفرقة الثانية",
+      4: "الفرقة الثالثة",
+      5: "الفرقة الرابعة",
+      6: "الفرقة الخامسة",
+    };
+    levelName = LEVEL_NAMES_AR[levelNum] || `الفرقة ${levelNum}`;
+  }
+
   res.status(200).json({
     success: true,
     data: {
@@ -569,7 +578,7 @@ exports.getProfile = catchAsync(async (req, res) => {
 
       // Academic
       specialization: student.academicInfo?.specialization?.name || "",
-      level: student.academicInfo?.level || null,
+      level: levelName,
 
       // Enrolled courses (for reference)
       enrolledCourses: (student.academicInfo?.enrolledCourses || []).map((c) => ({

@@ -778,12 +778,16 @@ exports.endLecture = catchAsync(async (req, res, next) => {
       }
     }
 
+    // Cap totalPresenceTime to lectureDuration to prevent impossible values
+    const cappedPresenceTime = Math.min(record.totalPresenceTime, lectureDuration);
+
     // Calculate presence percentage
     const presencePercentage = lectureDuration > 0
-      ? (record.totalPresenceTime / lectureDuration) * 100
+      ? (cappedPresenceTime / lectureDuration) * 100
       : 0;
 
     record.presencePercentage = Math.min(Math.round(presencePercentage), 100);
+    record.totalPresenceTime = cappedPresenceTime;
 
     // Determine final status
     let finalStatus = ATTENDANCE_STATUS.ABSENT;
@@ -791,7 +795,6 @@ exports.endLecture = catchAsync(async (req, res, next) => {
       finalStatus = ATTENDANCE_STATUS.PRESENT;
     }
 
-    // Use updateOne to absolutely guarantee the database is updated directly
     await AttendanceRecord.updateOne(
       { _id: record._id },
       {
@@ -800,9 +803,9 @@ exports.endLecture = catchAsync(async (req, res, next) => {
           presencePercentage: record.presencePercentage,
           isFinalized: true,
           finalizedAt: now,
-          totalPresenceTime: record.totalPresenceTime,
+          totalPresenceTime: record.totalPresenceTime, // already capped above
           lectureEndTime: lecture.actualEndTime,
-          sessions: record.sessions // This saves the checkOut changes
+          sessions: record.sessions
         }
       }
     );

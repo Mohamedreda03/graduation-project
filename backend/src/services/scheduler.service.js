@@ -8,7 +8,7 @@ const {
   Course,
 } = require("../models");
 const { ATTENDANCE_STATUS } = require("../config/constants");
-const { getLocalTime, getTodayDate } = require("../utils/helpers");
+const { getLocalTime, getTodayDate, getAbsoluteTimeFromLocal } = require("../utils/helpers");
 
 /**
  * Check if MongoDB is connected before running scheduler tasks
@@ -48,7 +48,7 @@ async function finalizeAttendanceRecords() {
       .populate("lecture")
       .cursor();
 
-    const now = getLocalTime();
+    const now = new Date();
     let finalized = 0;
 
     for await (const record of cursor) {
@@ -117,16 +117,18 @@ async function markAbsentStudents() {
   console.log("[Scheduler] Marking absent students...");
 
   try {
-    const now = getLocalTime();
+    const now = new Date();
+    const localNow = getLocalTime();
     const today = getTodayDate();
 
     // Get today's day of week (0 = Sunday, 1 = Monday, etc.)
-    const dayOfWeek = now.getDay();
+    const dayOfWeek = localNow.getDay();
 
-    // Find all lectures that should have ended by now using cursor
+    // Find all completed lectures on this day using cursor
     const cursor = Lecture.find({
       dayOfWeek,
       isActive: true,
+      status: "completed",
     })
       .populate("course")
       .cursor();
@@ -209,10 +211,9 @@ async function cleanupStaleSessions() {
  * Helper: Get lecture end time as Date object
  */
 function getLectureEndTime(date, endTimeStr) {
-  const [hours, minutes] = endTimeStr.split(":").map(Number);
-  const result = new Date(date);
-  result.setHours(hours, minutes, 0, 0);
-  return result;
+  // Use the new helper to correctly calculate the absolute UTC time
+  // based on the provided "shifted" date and local HH:MM time string.
+  return getAbsoluteTimeFromLocal(date, endTimeStr);
 }
 
 /**
@@ -250,7 +251,7 @@ function getMostRecentDayOfWeekDate(dayOfWeek) {
 async function autoCompleteLectures() {
   console.log("[Scheduler] Checking for ended in-progress lectures...");
   try {
-    const now = getLocalTime();
+    const now = new Date();
 
     const minPresenceSetting = await Setting.findOne({ key: "MIN_PRESENCE_PERCENTAGE" });
     const minPresencePercentage = minPresenceSetting ? parseInt(minPresenceSetting.value) : 50;
@@ -309,7 +310,8 @@ async function autoCompleteLectures() {
           }
         }
 
-        const presencePercentage = Math.min(100, Math.round((totalPresenceTime / lectureDuration) * 100));
+        const cappedPresenceTime = Math.min(totalPresenceTime, lectureDuration);
+        const presencePercentage = Math.min(100, Math.round((cappedPresenceTime / lectureDuration) * 100));
         const finalStatus = presencePercentage >= minPresencePercentage
           ? ATTENDANCE_STATUS.PRESENT
           : ATTENDANCE_STATUS.ABSENT;
@@ -320,7 +322,7 @@ async function autoCompleteLectures() {
             $set: {
               status: finalStatus,
               presencePercentage,
-              totalPresenceTime,
+              totalPresenceTime: cappedPresenceTime,
               isFinalized: true,
               finalizedAt: now,
               lectureEndTime: actualEndTime,

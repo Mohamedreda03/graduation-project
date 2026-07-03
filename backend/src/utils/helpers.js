@@ -133,6 +133,23 @@ const buildNameSearchQuery = (search, otherFields = []) => {
   return { $or: orQueries };
 };
 
+/**
+ * Get an absolute UTC Date from a local time.
+ * @param {Date} targetDay - A "shifted" local Date object (e.g. from getLocalTime)
+ * @param {string} timeStr - "HH:MM" string
+ */
+const getAbsoluteTimeFromLocal = (targetDay, timeStr) => {
+  const [h, m] = timeStr.split(":");
+  const now = new Date();
+  const localNow = getLocalTime(now);
+  const offsetMs = localNow.getTime() - now.getTime();
+  
+  const localTarget = new Date(targetDay.getTime());
+  localTarget.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+  
+  return new Date(localTarget.getTime() - offsetMs);
+};
+
 module.exports = {
   catchAsync,
   getLocalTime,
@@ -145,4 +162,5 @@ module.exports = {
   paginate,
   paginationResponse,
   buildNameSearchQuery,
+  getAbsoluteTimeFromLocal,
 };
