@@ -730,7 +730,6 @@ exports.endLecture = catchAsync(async (req, res, next) => {
   }
 
   lecture.status = "completed";
-  lecture.isActive = false;
   lecture.actualEndTime = new Date();
   await lecture.save();
 
@@ -876,7 +875,6 @@ exports.cancelLecture = catchAsync(async (req, res, next) => {
   }
 
   lecture.status = "cancelled";
-  lecture.isActive = false;
   await lecture.save();
 
   res.status(200).json({

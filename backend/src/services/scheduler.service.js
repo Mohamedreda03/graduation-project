@@ -273,7 +273,6 @@ async function autoCompleteLectures() {
       // 1. Mark lecture as completed with actual end time
       lecture.status = "completed";
       lecture.actualEndTime = lecture.actualEndTime || lectureEnd;
-      lecture.isActive = false;
       await lecture.save();
       completedCount++;
       console.log(`[Scheduler] Auto-completed lecture ${lecture._id} (${lecture.startTime} - ${lecture.endTime})`);

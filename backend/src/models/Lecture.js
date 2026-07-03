@@ -144,6 +144,7 @@ lectureSchema.statics.findActiveLecture = async function (
   return this.findOne({
     hall: hallId,
     isActive: true,
+    status: { $nin: ["completed", "cancelled"] },
     $or: [
       {
         // Match by scheduled time window

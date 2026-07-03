@@ -413,9 +413,13 @@ export function LiveAttendancePage() {
         }
       }
 
-      const livePresencePercentage = activeDuration > 0
+      let livePresencePercentage = activeDuration > 0
         ? Math.min(100, Math.round((livePresenceTime / activeDuration) * 100))
         : 0;
+
+      if (selectedLecture?.status === "completed" && rec && typeof rec.presencePercentage === "number") {
+        livePresencePercentage = rec.presencePercentage;
+      }
 
       return {
         student,
