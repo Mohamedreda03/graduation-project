@@ -693,6 +693,11 @@ export function LectureSchedulePage() {
                 <div className="text-[10.5px] text-slate-700 dark:text-slate-300 font-bold">
                   ({cell.hall?.name || "غير محدد"}) {cell.lectureType === "lecture" ? "" : cell.lectureType === "lab" ? "(معمل)" : "(سكشن)"}
                 </div>
+
+                {/* Lecture Time */}
+                <div className="text-[9.5px] text-slate-500 dark:text-slate-400 font-mono bg-slate-100/60 dark:bg-slate-900/40 px-1 py-0.5 rounded mt-1 inline-block" dir="ltr">
+                  {formatTime12h(cell.startTime)} - {formatTime12h(cell.endTime)}
+                </div>
               </div>
             </td>
           );
@@ -907,7 +912,17 @@ export function LectureSchedulePage() {
           <p className="text-slate-500 mt-2">اختر الكلية، الفرقة، والتخصص (إن وُجد) لعرض الجدول</p>
         </div>
       ) : (
-        <Card className="shadow-none border-none rounded-none overflow-hidden print-full-width p-0 bg-transparent">
+        <>
+          {import.meta.env.DEV && (
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl p-4 text-xs font-semibold leading-relaxed flex items-start gap-3 no-print mb-4" dir="rtl">
+              <span className="text-lg">💡</span>
+              <div>
+                <strong>وضع التطوير نشط:</strong> يمكنك جدولة المحاضرات في أي وقت وأي يوم (بما في ذلك يوم الجمعة). للمحاضرات ذات التوقيت المخصص (خارج الفترات القياسية)، سيتم عرض وقتها الفعلي وتسكينها في أقرب فترة على الشبكة.
+              </div>
+            </div>
+          )}
+          
+          <Card className="shadow-none border-none rounded-none overflow-hidden print-full-width p-0 bg-transparent">
           {/* Official Printable Header */}
           <div className="hidden print:flex flex-row justify-between items-start border-b-2 border-slate-800 pb-4 p-6 bg-white text-black" dir="rtl">
             <div className="text-right space-y-1 text-[11px] font-bold">
@@ -1009,6 +1024,7 @@ export function LectureSchedulePage() {
             </table>
           </CardContent>
         </Card>
+        </>
       )}
 
       {/* Sections Count Edit Dialog */}
@@ -1070,6 +1086,14 @@ export function LectureSchedulePage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-5 max-h-[75vh] overflow-y-auto">
+              {import.meta.env.DEV && (
+                <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-md p-3 text-xs font-semibold leading-relaxed mb-4 flex items-start gap-2" dir="rtl">
+                  <span className="text-sm mt-0.5">⚠️</span>
+                  <div>
+                    <strong>وضع التطوير نشط:</strong> يمكنك إضافة المحاضرة في أي وقت وأي يوم (بما في ذلك يوم الجمعة). إذا كنت تريد وقتاً غير قياسي، اختر <strong>"توقيت يدوي مخصص"</strong> من خيارات نظام توقيت الحصة بالأسفل.
+                  </div>
+                </div>
+              )}
               
               {/* SECTION 1: Academic Information */}
               <div className="space-y-3.5 border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-md bg-slate-50/30 dark:bg-slate-900/5">

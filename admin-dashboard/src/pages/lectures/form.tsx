@@ -233,6 +233,12 @@ export function LectureFormPage() {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-8"
               >
+                {import.meta.env.DEV && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl p-4 text-xs font-semibold leading-relaxed col-span-full" dir="rtl">
+                    ⚠️ وضع التطوير نشط: يمكنك جدولة المحاضرات في أي وقت وأي يوم (بما في ذلك يوم الجمعة) دون قيود. حقول وقت البداية والنهاية بالأسفل تسمح بإدخال أي توقيت تريده.
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Course */}
                   <FormField<FormValues, "course">
