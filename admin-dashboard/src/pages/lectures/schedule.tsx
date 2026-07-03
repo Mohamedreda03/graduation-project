@@ -67,18 +67,15 @@ import {
 import type { Hall, Lecture } from "@/types";
 import { toast } from "sonner";
 
-const baseDayNames = [
+const dayNames = [
   { value: "6", label: "السبت" },
   { value: "0", label: "الأحد" },
   { value: "1", label: "الاثنين" },
   { value: "2", label: "الثلاثاء" },
   { value: "3", label: "الأربعاء" },
   { value: "4", label: "الخميس" },
+  { value: "5", label: "الجمعة" },
 ];
-
-const dayNames = import.meta.env.DEV
-  ? [...baseDayNames, { value: "5", label: "الجمعة" }]
-  : baseDayNames;
 
 const levelNames: Record<string, string> = {
   "1": "الإعدادية",
@@ -913,14 +910,12 @@ export function LectureSchedulePage() {
         </div>
       ) : (
         <>
-          {import.meta.env.DEV && (
-            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl p-4 text-xs font-semibold leading-relaxed flex items-start gap-3 no-print mb-4" dir="rtl">
-              <span className="text-lg">💡</span>
-              <div>
-                <strong>وضع التطوير نشط:</strong> يمكنك جدولة المحاضرات في أي وقت وأي يوم (بما في ذلك يوم الجمعة). للمحاضرات ذات التوقيت المخصص (خارج الفترات القياسية)، سيتم عرض وقتها الفعلي وتسكينها في أقرب فترة على الشبكة.
-              </div>
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl p-4 text-xs font-semibold leading-relaxed flex items-start gap-3 no-print mb-4" dir="rtl">
+            <span className="text-lg">💡</span>
+            <div>
+              <strong>نظام الجدولة المفتوح نشط:</strong> يمكنك جدولة المحاضرات في أي وقت وأي يوم (بما في ذلك يوم الجمعة). للمحاضرات ذات التوقيت المخصص (خارج الفترات القياسية)، سيتم عرض وقتها الفعلي وتسكينها في أقرب فترة على الشبكة.
             </div>
-          )}
+          </div>
           
           <Card className="shadow-none border-none rounded-none overflow-hidden print-full-width p-0 bg-transparent">
           {/* Official Printable Header */}
@@ -1086,14 +1081,12 @@ export function LectureSchedulePage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-5 max-h-[75vh] overflow-y-auto">
-              {import.meta.env.DEV && (
-                <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-md p-3 text-xs font-semibold leading-relaxed mb-4 flex items-start gap-2" dir="rtl">
-                  <span className="text-sm mt-0.5">⚠️</span>
-                  <div>
-                    <strong>وضع التطوير نشط:</strong> يمكنك إضافة المحاضرة في أي وقت وأي يوم (بما في ذلك يوم الجمعة). إذا كنت تريد وقتاً غير قياسي، اختر <strong>"توقيت يدوي مخصص"</strong> من خيارات نظام توقيت الحصة بالأسفل.
-                  </div>
+              <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-md p-3 text-xs font-semibold leading-relaxed mb-4 flex items-start gap-2" dir="rtl">
+                <span className="text-sm mt-0.5">💡</span>
+                <div>
+                  <strong>جدولة مفتوحة:</strong> يمكنك إضافة المحاضرة في أي وقت وأي يوم (بما في ذلك يوم الجمعة). إذا كنت تريد وقتاً غير قياسي، اختر <strong>"توقيت يدوي مخصص"</strong> من خيارات نظام توقيت الحصة بالأسفل.
                 </div>
-              )}
+              </div>
               
               {/* SECTION 1: Academic Information */}
               <div className="space-y-3.5 border border-slate-200/80 dark:border-slate-800/80 p-3.5 rounded-md bg-slate-50/30 dark:bg-slate-900/5">
