@@ -304,7 +304,7 @@ async function autoCompleteLectures() {
               effectiveCheckIn = new Date(lecture.actualStartTime);
             }
 
-            const diffMins = Math.max(0, Math.floor((actualEndTime - effectiveCheckIn) / 60000));
+            const diffMins = Math.max(0, Math.round((actualEndTime - effectiveCheckIn) / 60000));
             lastSession.duration = diffMins;
             totalPresenceTime += diffMins;
           }

@@ -772,7 +772,7 @@ exports.endLecture = catchAsync(async (req, res, next) => {
         }
 
         const diffMs = now - effectiveCheckIn;
-        const diffMins = Math.floor(diffMs / 1000 / 60);
+        const diffMins = Math.round(diffMs / 1000 / 60);
         lastSession.duration = Math.max(0, diffMins);
         record.totalPresenceTime += lastSession.duration;
       }
