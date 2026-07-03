@@ -140,7 +140,6 @@ router.post("/web/logout", protect, authController.webLogout);
  */
 router.post(
   "/mobile/login",
-  authLimiter,
   validate(loginSchema),
   authController.mobileLogin,
 );
@@ -169,7 +168,7 @@ router.post(
  *       401:
  *         description: Invalid refresh token
  */
-router.post("/mobile/refresh", authLimiter, authController.mobileRefreshToken);
+router.post("/mobile/refresh", authController.mobileRefreshToken);
 
 /**
  * @swagger

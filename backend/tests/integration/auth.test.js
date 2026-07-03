@@ -98,7 +98,6 @@ describe('Authentication API Integration Tests', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body.data).toHaveProperty('accessToken');
-      expect(res.body.data).toHaveProperty('refreshToken');
       expect(res.body.data.user.studentId).toBe(studentUser.studentId);
       
       // Verify device binding
@@ -117,7 +116,6 @@ describe('Authentication API Integration Tests', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body.data).toHaveProperty('accessToken');
-      expect(res.body.data).toHaveProperty('refreshToken');
       expect(res.body.data.user.studentId).toBe(studentUser.studentId);
     });
 

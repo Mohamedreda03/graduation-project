@@ -272,29 +272,46 @@ exports.deleteLecture = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * Get currently active lectures
- * GET /api/lectures/current
- */
 exports.getCurrentLectures = catchAsync(async (req, res, next) => {
-  const now = new Date();
+  const now = getLocalTime();
   const currentDay = now.getDay();
+  const yesterday = (currentDay - 1 + 7) % 7;
   const currentTime = getCurrentTimeString();
 
   const lectures = await Lecture.find({
-    dayOfWeek: currentDay,
+    dayOfWeek: { $in: [currentDay, yesterday] },
     isActive: true,
-    startTime: { $lte: currentTime },
-    endTime: { $gte: currentTime },
   })
     .populate("course", "name code")
     .populate("hall", "name building")
     .populate("doctor", "name");
 
+  const activeLectures = lectures.filter(lecture => {
+    const [startH, startM] = lecture.startTime.split(":").map(Number);
+    const [endH, endM] = lecture.endTime.split(":").map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+    const spansMidnight = startMinutes > endMinutes;
+
+    const [curH, curM] = currentTime.split(":").map(Number);
+    const curMinutes = curH * 60 + curM;
+
+    if (lecture.dayOfWeek === currentDay) {
+      if (!spansMidnight) {
+        return curMinutes >= startMinutes && curMinutes <= endMinutes;
+      } else {
+        return curMinutes >= startMinutes || curMinutes <= endMinutes;
+      }
+    } else if (lecture.dayOfWeek === yesterday) {
+      return spansMidnight && curMinutes <= endMinutes;
+    }
+    return false;
+  });
+
   res.status(200).json({
     success: true,
-    count: lectures.length,
-    data: lectures,
+    count: activeLectures.length,
+    data: activeLectures,
   });
 });
 
@@ -371,9 +388,10 @@ exports.getMySchedule = catchAsync(async (req, res, next) => {
 exports.getTodayLectures = catchAsync(async (req, res, next) => {
   const now = getLocalTime();
   const currentDay = now.getDay();
+  const yesterday = (currentDay - 1 + 7) % 7;
 
   const lectures = await Lecture.find({
-    dayOfWeek: currentDay,
+    dayOfWeek: { $in: [currentDay, yesterday] },
     isActive: true,
   })
     .populate({
@@ -388,10 +406,26 @@ exports.getTodayLectures = catchAsync(async (req, res, next) => {
     .populate("doctor", "name")
     .sort({ startTime: 1 });
 
+  const filtered = lectures.filter(lecture => {
+    if (lecture.dayOfWeek === currentDay) return true;
+    if (lecture.dayOfWeek === yesterday) {
+      const [startH, startM] = lecture.startTime.split(":").map(Number);
+      const [endH, endM] = lecture.endTime.split(":").map(Number);
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+      const spansMidnight = startMinutes > endMinutes;
+      if (!spansMidnight) return false;
+
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      return currentMinutes <= endMinutes || lecture.status === "in-progress";
+    }
+    return false;
+  });
+
   res.status(200).json({
     success: true,
-    count: lectures.length,
-    data: lectures,
+    count: filtered.length,
+    data: filtered,
   });
 });
 
@@ -406,14 +440,14 @@ exports.getLecturesByDate = catchAsync(async (req, res, next) => {
     throw ApiError.badRequest("Date parameter is required");
   }
 
-  const targetDate = new Date(date);
-  if (isNaN(targetDate.getTime())) {
+  const [yyyy, mm, dd] = date.split("-").map(Number);
+  const targetDateNormalized = new Date(`${yyyy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}T00:00:00Z`);
+  
+  if (isNaN(targetDateNormalized.getTime())) {
     throw ApiError.badRequest("Invalid date format");
   }
 
-  const dayOfWeek = targetDate.getDay();
-  const targetDateNormalized = new Date(targetDate);
-  targetDateNormalized.setHours(0, 0, 0, 0);
+  const dayOfWeek = targetDateNormalized.getUTCDay();
 
   const lectures = await Lecture.find({
     dayOfWeek,

@@ -134,15 +134,32 @@ exports.getHome = catchAsync(async (req, res) => {
   // 1. Load all lectures for enrolled courses on today's weekday
   const enrolledIds = student.academicInfo?.enrolledCourses || [];
 
-  const todayLectures = await Lecture.find({
+  const yesterday = (today - 1 + 7) % 7;
+
+  const candidateLectures = await Lecture.find({
     course: { $in: enrolledIds },
-    dayOfWeek: today,
+    dayOfWeek: { $in: [today, yesterday] },
     isActive: true,
   })
     .populate("course", "name code")
     .populate("hall", "name")
     .populate("doctor", "name")
     .sort({ startTime: 1 });
+
+  const todayLectures = candidateLectures.filter(lecture => {
+    if (lecture.dayOfWeek === today) return true;
+    if (lecture.dayOfWeek === yesterday) {
+      const [startH, startM] = lecture.startTime.split(":").map(Number);
+      const [endH, endM] = lecture.endTime.split(":").map(Number);
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+      const spansMidnight = startMinutes > endMinutes;
+      if (!spansMidnight) return false;
+
+      return currentMins <= endMinutes || lecture.status === "in-progress";
+    }
+    return false;
+  });
 
   // 2. Identify live lecture (must be in-progress)
   let liveLecture = null;
