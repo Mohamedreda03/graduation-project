@@ -8,6 +8,7 @@ const {
   Course,
 } = require("../models");
 const { ATTENDANCE_STATUS } = require("../config/constants");
+const { getLocalTime, getTodayDate } = require("../utils/helpers");
 
 /**
  * Check if MongoDB is connected before running scheduler tasks
@@ -47,7 +48,7 @@ async function finalizeAttendanceRecords() {
       .populate("lecture")
       .cursor();
 
-    const now = new Date();
+    const now = getLocalTime();
     let finalized = 0;
 
     for await (const record of cursor) {
@@ -116,9 +117,8 @@ async function markAbsentStudents() {
   console.log("[Scheduler] Marking absent students...");
 
   try {
-    const now = new Date();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = getLocalTime();
+    const today = getTodayDate();
 
     // Get today's day of week (0 = Sunday, 1 = Monday, etc.)
     const dayOfWeek = now.getDay();
@@ -232,7 +232,7 @@ function calculateLectureDuration(startTimeStr, endTimeStr) {
  * Helper: Get the date of the most recent occurrence of a day of week
  */
 function getMostRecentDayOfWeekDate(dayOfWeek) {
-  const result = new Date();
+  const result = getLocalTime();
   const currentDay = result.getDay();
   let distance = currentDay - dayOfWeek;
   if (distance < 0) {
@@ -250,7 +250,7 @@ function getMostRecentDayOfWeekDate(dayOfWeek) {
 async function autoCompleteLectures() {
   console.log("[Scheduler] Checking for ended in-progress lectures...");
   try {
-    const now = new Date();
+    const now = getLocalTime();
 
     const minPresenceSetting = await Setting.findOne({ key: "MIN_PRESENCE_PERCENTAGE" });
     const minPresencePercentage = minPresenceSetting ? parseInt(minPresenceSetting.value) : 50;
