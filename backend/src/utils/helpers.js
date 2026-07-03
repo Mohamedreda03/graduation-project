@@ -150,6 +150,20 @@ const getAbsoluteTimeFromLocal = (targetDay, timeStr) => {
   return new Date(localTarget.getTime() - offsetMs);
 };
 
+/**
+ * Format 24-hour "HH:MM" string to 12-hour Arabic format (e.g., "10:30 ص", "02:15 م")
+ */
+const formatTime12Hour = (timeStr) => {
+  if (!timeStr) return "";
+  const [hStr, mStr] = timeStr.split(":");
+  let h = parseInt(hStr, 10);
+  const ampm = h >= 12 ? "م" : "ص";
+  h = h % 12;
+  if (h === 0) h = 12;
+  const h12 = String(h).padStart(2, "0");
+  return `${h12}:${mStr} ${ampm}`;
+};
+
 module.exports = {
   catchAsync,
   getLocalTime,
@@ -163,4 +177,5 @@ module.exports = {
   paginationResponse,
   buildNameSearchQuery,
   getAbsoluteTimeFromLocal,
+  formatTime12Hour,
 };

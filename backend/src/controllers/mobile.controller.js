@@ -19,7 +19,7 @@ const {
   User,
 } = require("../models");
 
-const { catchAsync, getLocalTime, getTodayDate, getAbsoluteTimeFromLocal } = require("../utils/helpers");
+const { catchAsync, getLocalTime, getTodayDate, getAbsoluteTimeFromLocal, formatTime12Hour } = require("../utils/helpers");
 const { ATTENDANCE_STATUS, DEVICE_REQUEST_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
 
@@ -199,8 +199,8 @@ exports.getHome = catchAsync(async (req, res) => {
         ? `د. ${liveLec.doctor.name?.first || ""} ${liveLec.doctor.name?.last || ""}`.trim()
         : "",
       hallName: liveLec.hall?.name || "",
-      startTime: liveLec.startTime,
-      endTime: liveLec.endTime,
+      startTime: formatTime12Hour(liveLec.startTime),
+      endTime: formatTime12Hour(liveLec.endTime),
       startTimeIso: getIsoTimeToday(liveLec.startTime),
       endTimeIso: getIsoTimeToday(liveLec.endTime),
       durationMinutes: liveLec.durationMinutes || Math.round((toMinutes(liveLec.endTime) - toMinutes(liveLec.startTime))),
@@ -227,8 +227,8 @@ exports.getHome = catchAsync(async (req, res) => {
           ? `د. ${lec.doctor.name?.first || ""} ${lec.doctor.name?.last || ""}`.trim()
           : "",
         hallName: lec.hall?.name || "",
-        startTime: lec.startTime,
-        endTime: lec.endTime,
+        startTime: formatTime12Hour(lec.startTime),
+        endTime: formatTime12Hour(lec.endTime),
         countdownFormatted: minutesToHMS(countdownSecs),
       };
       break;
@@ -244,8 +244,8 @@ exports.getHome = catchAsync(async (req, res) => {
       ? `د. ${lec.doctor.name?.first || ""} ${lec.doctor.name?.last || ""}`.trim()
       : "",
     hallName: lec.hall?.name || "",
-    startTime: lec.startTime,
-    endTime: lec.endTime,
+    startTime: formatTime12Hour(lec.startTime),
+    endTime: formatTime12Hour(lec.endTime),
     lectureType: lec.lectureType,
     isLive: lec._id.toString() === liveLectureId,
   }));
@@ -303,8 +303,8 @@ exports.getSchedule = catchAsync(async (req, res) => {
           ? `د. ${lec.doctor.name?.first || ""} ${lec.doctor.name?.last || ""}`.trim()
           : "",
         hallName: lec.hall?.name || "",
-        startTime: lec.startTime,
-        endTime: lec.endTime,
+        startTime: formatTime12Hour(lec.startTime),
+        endTime: formatTime12Hour(lec.endTime),
         lectureType: lec.lectureType,
       });
     }
