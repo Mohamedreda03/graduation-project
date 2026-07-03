@@ -74,7 +74,6 @@ const dayNames = [
   { value: "2", label: "الثلاثاء" },
   { value: "3", label: "الأربعاء" },
   { value: "4", label: "الخميس" },
-  { value: "5", label: "الجمعة" },
 ];
 
 const levelNames: Record<string, string> = {
@@ -913,7 +912,7 @@ export function LectureSchedulePage() {
           <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl p-4 text-xs font-semibold leading-relaxed flex items-start gap-3 no-print mb-4" dir="rtl">
             <span className="text-lg">💡</span>
             <div>
-              <strong>نظام الجدولة المفتوح نشط:</strong> يمكنك جدولة المحاضرات في أي وقت وأي يوم (بما في ذلك يوم الجمعة). للمحاضرات ذات التوقيت المخصص (خارج الفترات القياسية)، سيتم عرض وقتها الفعلي وتسكينها في أقرب فترة على الشبكة.
+              <strong>نظام الجدولة المفتوح نشط:</strong> يمكنك جدولة المحاضرات في أي وقت وأي يوم دراسي (من السبت إلى الخميس). للمحاضرات ذات التوقيت المخصص (خارج الفترات القياسية)، سيتم عرض وقتها الفعلي وتسكينها في أقرب فترة على الشبكة.
             </div>
           </div>
           
@@ -1084,7 +1083,7 @@ export function LectureSchedulePage() {
               <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-md p-3 text-xs font-semibold leading-relaxed mb-4 flex items-start gap-2" dir="rtl">
                 <span className="text-sm mt-0.5">💡</span>
                 <div>
-                  <strong>جدولة مفتوحة:</strong> يمكنك إضافة المحاضرة في أي وقت وأي يوم (بما في ذلك يوم الجمعة). إذا كنت تريد وقتاً غير قياسي، اختر <strong>"توقيت يدوي مخصص"</strong> من خيارات نظام توقيت الحصة بالأسفل.
+                  <strong>جدولة مفتوحة:</strong> يمكنك إضافة المحاضرة في أي وقت وأي يوم دراسي (من السبت إلى الخميس). إذا كنت تريد وقتاً غير قياسي، اختر <strong>"توقيت يدوي مخصص"</strong> من خيارات نظام توقيت الحصة بالأسفل.
                 </div>
               </div>
               

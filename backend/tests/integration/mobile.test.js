@@ -225,7 +225,7 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
   // Screen 3 – Weekly Schedule
   // ─────────────────────────────────────────────
   describe("GET /api/mobile/schedule", () => {
-    it("should return 200 with 7-day academic week", async () => {
+    it("should return 200 with 6-day academic week", async () => {
       const res = await request(app)
         .get("/api/mobile/schedule")
         .set("Authorization", `Bearer ${token}`);
@@ -233,7 +233,7 @@ describe("Mobile API Integration Tests (/api/mobile)", () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(Array.isArray(res.body.data.days)).toBe(true);
-      expect(res.body.data.days.length).toBe(7);
+      expect(res.body.data.days.length).toBe(6);
     });
 
     it("should have complete day structure with Arabic names", async () => {

@@ -38,8 +38,8 @@ function getLocalDateString(date) {
 
 const env = require("../config/env");
 
-/** Egyptian academic week: Saturday(6) → Friday(5) (Friday included) */
-const DAY_ORDER = [6, 0, 1, 2, 3, 4, 5];
+/** Egyptian academic week: Saturday(6) → Thursday(4) (Friday excluded) */
+const DAY_ORDER = [6, 0, 1, 2, 3, 4];
 
 const DAY_NAMES_AR = {
   0: "الأحد",
