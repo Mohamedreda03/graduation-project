@@ -135,6 +135,7 @@ const buildNameSearchQuery = (search, otherFields = []) => {
 
 module.exports = {
   catchAsync,
+  getLocalTime,
   getTodayDate,
   timeToMinutes,
   getCurrentTimeString,

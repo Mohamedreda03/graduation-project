@@ -19,7 +19,7 @@ const {
   User,
 } = require("../models");
 
-const { catchAsync } = require("../utils/helpers");
+const { catchAsync, getLocalTime, getTodayDate } = require("../utils/helpers");
 const { ATTENDANCE_STATUS, DEVICE_REQUEST_STATUS } = require("../config/constants");
 const ApiError = require("../utils/ApiError");
 
@@ -94,7 +94,7 @@ const toMinutes = (t) => {
 
 /** Get current time in minutes since midnight */
 const nowMinutes = () => {
-  const n = new Date();
+  const n = getLocalTime();
   return n.getHours() * 60 + n.getMinutes();
 };
 
@@ -102,9 +102,15 @@ const nowMinutes = () => {
 const getIsoTimeToday = (timeStr) => {
   if (!timeStr) return null;
   const [h, m] = timeStr.split(":");
-  const d = new Date();
-  d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
-  return d.toISOString();
+  const now = new Date();
+  const localNow = getLocalTime(now);
+  const offsetMs = localNow.getTime() - now.getTime();
+  
+  const localToday = getLocalTime(now);
+  localToday.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+  
+  const utcDate = new Date(localToday.getTime() - offsetMs);
+  return utcDate.toISOString();
 };
 
 /** Compute alert level for attendance percentage */
@@ -132,7 +138,7 @@ const buildAttendanceAlert = (percentage) => {
 // ─────────────────────────────────────────────
 exports.getHome = catchAsync(async (req, res) => {
   const student = req.user;
-  const today = new Date().getDay(); // 0=Sun … 6=Sat
+  const today = getLocalTime().getDay(); // 0=Sun … 6=Sat
   const currentMins = nowMinutes();
 
   // 1. Load all lectures for enrolled courses on today's weekday
@@ -183,8 +189,7 @@ exports.getHome = catchAsync(async (req, res) => {
     let checkInTime = null;
 
     // Fetch attendance record for today for this lecture to get checkInTime
-    const todayDate = new Date();
-    todayDate.setHours(0, 0, 0, 0);
+    const todayDate = getTodayDate();
     const rec = await AttendanceRecord.findOne({
       student: student._id,
       lecture: liveLec._id,
@@ -321,7 +326,7 @@ exports.getSchedule = catchAsync(async (req, res) => {
 
   // Calculate the actual calendar date for each weekday in the current week
   // (anchor = today, find the Saturday of this week then walk forward)
-  const now = new Date();
+  const now = getLocalTime();
   const todayDow = now.getDay(); // 0-6
   // Distance from today back to Saturday (6)
   const diffToSat = (todayDow - 6 + 7) % 7;
