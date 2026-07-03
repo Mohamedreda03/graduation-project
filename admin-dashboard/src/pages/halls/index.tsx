@@ -31,6 +31,7 @@ import {
 import { DataTable } from "@/components/data-table";
 import { useHalls, useDeleteHall } from "@/hooks";
 import type { Hall } from "@/types";
+import { cn } from "@/lib/utils";
 
 export function HallsPage() {
   const { data, isLoading } = useHalls();
@@ -74,7 +75,16 @@ export function HallsPage() {
           );
         }
         return (
-          <span className="font-medium font-mono text-sm" dir="ltr">{ap.ssid || ap.apIdentifier}</span>
+          <div className="flex items-center gap-2 font-mono text-sm" dir="ltr">
+            <span
+              className={cn(
+                "h-2 w-2 rounded-full shrink-0",
+                ap.isOnline ? "bg-emerald-500" : "bg-destructive"
+              )}
+              title={ap.isOnline ? "متصل" : "غير متصل"}
+            />
+            <span className="font-medium">{ap.ssid || ap.apIdentifier}</span>
+          </div>
         );
       },
     },

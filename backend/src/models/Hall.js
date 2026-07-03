@@ -65,11 +65,19 @@ hallSchema.statics.findByApInfo = function (apIdentifier, ipRange) {
   });
 };
 
-// Hide sensitive data if needed in the future
-hallSchema.set("toJSON", {
-  transform: function (doc, ret) {
-    return ret;
-  },
-});
+// Dynamically set isOnline status based on lastSeen time
+const transformFn = function (doc, ret) {
+  if (ret.accessPoint) {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    ret.accessPoint.isOnline = !!(
+      ret.accessPoint.lastSeen &&
+      new Date(ret.accessPoint.lastSeen) > fiveMinutesAgo
+    );
+  }
+  return ret;
+};
+
+hallSchema.set("toJSON", { transform: transformFn });
+hallSchema.set("toObject", { transform: transformFn });
 
 module.exports = mongoose.model("Hall", hallSchema);

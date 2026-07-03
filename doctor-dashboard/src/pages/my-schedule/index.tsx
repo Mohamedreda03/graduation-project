@@ -28,7 +28,7 @@ import { useStartLecture, useEndLecture } from "@/hooks";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
 
-const dayNames = [
+const baseDayNames = [
   { value: "6", label: "السبت" },
   { value: "0", label: "الأحد" },
   { value: "1", label: "الإثنين" },
@@ -36,6 +36,10 @@ const dayNames = [
   { value: "3", label: "الأربعاء" },
   { value: "4", label: "الخميس" },
 ];
+
+const dayNames = import.meta.env.DEV
+  ? [...baseDayNames, { value: "5", label: "الجمعة" }]
+  : baseDayNames;
 
 const PERIODS = [
   { id: 1, label: "الأولى", start: "09:00", end: "09:45", display: "9:45 - 9:00" },

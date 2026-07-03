@@ -67,7 +67,7 @@ import {
 import type { Hall, Lecture } from "@/types";
 import { toast } from "sonner";
 
-const dayNames = [
+const baseDayNames = [
   { value: "6", label: "السبت" },
   { value: "0", label: "الأحد" },
   { value: "1", label: "الاثنين" },
@@ -75,6 +75,10 @@ const dayNames = [
   { value: "3", label: "الأربعاء" },
   { value: "4", label: "الخميس" },
 ];
+
+const dayNames = import.meta.env.DEV
+  ? [...baseDayNames, { value: "5", label: "الجمعة" }]
+  : baseDayNames;
 
 const levelNames: Record<string, string> = {
   "1": "الإعدادية",

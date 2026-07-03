@@ -95,6 +95,52 @@ export function AccessPointsPage() {
       },
     },
     {
+      accessorKey: "accessPoint.isOnline",
+      header: "الحالة",
+      cell: ({ row }) => {
+        const isOnline = row.original.accessPoint?.isOnline;
+        const lastSeen = row.original.accessPoint?.lastSeen;
+        const hasAp = row.original.accessPoint?.apIdentifier || row.original.accessPoint?.ssid;
+
+        if (!hasAp) {
+          return <span className="text-muted-foreground text-sm">—</span>;
+        }
+
+        return (
+          <div className="flex items-center justify-end gap-3">
+            <span className="text-xs text-muted-foreground">
+              {lastSeen
+                ? `آخر ظهور: ${new Date(lastSeen).toLocaleTimeString("ar-EG", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`
+                : "لم يتصل بعد"}
+            </span>
+            <Badge
+              variant={isOnline ? "default" : "destructive"}
+              className={cn(
+                "gap-1 flex items-center justify-center h-6 px-2.5",
+                isOnline &&
+                  "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+              )}
+            >
+              {isOnline ? (
+                <>
+                  <Wifi className="h-3.5 w-3.5" />
+                  <span>متصل</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-3.5 w-3.5" />
+                  <span>غير متصل</span>
+                </>
+              )}
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "accessPoint.apiKey",
       header: "مفتاح API",
       cell: ({ row }) => {
@@ -134,9 +180,10 @@ export function AccessPointsPage() {
   const linkedHalls = halls.filter(
     (h) => h.accessPoint?.apIdentifier || h.accessPoint?.ssid,
   ).length;
-  const unlinkedHalls = halls.filter(
-    (h) => !h.accessPoint?.apIdentifier && !h.accessPoint?.ssid,
+  const onlineAPs = halls.filter(
+    (h) => (h.accessPoint?.apIdentifier || h.accessPoint?.ssid) && h.accessPoint?.isOnline,
   ).length;
+  const offlineAPs = linkedHalls - onlineAPs;
 
   return (
     <div className="w-full space-y-6">
@@ -162,7 +209,7 @@ export function AccessPointsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-card p-4 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -183,30 +230,46 @@ export function AccessPointsPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium text-muted-foreground mb-1">
-                شبكات مرتبطة
+                نقاط وصول مرتبطة
               </div>
               <div className="text-2xl font-bold tabular-nums text-primary">
                 {linkedHalls}
               </div>
             </div>
             <div className="p-2 bg-primary/10 rounded-md">
-              <Zap className="h-5 w-5 text-primary" />
+              <Router className="h-5 w-5 text-primary" />
             </div>
           </div>
         </div>
 
-        <div className="bg-card p-4 rounded-lg border shadow-sm border-l-amber-500/50">
+        <div className="bg-card p-4 rounded-lg border shadow-sm border-l-emerald-500/50">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium text-muted-foreground mb-1">
-                قاعات بدون شبكة
+                متصلة حالياً
               </div>
-              <div className="text-2xl font-bold tabular-nums text-amber-600 dark:text-amber-500">
-                {unlinkedHalls}
+              <div className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                {onlineAPs}
               </div>
             </div>
-            <div className="p-2 bg-amber-500/10 rounded-md">
-              <WifiOff className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+            <div className="p-2 bg-emerald-500/10 rounded-md">
+              <Wifi className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-card p-4 rounded-lg border shadow-sm border-l-destructive/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-1">
+                غير متصلة
+              </div>
+              <div className="text-2xl font-bold tabular-nums text-destructive">
+                {offlineAPs}
+              </div>
+            </div>
+            <div className="p-2 bg-destructive/10 rounded-md">
+              <WifiOff className="h-5 w-5 text-destructive" />
             </div>
           </div>
         </div>

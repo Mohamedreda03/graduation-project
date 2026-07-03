@@ -139,6 +139,12 @@ exports.getHallStatus = catchAsync(async (req, res, next) => {
     throw ApiError.notFound("Hall not found");
   }
 
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  const isOnline = !!(
+    hall.accessPoint.lastSeen &&
+    new Date(hall.accessPoint.lastSeen) > fiveMinutesAgo
+  );
+
   res.status(200).json({
     success: true,
     data: {
@@ -150,6 +156,7 @@ exports.getHallStatus = catchAsync(async (req, res, next) => {
         ssid: hall.accessPoint.ssid,
         ipRange: hall.accessPoint.ipRange,
         lastSeen: hall.accessPoint.lastSeen,
+        isOnline: isOnline,
       },
     },
   });

@@ -1,3 +1,6 @@
+const env = require("./env");
+const isDev = env.nodeEnv === "development";
+
 module.exports = {
   // User Roles
   ROLES: {
@@ -48,5 +51,5 @@ module.exports = {
   },
 
   // Working days (أيام الدراسة)
-  WORKING_DAYS: [6, 0, 1, 2, 3, 4], // السبت للخميس
+  WORKING_DAYS: isDev ? [6, 0, 1, 2, 3, 4, 5] : [6, 0, 1, 2, 3, 4], // السبت للخميس
 };

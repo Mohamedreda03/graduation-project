@@ -36,8 +36,12 @@ function getLocalDateString(date) {
 // Arabic helpers
 // ─────────────────────────────────────────────
 
+const env = require("../config/env");
+
 /** Egyptian academic week: Saturday(6) → Thursday(4) (Friday excluded as holiday) */
-const DAY_ORDER = [6, 0, 1, 2, 3, 4];
+const DAY_ORDER = env.nodeEnv === "development"
+  ? [6, 0, 1, 2, 3, 4, 5]
+  : [6, 0, 1, 2, 3, 4];
 
 const DAY_NAMES_AR = {
   0: "الأحد",
