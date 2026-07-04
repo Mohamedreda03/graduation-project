@@ -57,6 +57,7 @@ export function ImportStudentsPage() {
   // Sidebar state — كل البيانات الأكاديمية هنا
   const [specialization, setSpecialization] = useState("");
   const [level, setLevel] = useState("");
+  const [department, setDepartment] = useState("");
   const [defaultPassword, setDefaultPassword] = useState("123456");
 
   // File state
@@ -72,10 +73,28 @@ export function ImportStudentsPage() {
     return spec?.levels ?? [];
   }, [specialization, specializationsData]);
 
-  // ─── عند تغيير التخصص، نصفر الفرقة ───────────────────────────────────
+  const availableDepartments = useMemo(() => {
+    if (!specialization || !specializationsData) return [];
+    const spec = specializationsData.find((s) => s._id === specialization);
+    return spec?.departments ?? [];
+  }, [specialization, specializationsData]);
+
+  const selectedLevelData = useMemo(() => {
+    return availableLevels.find(l => String(l.level) === level);
+  }, [availableLevels, level]);
+
+  const requiresDepartment = selectedLevelData?.hasDepartments ?? false;
+
+  // ─── عند تغيير التخصص أو الفرقة، نصفر ما يليه ─────────────────────────
   const handleSpecializationChange = (val: string) => {
     setSpecialization(val);
     setLevel("");
+    setDepartment("");
+  };
+
+  const handleLevelChange = (val: string) => {
+    setLevel(val);
+    setDepartment("");
   };
 
   // ─── قراءة الأكسيل ────────────────────────────────────────────────────
@@ -242,6 +261,7 @@ export function ImportStudentsPage() {
           academicInfo: {
             specialization,
             level: parseInt(level),
+            ...(requiresDepartment && department ? { department } : {}),
           },
         })),
         defaultPassword,
@@ -253,7 +273,7 @@ export function ImportStudentsPage() {
   };
 
   const isReadyToImport =
-    !!specialization && !!level && parsedData.length > 0;
+    !!specialization && !!level && (!requiresDepartment || !!department) && parsedData.length > 0;
 
   const steps = [
     { id: 1, title: "رفع الملف", icon: Upload },
@@ -545,7 +565,7 @@ export function ImportStudentsPage() {
                     الفرقة الدراسية
                   </label>
                   {availableLevels.length > 0 ? (
-                    <Select dir="rtl" value={level} onValueChange={setLevel}>
+                    <Select dir="rtl" value={level} onValueChange={handleLevelChange}>
                       <SelectTrigger className="h-10">
                         <SelectValue placeholder="اختر الفرقة..." />
                       </SelectTrigger>
@@ -563,6 +583,33 @@ export function ImportStudentsPage() {
                   ) : (
                     <p className="text-xs text-muted-foreground bg-muted/40 rounded p-2 border border-dashed">
                       لم يتم تحديد فرق لهذا التخصص بعد
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* القسم — يظهر فقط إذا كانت الفرقة المختارة تتطلب قسم */}
+              {requiresDepartment && (
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-foreground">
+                    القسم
+                  </label>
+                  {availableDepartments.length > 0 ? (
+                    <Select dir="rtl" value={department} onValueChange={setDepartment}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="اختر القسم..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableDepartments.map((dept) => (
+                          <SelectItem key={dept} value={dept}>
+                            {dept}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-xs text-muted-foreground bg-muted/40 rounded p-2 border border-dashed text-destructive">
+                      الفرقة تتطلب قسم، ولكن لم يتم إضافة أقسام لهذا التخصص
                     </p>
                   )}
                 </div>
@@ -610,6 +657,14 @@ export function ImportStudentsPage() {
                 </div>
                 الفرقة {level ? "محددة ✓" : "غير محددة"}
               </div>
+              {requiresDepartment && (
+                <div className={`flex items-center gap-2 ${department ? "text-green-600" : "text-muted-foreground"}`}>
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${department ? "bg-green-100 border-green-500" : "border-muted-foreground/40"}`}>
+                    {department && <CheckCircle2 className="h-3 w-3" />}
+                  </div>
+                  القسم {department ? "محدد ✓" : "غير محدد"}
+                </div>
+              )}
             </div>
 
             <div className="border-t pt-3 space-y-2">
