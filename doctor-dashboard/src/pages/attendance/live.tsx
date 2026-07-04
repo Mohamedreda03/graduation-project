@@ -116,7 +116,9 @@ const StudentCardRow = memo(function StudentCardRow({
         </div>
         <div className="flex flex-col">
           <span className="text-muted-foreground font-medium">المدة</span>
-          <span className="font-semibold text-foreground">{isAbsent ? "—" : `${livePresenceTime} د`}</span>
+          <span className="font-semibold text-foreground">
+            {livePresenceTime > 0 || !isAbsent ? `${livePresenceTime} د` : "—"}
+          </span>
         </div>
         <div className="flex flex-col">
           <span className="text-muted-foreground font-medium">النسبة</span>
@@ -152,7 +154,7 @@ const StudentTableRow = memo(function StudentTableRow({
       <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground"><span dir="ltr">{entryTimeStr}</span></td>
       <td className="py-2 px-2 text-center font-mono text-xs font-medium text-foreground"><span dir="ltr">{exitTimeStr}</span></td>
       <td className="py-2 px-2 text-center text-xs text-muted-foreground font-medium">
-        {isAbsent ? "—" : `${livePresenceTime} د`}
+        {livePresenceTime > 0 || !isAbsent ? `${livePresenceTime} د` : "—"}
       </td>
       <td className="py-2 px-2 text-center">
         <span className="text-xs font-mono font-semibold text-foreground tabular-nums">
@@ -359,7 +361,13 @@ export function LiveAttendancePage() {
       if (!startTime || !endTime) return 45;
       const [startHour, startMin] = startTime.split(":").map(Number);
       const [endHour, endMin] = endTime.split(":").map(Number);
-      return endHour * 60 + endMin - (startHour * 60 + startMin);
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+      // Handle midnight-spanning lectures (e.g., 23:30 -> 01:30)
+      if (endMinutes <= startMinutes) {
+        return (1440 - startMinutes) + endMinutes;
+      }
+      return endMinutes - startMinutes;
     };
 
     return filteredStudents.map((student: any) => {

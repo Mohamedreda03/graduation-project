@@ -11,7 +11,6 @@ import {
   Layers,
   Grid3X3,
   CalendarClock,
-  Printer,
   Filter,
   X,
   Trash2,
@@ -513,10 +512,6 @@ export function LectureSchedulePage() {
     setSelectedSemester("الفصل الدراسي الأول");
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const isLoading = coursesLoading || hallsLoading || scheduleLoading;
   const hasLectures = scheduleData && Object.values(scheduleData).some((dayLectures: any) => dayLectures.length > 0);
 
@@ -750,11 +745,6 @@ export function LectureSchedulePage() {
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handlePrint} variant="outline" className="rounded-xl border-slate-200">
-            <Printer className="h-4 w-4 ml-2" />
-            طباعة الجدول
-          </Button>
-
           <Button
             onClick={() => {
               setIsEditing(false);

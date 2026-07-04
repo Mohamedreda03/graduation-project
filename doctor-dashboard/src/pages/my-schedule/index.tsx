@@ -8,7 +8,6 @@ import {
   Wifi,
   Play,
   Square,
-  Printer,
   CalendarClock,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -194,10 +193,6 @@ export function MySchedulePage() {
     setIsDetailDialogOpen(true);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const hasLectures = schedule && Object.values(schedule).some((dayLectures: any) => dayLectures.length > 0);
 
   const renderDayRows = (dayValue: string, dayLabel: string) => {
@@ -362,13 +357,6 @@ export function MySchedulePage() {
           <p className="text-muted-foreground mt-1.5 text-sm">
             عرض وتنظيم الجدول الأسبوعي الخاص بك مع تفاصيل المادة، الفرقة، الكلية، القسم والقاعة.
           </p>
-        </div>
-
-        <div className="flex gap-2">
-          <Button onClick={handlePrint} variant="outline" className="rounded-xl border-slate-200 font-bold">
-            <Printer className="h-4 w-4 ml-2" />
-            طباعة الجدول
-          </Button>
         </div>
       </div>
 

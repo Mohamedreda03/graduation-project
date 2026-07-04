@@ -767,9 +767,24 @@ exports.endLecture = catchAsync(async (req, res, next) => {
   lecture.actualEndTime = new Date();
   await lecture.save();
 
-  // Set the end time on all attendance records for today (both finalized and in-progress/absent)
+  // Derive the attendance record date from when the lecture was actually started.
+  // This is critical for midnight-spanning lectures: if a lecture started Friday 23:30
+  // and is being ended Saturday 00:15, records were created with Friday's date.
+  const getLectureDate = () => {
+    if (lecture.actualStartTime) {
+      const startLocal = getLocalTime(lecture.actualStartTime);
+      const yyyy = startLocal.getFullYear();
+      const mm = String(startLocal.getMonth() + 1).padStart(2, "0");
+      const dd = String(startLocal.getDate()).padStart(2, "0");
+      return new Date(`${yyyy}-${mm}-${dd}T00:00:00Z`);
+    }
+    return getTodayDate();
+  };
+  const lectureDate = getLectureDate();
+
+  // Set the end time on all attendance records for this lecture
   await AttendanceRecord.updateMany(
-    { lecture: lecture._id, date: getTodayDate() },
+    { lecture: lecture._id, date: lectureDate },
     { $set: { lectureEndTime: lecture.actualEndTime } }
   );
 
@@ -848,7 +863,7 @@ exports.endLecture = catchAsync(async (req, res, next) => {
   // 2. Create absent records for enrolled students who never joined
   const allRecords = await AttendanceRecord.find({
     lecture: lecture._id,
-    date: getTodayDate(),
+    date: lectureDate,
   });
   const allRecordStudentIds = new Set(allRecords.map(r => r.student.toString()));
   const enrolledStudents = lecture.course?.students || [];
@@ -863,7 +878,7 @@ exports.endLecture = catchAsync(async (req, res, next) => {
       course: lecture.course._id,
       lecture: lecture._id,
       hall: lecture.hall._id,
-      date: getTodayDate(),
+      date: lectureDate,
       status: ATTENDANCE_STATUS.ABSENT,
       isFinalized: true,
       finalizedAt: now,

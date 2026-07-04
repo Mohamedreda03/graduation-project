@@ -226,6 +226,10 @@ function calculateLectureDuration(startTimeStr, endTimeStr) {
   const startMinutes = startH * 60 + startM;
   const endMinutes = endH * 60 + endM;
 
+  // Handle midnight-spanning lectures (e.g., 23:30 -> 01:30)
+  if (endMinutes <= startMinutes) {
+    return (1440 - startMinutes) + endMinutes;
+  }
   return endMinutes - startMinutes;
 }
 
@@ -264,10 +268,21 @@ async function autoCompleteLectures() {
     let completedCount = 0;
 
     for (const lecture of lectures) {
-      const lectureEnd = getLectureEndTime(
-        getMostRecentDayOfWeekDate(lecture.dayOfWeek),
-        lecture.endTime
-      );
+      // Determine when the lecture should end.
+      // For midnight-spanning lectures (e.g. startTime 23:30, endTime 01:30),
+      // the endTime is on the NEXT day relative to the start day.
+      const baseDate = getMostRecentDayOfWeekDate(lecture.dayOfWeek);
+      let lectureEnd = getLectureEndTime(baseDate, lecture.endTime);
+
+      // Check if this is a midnight-spanning lecture
+      const [startH, startM] = lecture.startTime.split(":").map(Number);
+      const [endH, endM] = lecture.endTime.split(":").map(Number);
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+      if (endMinutes <= startMinutes) {
+        // End time is on the next day, add 24 hours
+        lectureEnd = new Date(lectureEnd.getTime() + 24 * 60 * 60 * 1000);
+      }
 
       if (now < lectureEnd) continue;
 
@@ -376,8 +391,8 @@ async function resetLecturesStatus() {
 function initScheduler() {
   console.log("[Scheduler] Initializing scheduled jobs...");
 
-  // Run every 2 minutes (reduced from 1 minute to lower DB pressure)
-  cron.schedule("*/2 * * * *", async () => {
+  // Run every 30 seconds to quickly detect and auto-complete ended lectures
+  cron.schedule("*/30 * * * * *", async () => {
     if (!isDbReady()) {
       console.log("[Scheduler] Skipping finalization - DB not ready");
       return;
