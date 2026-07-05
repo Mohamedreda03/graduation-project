@@ -1,15 +1,17 @@
 # Slide 6: Admin Portal - Academic & Hall Setup
 
 ## 👤 Presenter: Student 6
+
 ### ⏱️ Estimated Time: 2 Minutes
 
 ---
 
 ## 📊 PowerPoint Slide Content (English)
-* **Specializations Setup**: Manage departments, divisions, and academic levels.
-* **Lecture Halls Directory**: Record room names, building locations, and student capacities.
-* **Access Point Mapping**: Securely bind classrooms to their physical Wi-Fi routers using unique router identifiers.
-* **Network Status Dashboard**: Real-time monitoring of router status (Online / Offline) with "Last Seen" tracking.
+
+- **Specializations Setup**: Manage departments, divisions, and academic levels.
+- **Lecture Halls Directory**: Record room names, building locations, and student capacities.
+- **Access Point Mapping**: Securely bind classrooms to their physical Wi-Fi routers using unique router identifiers.
+- **Network Status Dashboard**: Real-time monitoring of router status (Online / Offline) with "Last Seen" tracking.
 
 ---
 
@@ -17,7 +19,7 @@
 
 "دلوقتي بقى يا دكاترة، هندخل جوه شاشات النظام الفعلية، وهبدأ معاكم بأول خطوة بنعملها عشان نشغل السيستم ده، وهي 'تهيئة الكلية والقاعات' من لوحة تحكم المسؤول (Admin Dashboard).
 
-أول شاشة عندنا هي شاشة **إدارة التخصصات (Specializations)**. دي الواجهة اللي المسؤول بيدخل عليها عشان يحدد أقسام الكلية وشعبها المختلفة، زي قسم اتصالات، حاسبات، عمارة، ويحدد المستويات الدراسية لكل قسم. وده مهم عشان السيستم يقدر يوزع الجداول والطلبة أوتوماتيكياً.
+أول شاشة عندنا هي شاشة **إدارة التخصصات (Specializations)**. دي الواجهة اللي المسؤول بيدخل عليها عشان يحدد أقسام الكلية وشعبها المختلفة، زي قسم اتصالات، حاسبات، عمارة، ويحدد المستويات الدراسية لكل قسم.
 
 ثاني شاشة وهي الأساسية، شاشة **إدارة القاعات والمدرجات (Halls)**. هنا الإدارة بتسجل المدرجات، سعة كل مدرج، والمبنى اللي موجود فيه. وبنعمل هنا عملية الربط الذكية: بنربط المدرج بالراوتر المتركب فيه عن طريق كتابة المعرف الفريد للواي فاي الخاص بالقاعة دي.
 
@@ -29,11 +31,11 @@
 
 ## ⚙️ الخطوات العملية للمناقشة (Live Demo & System Flow)
 
-* **طريقة الوصول في الموقع**:
-  * لعرض التخصصات: من القائمة الجانبية اضغط على **الكليات** -> ثم **جميع الكليات** (الرابط `/specializations`).
-  * لعرض حالة أجهزة الواي فاي: من القائمة الجانبية اضغط على **القاعات** -> ثم **نقاط الوصول** (الرابط `/halls/access-points`).
-* **ماذا تفعل (التفاعل)**: استعراض التخصصات والأقسام، والذهاب لجدول نقاط الوصول المباشر والضغط على زر "تحديث البيانات" (Refresh) لمزامنة حالة أجهزة الواي فاي المباشرة.
-* **ماذا تشرح (التدفق التقني)**:
+- **طريقة الوصول في الموقع**:
+  - لعرض التخصصات: من القائمة الجانبية اضغط على **الكليات** -> ثم **جميع الكليات** (الرابط `/specializations`).
+  - لعرض حالة أجهزة الواي فاي: من القائمة الجانبية اضغط على **القاعات** -> ثم **نقاط الوصول** (الرابط `/halls/access-points`).
+- **ماذا تفعل (التفاعل)**: استعراض التخصصات والأقسام، والذهاب لجدول نقاط الوصول المباشر والضغط على زر "تحديث البيانات" (Refresh) لمزامنة حالة أجهزة الواي فاي المباشرة.
+- **ماذا تشرح (التدفق التقني)**:
   1. تشير للجنة أن إضافة القاعة تتطلب تعيين المعرف الفريد للراوتر في النظام لربطه فيزيائياً بالقاعة الرقمية.
   2. توضح كيف يعالج النظام إشارات الاتصال الدورية من الراوتر ويقوم بتحديث حالة الراوتر إلى متصل (Online) بشكل مباشر في الشاشة إذا كان الاتصال نشطاً.
   3. تشرح أن أي عطل في راوتر المدرج يظهر فوراً باللون الأحمر (Offline) لتنبيه الموظفين قبل بدء المحاضرات لضمان صيانة وإصلاح أجهزة القاعة بسرعة.

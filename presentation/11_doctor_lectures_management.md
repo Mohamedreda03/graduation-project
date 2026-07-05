@@ -1,15 +1,17 @@
 # Slide 11: Doctor Portal - Homepage & Launching Lectures
 
 ## 👤 Presenter: Student 11
+
 ### ⏱️ Estimated Time: 2 Minutes
 
 ---
 
 ## 📊 PowerPoint Slide Content (English)
-* **Doctor Dashboard Analytics**: Quick statistics showing today's classes, total courses, and average attendance.
-* **Daily Schedule Screen**: Detailed list of today's lectures with timings and room assignments.
-* **Manual Lecture Activation**: Click the "Start Lecture" button to open the attendance window.
-* **Initial Attendance Scan**: Instantly check-in students who are already connected to the hall Wi-Fi.
+
+- **Doctor Dashboard Analytics**: Quick statistics showing today's classes, total courses, and average attendance.
+- **Daily Schedule Screen**: Detailed list of today's lectures with timings and room assignments.
+- **Manual Lecture Activation**: Click the "Start Lecture" button to open the attendance window.
+- **Initial Attendance Scan**: Instantly check-in students who are already connected to the hall Wi-Fi.
 
 ---
 
@@ -21,9 +23,10 @@
 
 بعد كده، بيدخل على شاشة **جدول محاضراتي اليومي (My Schedule)**. الشاشة دي بتعرض قائمة المحاضرات المخصصة للدكتور ده النهاردة ومترتبة بالوقت. بيظهر قدام كل محاضرة: اسم المادة، الفرقة أو السكشن المستهدف، المدرج اللي هيتشرح فيه، والوقت المحدد للمحاضرة.
 
-الخطوة المهمة جداً بتبدأ أول ما الدكتور يدخل المدرج الفعلي؛ بيفتح اللاب توب بتاعه أو بيعرض لوحة التحكم على شاشة العرض (Projector), وبيضغط على زرار **بدء المحاضرة (Start Lecture)** للمحاضرة اللي عليها الدور.
+الخطوة المهمة جداً بتبدأ أول ما الدكتور يدخل المدرج الفعلي؛ بيفتح اللاب توب بتاعه, وبيضغط على زرار **بدء المحاضرة (Start Lecture)** للمحاضرة اللي عليها الدور.
 
 الضغطة البسيطة دي بتشغل كذا حاجة في الخلفية:
+
 1. بتغير حالة المحاضرة في النظام لـ **جارية (In-Progress)** وتفعل أوتوماتيكياً استقبال إشارات الحضور للغرفة دي.
 2. بتسجل الوقت الفعلي لبدء الشرح (Actual Start Time).
 3. ودي الأهم؛ النظام بيعمل مسح أولي (Initial Scan) وبيروح يشوف مين الطلبة اللي كانوا قاعدين في المدرج وموبايلاتهم متصلة بالواي فاي من قبل ما المحاضرة تبدأ؛ فبيسجل حضورهم في المدرج فوراً ويربط جلستهم بالمحاضرة من أول دقيقة لتوفر عليهم الوقت.
@@ -34,9 +37,9 @@
 
 ## ⚙️ الخطوات العملية للمناقشة (Live Demo & System Flow)
 
-* **طريقة الوصول في الموقع**: من القائمة الجانبية لبوابة الأستاذ، اضغط على تبويب **محاضراتي** (الرابط `/my-schedule`).
-* **ماذا تفعل (التفاعل)**: إظهار محاضرات اليوم والضغط على زر "بدء المحاضرة" (Start Lecture) الأخضر لتفعيل تسجيل الغياب للمدرج.
-* **ماذا تشرح (التدفق التقني)**:
+- **طريقة الوصول في الموقع**: من القائمة الجانبية لبوابة الأستاذ، اضغط على تبويب **محاضراتي** (الرابط `/my-schedule`).
+- **ماذا تفعل (التفاعل)**: إظهار محاضرات اليوم والضغط على زر "بدء المحاضرة" (Start Lecture) الأخضر لتفعيل تسجيل الغياب للمدرج.
+- **ماذا تشرح (التدفق التقني)**:
   1. تشرح للجنة أن الضغط على زر البدء يرسل طلباً للنظام لتغيير حالة المحاضرة إلى "جارية" وتسجيل توقيت البداية الفعلي.
   2. توضح أن النظام يبحث فوراً عن الطلبة الذين اتصلت هواتفهم مسبقاً براوتر القاعة ويقوم بتحضيرهم تلقائياً لتسريع التحضير.
   3. تشرح كيف يتم توجيه الدكتور تلقائياً لشاشة الحضور المباشر لبدء متابعة عملية التحضير اللحظية.
