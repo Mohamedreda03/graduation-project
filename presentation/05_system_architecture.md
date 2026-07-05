@@ -1,18 +1,20 @@
 # Slide 5: System Architecture & Workflow
 
 ## 👤 Presenter: Student 5
+
 ### ⏱️ Estimated Time: 2 Minutes
 
 ---
 
 ## 📊 PowerPoint Slide Content (English)
-* **Hardware Layer**: Wi-Fi Access Points forwarding connect/disconnect events.
-* **Core Server**: Central processing engine that handles business rules, schedules, and active sessions.
-* **Data Persistence**: Secure database storing students, courses, lectures, and attendance metrics.
-* **Dashboards**: 
-  * *Admin Portal*: System setup, device approvals, and analytics.
-  * *Doctor Portal*: Live lecture control and class monitoring.
-* **Student Interface**: Mobile App showing schedules, warning badges, and device requests.
+
+- **Hardware Layer**: Wi-Fi Access Points forwarding connect/disconnect events.
+- **Core Server**: Central processing engine that handles business rules, schedules, and active sessions.
+- **Data Persistence**: Secure database storing students, courses, lectures, and attendance metrics.
+- **Dashboards**:
+  - _Admin Portal_: System setup, device approvals, and analytics.
+  - _Doctor Portal_: Live lecture control and class monitoring.
+- **Student Interface**: Mobile App showing schedules, warning badges, and device requests.
 
 ---
 
@@ -30,9 +32,9 @@
 
 رابعاً، **لوحات التحكم (Dashboards)** على الويب، ودي مقسومة جزئين: لوحة **المسؤول (Admin)** عشان الإدارة والجدولة وتفعيل الهواتف، ولوحة **الدكتور (Doctor)** اللي بيعرضها على شاشة المدرج عشان يشوف الحضور والغياب لايف قدامه والطلبة بتتحضر.
 
-خامساً، **تطبيق الموبايل بتاع الطالب (Student Mobile App)**. ده اللي الطالب بيشوف منه جدوله ومؤقت المحاضرة الجاية، وأول ما يدخل المدرج وتتحضر يظهرله بانر أخضر فوري يطمنه إنه كدة اتحضر رسمي.
+خامساً، **تطبيق الموبايل بتاع الطالب (Student Mobile App)**. ده اللي الطالب بيشوف منه جدوله ومؤقت المحاضرة الجاية.
 
-التكامل ده بيخلي البيانات تلف في دايرة كاملة في ثواني معدودة؛ الطالب يدخل المدرج، الموبايل يلقط، الإشارة تروح للسيرفر، تظهر في لوحة الدكتور خضرا، وتظهر لافتة في موبايل الطالب تؤكد حضوره، من غير تدخل بشري واحد."
+التكامل ده بيخلي البيانات تلف في دايرة كاملة في ثواني معدودة؛ الطالب يدخل المدرج، الموبايل يلقط، الإشارة تروح للسيرفر، تظهر في لوحة الدكتور، وتظهر لافتة في موبايل الطالب، من غير تدخل بشري واحد."
 
 ---
 

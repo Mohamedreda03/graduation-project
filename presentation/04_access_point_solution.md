@@ -1,15 +1,17 @@
 # Slide 4: Our Innovation - Wi-Fi Access Point Attendance
 
 ## 👤 Presenter: Student 4
+
 ### ⏱️ Estimated Time: 2 Minutes
 
 ---
 
 ## 📊 PowerPoint Slide Content (English)
-* **Smart Campus Automation**: Leverages standard Wi-Fi Access Points (APs) as presence detectors.
-* **Double Investment Utility**: One Wi-Fi network serves both student internet/AI research and automated attendance.
-* **Physical Proximity Lock**: Limit attendance strictly to the classroom's Wi-Fi signal boundary.
-* **Continuous Connection Analysis**: Tracks presence duration to eliminate "check-in and leave" fraud.
+
+- **Smart Campus Automation**: Leverages standard Wi-Fi Access Points (APs) as presence detectors.
+- **Double Investment Utility**: One Wi-Fi network serves both student internet/AI research and automated attendance.
+- **Physical Proximity Lock**: Limit attendance strictly to the classroom's Wi-Fi signal boundary.
+- **Continuous Connection Analysis**: Tracks presence duration to eliminate "check-in and leave" fraud.
 
 ---
 
@@ -28,9 +30,3 @@
 ده حل آمن، اقتصادي، وبيواكب رؤية الدولة والجامعات للتحول الرقمي الكامل بأقل تكلفة تشغيلية ممكنة."
 
 ---
-
-## ⚙️ سير العمل التقني للمفهوم (Conceptual Data Flow)
-
-1. **دخول النطاق الجغرافي**: يدخل الطالب المدرج فيتصل هاتفه تلقائياً بشبكة الواي فاي الخاصة بالمدرج.
-2. **رصد الاتصال وإرسال الحدث**: يلتقط راوتر القاعة الـ MAC Address الخاص بالهاتف، ويرسل إشارة لحظية للخادم تحتوي على معرف الراوتر والماك أدرس للتليفون.
-3. **التحقق والتسجيل**: يطابق الخادم الماك أدرس ببيانات الطالب المسجلة سلفاً في قاعدة البيانات للتأكد من هويته وجدول محاضراته، ويبدأ بحساب زمن الحضور الفعلي بالدقيقة.
