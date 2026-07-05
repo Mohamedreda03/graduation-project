@@ -200,11 +200,6 @@ const navMainItems: NavItem[] = [
         title: "طلاب متعثرون",
         url: "/attendance/at-risk",
       },
-      {
-        title: "🔍 المتابعة الشاملة",
-        url: "/attendance/monitoring",
-        allowedAdminRoles: ["super_admin", "dean"],
-      },
     ],
   },
   {

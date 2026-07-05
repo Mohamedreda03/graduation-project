@@ -34,7 +34,6 @@ import { TodayLecturesPage } from "@/pages/lectures/today";
 import { AttendancePage } from "@/pages/attendance";
 import { LiveAttendancePage } from "@/pages/attendance/live";
 import { AtRiskStudentsPage } from "@/pages/attendance/at-risk";
-import { AttendanceMonitoringPage } from "@/pages/attendance/monitoring";
 import { SettingsPage } from "@/pages/settings";
 import { EmployeesPage, EmployeeFormPage } from "@/pages/employees";
 import AIChatPage from "@/pages/ai-chat";
@@ -136,11 +135,6 @@ function App() {
                     <Route path="/attendance" element={<AttendancePage />} />
                     <Route path="/attendance/live" element={<LiveAttendancePage />} />
                     <Route path="/attendance/at-risk" element={<AtRiskStudentsPage />} />
-                  </Route>
-
-                  {/* Dean and Super Admin Only - Comprehensive Monitoring */}
-                  <Route element={<ProtectedRoute allowedAdminRoles={["super_admin", "dean"]} />}>
-                    <Route path="/attendance/monitoring" element={<AttendanceMonitoringPage />} />
                   </Route>
 
                   {/* AI Chat */}
