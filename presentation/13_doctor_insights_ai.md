@@ -8,7 +8,7 @@
 ## 📊 PowerPoint Slide Content (English)
 * **Course Analytics Interface**: View cumulative statistics, attendance charts, and individual records for all students.
 * **Conversational AI Chat (AI Assistant)**: Natural language portal enabling doctors to speak directly with the database.
-* **Secure Database Tools**: AI utilizes backend functions (e.g. `get_student_attendance`, `search_users`) with strict role-based access.
+* **Secure Integrations**: AI securely accesses academic data with strict role-based permissions.
 * **Instant Query Resolution**: 
   * *"Who was absent in the last lecture?"*
   * *"Draw a table for students with less than 60% attendance."*
@@ -32,7 +32,7 @@
 * 'ما هي نسبة الحضور العامة للمادة الشهر ده؟'
 * 'مين أكتر طالب ملتزم وبيحضر معايا؟'
 
-المساعد الذكي بيروح فوراً من خلال برمجيات خلفية آمنة (Database Tools) يستعلم من قاعدة البيانات ويحلل حضور وغياب الطلبة في المقررات دي بس، وبيرد على الدكتور في ثواني بإجابات منسقة جداً على شكل جداول ونقاط واضحة. 
+المساعد الذكي بيقدر يحلل فوراً حضور وغياب الطلبة في المقررات دي بس، وبيرد على الدكتور في ثواني بإجابات منسقة جداً على شكل جداول ونقاط واضحة. 
 
 الأداة دي بتغير الطريقة التقليدية للتعامل مع البيانات؛ بتوفر وقت الدكتور وبتخليه يوصل لأي إحصائية في ثواني معدودة بمجرد إنه يكتب سؤاله في الشات."
 
@@ -46,5 +46,5 @@
 * **ماذا تفعل (التفاعل)**: فتح شاشة الشات، وكتابة سؤال عربي مباشر (مثل: "مين الطلبة الي غابت في المحاضرة الاخيرة؟") والضغط على إرسال، ثم فتح صفحة المقررات لمشاهدة تفاصيل مادة.
 * **ماذا تشرح (التدفق التقني)**:
   1. تشرح للجنة أن الشات مدعوم بنظام فك وتفسير لغوي يفهم الأسئلة الطبيعية ويترجمها لاستدعاء دوال برمجية حقيقية.
-  2. توضح كيف يستدعي السيرفر دوال البحث الآمنة في قاعدة البيانات بناءً على هوية الطبيب وصلاحياته لمنع تسريب البيانات.
+  2. توضح للجنة أن المساعد الذكي يقتصر بحثه فقط على بيانات المواد المرتبطة بالدكتور لحماية الخصوصية ومنع تسريب بيانات المواد الأخرى.
   3. تبين كيف يقوم الـ AI بفرز البيانات وتوليد رد عربي منسق على هيئة جدول Markdown وعرضه للمستخدم بطريقة مقروءة ومرنة.
