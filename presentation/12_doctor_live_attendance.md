@@ -6,9 +6,8 @@
 ---
 
 ## 📊 PowerPoint Slide Content (English)
-* **Real-time Attendance Grid**: Visual cards with student pictures that turn green instantly upon connection.
-* **Classroom Display**: Project the live grid on the screen to encourage transparency and engagement.
-* **Manual Override Capability**: Doctors can manually adjust any student's status (Present, Absent, Excused) if they face phone issues.
+* **Real-time Attendance Grid**: Visual table with student rows that turn green (In-Progress) instantly upon connection.
+* **Manual Override Capability**: Doctors can manually adjust any student's status (Present, Absent) if they face phone issues.
 * **Smart Finalization (End Lecture)**: Calculates actual connection minutes, updates records, and auto-marks missing students as absent.
 
 ---
