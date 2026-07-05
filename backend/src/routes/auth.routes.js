@@ -1,5 +1,5 @@
 const express = require("express");
-const rateLimit = require("express-rate-limit");
+
 const router = express.Router();
 const authController = require("../controllers/auth.controller");
 const { protect } = require("../middlewares");
@@ -9,18 +9,6 @@ const {
   changePasswordSchema,
 } = require("../validators/auth.validator");
 
-// Rate limiter for login/refresh endpoints only (brute-force protection)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 attempts per window per IP
-  message: {
-    success: false,
-    error:
-      "Too many authentication attempts, please try again after 15 minutes",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 // ===========================================
 // WEB ROUTES (Admin & Doctor - uses cookies)
@@ -59,7 +47,6 @@ const authLimiter = rateLimit({
  */
 router.post(
   "/web/login",
-  authLimiter,
   validate(loginSchema),
   authController.webLogin,
 );
@@ -77,7 +64,7 @@ router.post(
  *       401:
  *         description: Invalid refresh token
  */
-router.post("/web/refresh", authLimiter, authController.webRefreshToken);
+router.post("/web/refresh", authController.webRefreshToken);
 
 /**
  * @swagger
@@ -222,7 +209,7 @@ router.post("/mobile/logout", protect, authController.mobileLogout);
  *       401:
  *         description: Invalid credentials
  */
-router.post("/login", authLimiter, validate(loginSchema), authController.login);
+router.post("/login", validate(loginSchema), authController.login);
 
 /**
  * @swagger
@@ -247,7 +234,7 @@ router.post("/login", authLimiter, validate(loginSchema), authController.login);
  *       401:
  *         description: Invalid or expired refresh token
  */
-router.post("/refresh", authLimiter, authController.refreshToken);
+router.post("/refresh", authController.refreshToken);
 
 // Protected routes
 router.use(protect);
