@@ -16,7 +16,15 @@ app.use((req, res, next) => {
 });
 
 // Security middleware
-app.use(helmet());
+// Disable HSTS and Content-Security-Policy to prevent automatic HTTPS redirects
+// when the site is running on HTTP.
+app.use(
+  helmet({
+    hsts: false,
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: false,
+  })
+);
 
 // CORS configuration - allow credentials for cookies
 app.use(
