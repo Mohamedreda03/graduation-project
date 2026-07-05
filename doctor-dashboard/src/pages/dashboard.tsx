@@ -82,11 +82,12 @@ export function DashboardPage() {
       )
     : 0;
 
-  // Calculate total students across all courses
-  const totalStudents = myCourses.reduce(
-    (acc: number, course: Course) => acc + (course.students?.length || 0),
-    0,
-  );
+  // Calculate total unique students across all courses
+  const totalStudents = new Set(
+    myCourses.flatMap((course: Course) =>
+      (course.students || []).map((s: any) => (typeof s === "string" ? s : s._id))
+    )
+  ).size;
 
   return (
     <div className="space-y-8">

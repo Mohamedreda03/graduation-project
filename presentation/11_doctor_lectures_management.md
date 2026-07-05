@@ -10,8 +10,7 @@
 
 - **Doctor Dashboard Analytics**: Quick statistics showing today's classes, total courses, and average attendance.
 - **Daily Schedule Screen**: Detailed list of today's lectures with timings and room assignments.
-- **Manual Lecture Activation**: Click the "Start Lecture" button to open the attendance window.
-- **Initial Attendance Scan**: Instantly check-in students who are already connected to the hall Wi-Fi.
+- **Manual Lecture Activation**: Click the "Start Lecture" button to open the live attendance window.
 
 ---
 
@@ -28,8 +27,7 @@
 الضغطة البسيطة دي بتشغل كذا حاجة في الخلفية:
 
 1. بتغير حالة المحاضرة في النظام لـ **جارية (In-Progress)** وتفعل أوتوماتيكياً استقبال إشارات الحضور للغرفة دي.
-2. بتسجل الوقت الفعلي لبدء الشرح (Actual Start Time).
-3. ودي الأهم؛ النظام بيعمل مسح أولي (Initial Scan) وبيروح يشوف مين الطلبة اللي كانوا قاعدين في المدرج وموبايلاتهم متصلة بالواي فاي من قبل ما المحاضرة تبدأ؛ فبيسجل حضورهم في المدرج فوراً ويربط جلستهم بالمحاضرة من أول دقيقة لتوفر عليهم الوقت.
+2. بتسجل الوقت الفعلي لبدء الشرح (Actual Start Time) وتنقل الدكتور فوراً لشاشة المتابعة.
 
 الخطوة دي بتخلي الدكتور يبدأ يومه من غير ما يشغل باله بدفاتر الحضور أو الأسامي، ويركز كل طاقته في الشرح والعلم."
 
@@ -45,5 +43,4 @@
   2. الانتقال لشاشة **محاضرات اليوم** والضغط على زر "بدء المحاضرة" (Start Lecture) الأخضر لتفعيل تسجيل الغياب.
 - **ماذا تشرح (التدفق التقني)**:
   1. تشرح للجنة أن الضغط على زر البدء يرسل طلباً للنظام لتغيير حالة المحاضرة إلى "جارية" وتسجيل توقيت البداية الفعلي.
-  2. توضح أن النظام يبحث فوراً عن الطلبة الذين اتصلت هواتفهم مسبقاً براوتر القاعة ويقوم بتحضيرهم تلقائياً لتسريع التحضير.
-  3. تشرح كيف يتم توجيه الدكتور تلقائياً لشاشة الحضور المباشر لبدء متابعة عملية التحضير اللحظية.
+  2. تشرح كيف يتم توجيه الدكتور تلقائياً لشاشة الحضور المباشر لبدء متابعة عملية التحضير اللحظية.
