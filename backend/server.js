@@ -36,6 +36,16 @@ async function startServer() {
   // Connect to database first - wait for connection before starting server
   await connectDB();
 
+  // On every startup: reactivate any soft-deleted lectures and reset completed ones
+  // This ensures lectures are always available after server restarts or manual deletions
+  try {
+    const { resetLecturesStatus } = require("./src/services/scheduler.service");
+    await resetLecturesStatus();
+    console.log("✅ [Startup] Lectures reactivation complete");
+  } catch (err) {
+    console.error("⚠️ [Startup] Lecture reactivation failed:", err.message);
+  }
+
   // Initialize scheduler for attendance auto-finalization
   schedulerService.initScheduler();
 

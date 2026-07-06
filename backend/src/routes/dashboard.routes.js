@@ -109,4 +109,29 @@ router.get(
  */
 router.get("/quick-stats", adminOrDoctor, dashboardController.getQuickStats);
 
+/**
+ * @swagger
+ * /dashboard/reset-lectures:
+ *   post:
+ *     summary: Reactivate all soft-deleted lectures and reset their status (Admin only)
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lectures reset successfully
+ */
+router.post("/reset-lectures", adminOnly, async (req, res) => {
+  try {
+    const { resetLecturesStatus } = require("../services/scheduler.service");
+    await resetLecturesStatus();
+    res.status(200).json({
+      success: true,
+      message: "تم إعادة تفعيل المحاضرات وإعادة تعيين حالتها بنجاح",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;
