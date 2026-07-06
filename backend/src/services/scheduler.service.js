@@ -368,9 +368,19 @@ async function autoCompleteLectures() {
  * Reset completed/cancelled lectures status back to scheduled
  */
 async function resetLecturesStatus() {
-  console.log("[Scheduler] Resetting completed lectures to scheduled status...");
+  console.log("[Scheduler] Resetting lectures status and reactivating...");
   try {
-    const result = await Lecture.updateMany(
+    // 1. Reactivate soft-deleted lectures (isActive: false → true)
+    const reactivated = await Lecture.updateMany(
+      { isActive: false },
+      { $set: { isActive: true, status: "scheduled" } }
+    );
+    if (reactivated.modifiedCount > 0) {
+      console.log(`[Scheduler] Reactivated ${reactivated.modifiedCount} soft-deleted lectures`);
+    }
+
+    // 2. Reset completed/cancelled lectures back to scheduled
+    const reset = await Lecture.updateMany(
       {
         isActive: true,
         status: { $in: ["completed", "cancelled"] },
@@ -379,7 +389,7 @@ async function resetLecturesStatus() {
         $set: { status: "scheduled" },
       }
     );
-    console.log(`[Scheduler] Reset ${result.modifiedCount} lectures to scheduled status`);
+    console.log(`[Scheduler] Reset ${reset.modifiedCount} lectures to scheduled status`);
   } catch (error) {
     console.error("[Scheduler] Error resetting lectures status:", error);
   }
