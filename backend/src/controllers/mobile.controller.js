@@ -139,7 +139,6 @@ exports.getHome = catchAsync(async (req, res) => {
   const candidateLectures = await Lecture.find({
     course: { $in: enrolledIds },
     dayOfWeek: { $in: [today, yesterday] },
-    isActive: true,
   })
     .populate("course", "name code")
     .populate("hall", "name")
@@ -309,7 +308,6 @@ exports.getSchedule = catchAsync(async (req, res) => {
   // Fetch all lectures for enrolled courses
   const allLectures = await Lecture.find({
     course: { $in: enrolledIds },
-    isActive: true,
   })
     .populate("course", "name code")
     .populate("hall", "name")
@@ -456,15 +454,10 @@ exports.getAttendanceHistory = catchAsync(async (req, res) => {
     _id: { $in: student.academicInfo?.enrolledCourses || [] },
   }).select("name code");
 
-  // Exclude Friday (dayOfWeek 5)
-  const nonFridayLectures = await Lecture.find({ dayOfWeek: { $ne: 5 } }).select("_id");
-  const nonFridayLectureIds = nonFridayLectures.map(l => l._id);
-
-  // Build query
-  const query = { 
-    student: student._id, 
+  // Build query — show all finalized attendance records for this student
+  const query = {
+    student: student._id,
     isFinalized: true,
-    lecture: { $in: nonFridayLectureIds }
   };
   if (courseId && courseId !== "all") {
     query.course = courseId;
