@@ -99,6 +99,28 @@ jobs:
               exit 1
             fi
 
+            # --------- Free Disk Space Before Build ---------
+            echo "🧹 Cleaning up disk space before build..."
+            echo "📊 Disk usage before cleanup:"
+            df -h /
+
+            # Remove stopped containers
+            sudo docker container prune -f || true
+            # Remove unused images (dangling + unreferenced)
+            sudo docker image prune -a -f || true
+            # Remove unused volumes
+            sudo docker volume prune -f || true
+            # Remove unused networks
+            sudo docker network prune -f || true
+            # Remove unused build cache
+            sudo docker builder prune -a -f || true
+            # Clean apt cache
+            sudo apt-get clean || true
+            sudo rm -rf /var/lib/apt/lists/* || true
+
+            echo "📊 Disk usage after cleanup:"
+            df -h /
+
             # --------- Build and Start Docker Containers ---------
             echo "🐳 Building and starting containers..."
             cd "$PROJECT_PATH"
@@ -117,8 +139,8 @@ jobs:
             echo "📊 Container status:"
             sudo docker-compose -f docker-compose.deploy.yml ps
 
-            # Cleanup old images
-            sudo docker image prune -f
+            # Final cleanup of dangling images only
+            sudo docker image prune -f || true
 
             echo "========================================="
             echo "✅ Deployment Complete!"
