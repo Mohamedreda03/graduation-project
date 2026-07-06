@@ -163,9 +163,30 @@ exports.updateStudent = catchAsync(async (req, res, next) => {
   // Don't allow certain fields to be updated
   delete req.body.role;
 
+  // Flatten the body to use dot notation, preventing Mongoose from overwriting entire nested objects (e.g. academicInfo)
+  const flattenObject = (obj, prefix = "") => {
+    let result = {};
+    for (const key in obj) {
+      if (
+        typeof obj[key] === "object" &&
+        obj[key] !== null &&
+        !Array.isArray(obj[key]) &&
+        !(obj[key] instanceof Date)
+      ) {
+        const nested = flattenObject(obj[key], `${prefix}${key}.`);
+        result = { ...result, ...nested };
+      } else {
+        result[`${prefix}${key}`] = obj[key];
+      }
+    }
+    return result;
+  };
+
+  const flatBody = flattenObject(req.body);
+
   const student = await User.findOneAndUpdate(
     { _id: req.params.id, role: ROLES.STUDENT },
-    req.body,
+    { $set: flatBody },
     { new: true, runValidators: true },
   );
 

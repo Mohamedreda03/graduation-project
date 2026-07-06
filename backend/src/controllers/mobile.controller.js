@@ -181,7 +181,10 @@ exports.getHome = catchAsync(async (req, res) => {
 
   if (liveLec) {
     // Calculate remaining time in seconds
-    const endMins = toMinutes(liveLec.endTime);
+    let endMins = toMinutes(liveLec.endTime);
+    if (endMins < toMinutes(liveLec.startTime) && currentMins >= toMinutes(liveLec.startTime)) {
+      endMins += 24 * 60;
+    }
     const remainingSecs = Math.max(0, (endMins - currentMins) * 60);
 
     // Is the student currently connected to this lecture?
@@ -220,7 +223,10 @@ exports.getHome = catchAsync(async (req, res) => {
       endTime: formatTime12Hour(liveLec.endTime),
       startTimeIso: getIsoTimeToday(liveLec.startTime),
       endTimeIso: getIsoTimeToday(liveLec.endTime),
-      durationMinutes: liveLec.durationMinutes || Math.round((toMinutes(liveLec.endTime) - toMinutes(liveLec.startTime))),
+      durationMinutes: liveLec.durationMinutes || Math.round(
+        toMinutes(liveLec.endTime) - toMinutes(liveLec.startTime) +
+        (toMinutes(liveLec.endTime) < toMinutes(liveLec.startTime) ? 24 * 60 : 0)
+      ),
       remainingTime: minutesToHMS(remainingSecs),
       attendanceStatus,
       attendanceStatusAr: STATUS_AR[attendanceStatus] || attendanceStatus,
@@ -233,7 +239,11 @@ exports.getHome = catchAsync(async (req, res) => {
   const liveLectureId = liveLecture?.lectureId?.toString();
   for (const lec of todayLectures) {
     if (lec._id.toString() === liveLectureId) continue;
-    const startMins = toMinutes(lec.startTime);
+    let startMins = toMinutes(lec.startTime);
+    if (lec.dayOfWeek !== today) {
+      startMins -= 24 * 60; // Lecture started yesterday
+    }
+    
     if (startMins > currentMins) {
       const countdownSecs = (startMins - currentMins) * 60;
       nextLecture = {
@@ -461,15 +471,7 @@ exports.getAttendanceHistory = catchAsync(async (req, res) => {
   }
 
   const total = await AttendanceRecord.countDocuments(query);
-  const records = await AttendanceRecord.find(query)
-    .populate("course", "name code")
-    .populate("lecture", "startTime endTime dayOfWeek")
-    .populate({ path: "lecture", populate: { path: "doctor", select: "name" } })
-    .sort({ date: -1 })
-    .skip((parseInt(page) - 1) * parseInt(limit))
-    .limit(parseInt(limit));
 
-  // Re-populate doctor via lecture
   const populatedRecords = await AttendanceRecord.find(query)
     .populate("course", "name code")
     .populate({
